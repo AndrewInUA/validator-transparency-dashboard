@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>AndrewInUA Validator Dashboard</title>
+  <title>AndrewInUA Validator Dashboard</title>
   <style>
     :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; }
     body { margin: 0; background: #0b0f1a; color: #e6eaf2; }
@@ -21,12 +21,21 @@
     .spark { width: 100%; height: 60px; display:block; }
     .footer { margin-top:24px; font-size:13px; color:#93a6c8; }
     a { color:#8bd5ff; text-decoration:none; }
+
+    /* New: tiny line under trust card */
+    .tiny-note {
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1 style="margin:0 0 8px">Validator Transparency Dashboard</h1>
-    <p class="muted">Built by AndrewInUA — starter demo with mock data. Flip to live data in <code>app.js</code>.</p>
+    <p class="muted">
+      Built by AndrewInUA — starter demo with live data from Solana RPC and Jito.
+    </p>
 
     <div class="grid">
       <div class="card" id="trust-card">
@@ -49,6 +58,9 @@
             <div id="status" class="kpi">—</div>
           </div>
         </div>
+
+        <!-- NEW: Last updated line -->
+        <div id="last-updated" class="tiny-note">Last updated: —</div>
       </div>
 
       <div class="card">
@@ -60,9 +72,12 @@
 
     <div class="footer">
       <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br/>
-      Repo idea: <code>andrewinua/validator-transparency-dashboard</code> • <a href="#" id="open-live">Open live (soon)</a>
+      Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
+      <a href="https://andrewinua.github.io/validator-transparency-dashboard/" id="open-live">Open on GitHub Pages</a>
     </div>
   </div>
-<script type="module" src="./app.js?v=7"></script>
+
+  <!-- Bump ?v=20 (or any new number) when you change app.js -->
+  <script src="./app.js?v=20" defer></script>
 </body>
 </html>
