@@ -2,7 +2,7 @@
 const USE_LIVE = false; // change to true when you add API keys and endpoints
 const VALIDATOR = {
   name: "AndrewInUA",
-  voteKey: "YourVoteAccountPubkeyHere"
+  voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 // When USE_LIVE=true, set your keys in a .env on your real build (Vercel) and read via server endpoints.
 
