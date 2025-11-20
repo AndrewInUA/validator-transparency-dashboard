@@ -34,82 +34,92 @@ function drawSpark(canvas, values) {
   ctx.stroke();
 }
 
-// --- Live data via Solana JSON-RPC (robust with fallbacks) ---
+// --- Live data via Solana JSON-RPC with automatic fallbacks ---
 async function fetchLive() {
-  // A CORS-friendly public RPC
-  const rpc = "https://rpc.ankr.com/solana"; // alt: "https://api.mainnet-beta.solana.com"
-  const body = {
+  // Try these in order; the first that works wins
+  const RPCS = [
+    "https://solana-mainnet.g.alchemy.com/v2/demo",     // CORS-friendly demo
+    "https://api.mainnet-beta.solana.com",              // official (may CORS-block)
+    "https://rpc.ankr.com/solana",                      // often 403 without key
+  ];
+
+  const reqBody = {
     jsonrpc: "2.0",
     id: 1,
     method: "getVoteAccounts",
     params: [{ commitment: "finalized" }],
   };
 
-  const safeEmpty = {
+  const baseEmpty = {
     commissionHistory: Array(10).fill(0),
     uptimeLast5EpochsPct: 0,
     jito: false,
     status: "error",
   };
 
-  try {
-    const res = await fetch(rpc, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    if (!json?.result) throw new Error("RPC response missing result");
+  let lastErr = null;
 
-    const current = json.result.current || [];
-    const delinquent = json.result.delinquent || [];
-    const all = current.concat(delinquent);
-
-    const me = all.find((v) => v.votePubkey === VALIDATOR.voteKey);
-    if (!me) {
-      console.warn("Vote account not found in getVoteAccounts:", VALIDATOR.voteKey);
-      return { ...safeEmpty, status: "not found" };
-    }
-
-    // Commission straight from RPC
-    const commission = Number(me.commission ?? 0);
-
-    // Delinquent or healthy
-    const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
-    const status = isDelinquent ? "delinquent" : "healthy";
-
-    // Relative “uptime” from recent epoch credits (proxy)
-    let uptimePct = 0;
+  for (const rpc of RPCS) {
     try {
-      const credits = me.epochCredits || []; // [[epoch, credits, prev], ...], newest last
-      const last6 = credits.slice(-6);
-      const deltas = [];
-      for (let i = 1; i < last6.length; i++) {
-        const delta = Math.max(0, (last6[i]?.[1] ?? 0) - (last6[i - 1]?.[1] ?? 0));
-        deltas.push(delta);
-      }
-      const window = deltas.slice(-5);
-      const maxDelta = Math.max(...window, 1);
-      const avgRel = window.length
-        ? window.reduce((a, b) => a + b / maxDelta, 0) / window.length
-        : 0;
-      uptimePct = Math.round(avgRel * 10000) / 100; // e.g. 97.32
-    } catch (e) {
-      console.warn("Uptime calc error:", e);
-      uptimePct = 0;
-    }
+      const res = await fetch(rpc, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify(reqBody),
+      });
 
-    return {
-      commissionHistory: Array(10).fill(commission), // flat until we add history
-      uptimeLast5EpochsPct: uptimePct,
-      jito: false, // Jito wiring next
-      status,
-    };
-  } catch (err) {
-    console.error("fetchLive error:", err);
-    return safeEmpty;
+      if (!res.ok) throw new Error(`HTTP ${res.status} at ${rpc}`);
+      const json = await res.json();
+      if (!json?.result) throw new Error(`Malformed response from ${rpc}`);
+
+      const current = json.result.current || [];
+      const delinquent = json.result.delinquent || [];
+      const all = current.concat(delinquent);
+
+      const me = all.find((v) => v.votePubkey === VALIDATOR.voteKey);
+      if (!me) {
+        console.warn("Vote account not found in getVoteAccounts:", VALIDATOR.voteKey, "via", rpc);
+        return { ...baseEmpty, status: "not found" };
+      }
+
+      const commission = Number(me.commission ?? 0);
+      const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
+      const status = isDelinquent ? "delinquent" : "healthy";
+
+      // Relative “uptime” proxy from recent epoch credits
+      let uptimePct = 0;
+      try {
+        const credits = me.epochCredits || []; // [[epoch, credits, prev], ...], newest last
+        const last6 = credits.slice(-6);
+        const deltas = [];
+        for (let i = 1; i < last6.length; i++) {
+          const delta = Math.max(0, (last6[i]?.[1] ?? 0) - (last6[i - 1]?.[1] ?? 0));
+          deltas.push(delta);
+        }
+        const window = deltas.slice(-5);
+        const maxDelta = Math.max(...window, 1);
+        const avgRel = window.length ? window.reduce((a, b) => a + b / maxDelta, 0) / window.length : 0;
+        uptimePct = Math.round(avgRel * 10000) / 100;
+      } catch (e) {
+        console.warn("Uptime calc error:", e);
+        uptimePct = 0;
+      }
+
+      console.log("LIVE via:", rpc, { commission, status, uptimePct });
+      return {
+        commissionHistory: Array(10).fill(commission),
+        uptimeLast5EpochsPct: uptimePct,
+        jito: false, // Jito wiring next
+        status,
+      };
+    } catch (e) {
+      lastErr = e;
+      console.warn("RPC failed:", rpc, e?.message || e);
+      // Try next RPC in the list
+    }
   }
+
+  console.error("All RPCs failed:", lastErr?.message || lastErr);
+  return baseEmpty;
 }
 
 async function main() {
