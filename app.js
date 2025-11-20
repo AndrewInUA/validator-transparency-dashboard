@@ -1,5 +1,5 @@
 // --- CONFIG ---
-const USE_LIVE = false; // change to true when you add API keys and endpoints
+const USE_LIVE = true;
 const VALIDATOR = {
   name: "AndrewInUA",
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
@@ -35,14 +35,68 @@ function drawSpark(canvas, values) {
   ctx.stroke();
 }
 
-// --- Live data stub (fill later) ---
+// --- Live data via Solana JSON-RPC (no key needed; public endpoint) ---
 async function fetchLive() {
-  // Example shape; later replace with real RPC/Helius/Jito calls via your backend or serverless functions.
+  const rpc = "https://api.mainnet-beta.solana.com";
+  const body = {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "getVoteAccounts",
+    params: [{ commitment: "finalized" }]
+  };
+
+  const res = await fetch(rpc, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const json = await res.json();
+  if (!json.result) throw new Error("RPC response missing result");
+
+  const all = [
+    ...(json.result.current || []),
+    ...(json.result.delinquent || [])
+  ];
+  const me = all.find(v => v.votePubkey === VALIDATOR.voteKey);
+
+  if (!me) {
+    return {
+      commissionHistory: Array(10).fill(0),
+      uptimeLast5EpochsPct: 0,
+      jito: false,
+      status: "not found"
+    };
+  }
+
+  const commission = me.commission;
+  const isDelinquent = (json.result.delinquent || []).some(
+    v => v.votePubkey === me.votePubkey
+  );
+  const status = isDelinquent ? "delinquent" : "healthy";
+
+  let uptimePct = 0;
+  try {
+    const credits = me.epochCredits || [];
+    const last6 = credits.slice(-6);
+    const deltas = [];
+    for (let i = 1; i < last6.length; i++) {
+      const delta = Math.max(0, last6[i][1] - last6[i - 1][1]);
+      deltas.push(delta);
+    }
+    const window = deltas.slice(-5);
+    const maxDelta = Math.max(...window, 1);
+    const avgRel =
+      window.reduce((a, b) => a + b / maxDelta, 0) / window.length;
+    uptimePct = Math.round(avgRel * 10000) / 100;
+  } catch (e) {
+    uptimePct = 0;
+  }
+
   return {
-    commissionHistory: [8, 8, 8, 8, 7, 7, 7, 7, 6, 6],
-    uptimeLast5EpochsPct: 98.9,
-    jito: true,
-    status: "healthy"
+    commissionHistory: Array(10).fill(commission),
+    uptimeLast5EpochsPct: uptimePct,
+    jito: false,
+    status
   };
 }
 
