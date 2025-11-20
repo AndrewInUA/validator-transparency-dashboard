@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Validator Transparency Dashboard</title>
+  <style>
+    :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; }
+    body { margin: 0; background: #0b0f1a; color: #e6eaf2; }
+    .wrap { max-width: 960px; margin: 40px auto; padding: 0 16px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: #121827; border: 1px solid #1f2a44; border-radius: 16px; padding: 16px; }
+    .muted { color: #9fb0ce; font-size: 14px; }
+    .title { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+    .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #1a2240; border: 1px solid #2a3561; }
+    .ok { background:#0f3a2b; border-color:#1f6c51; }
+    .warn { background:#40221a; border-color:#61352a; }
+    .kpi { font-size: 28px; font-weight: 800; }
+    .spark { width: 100%; height: 60px; display:block; }
+    .footer { margin-top:24px; font-size:13px; color:#93a6c8; }
+    a { color:#8bd5ff; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 style="margin:0 0 8px">Validator Transparency Dashboard</h1>
+    <p class="muted">Built by AndrewInUA — starter demo with mock data. Flip to live data in <code>app.js</code>.</p>
+
+    <div class="grid">
+      <div class="card" id="trust-card">
+        <p class="title">Trust Card</p>
+        <div class="row">
+          <span id="validator-name" class="badge">Validator: —</span>
+          <span id="jito-badge" class="badge">Jito: —</span>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div>
+            <div class="muted">Commission</div>
+            <div id="commission" class="kpi">—%</div>
+          </div>
+          <div>
+            <div class="muted">Uptime (last 5 epochs)</div>
+            <div id="uptime" class="kpi">—%</div>
+          </div>
+          <div>
+            <div class="muted">Status</div>
+            <div id="status" class="kpi">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="title">Commission history (last 10)</p>
+        <canvas id="spark" class="spark" width="600" height="60"></canvas>
+        <p class="muted" id="spark-label">—</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br/>
+      Repo idea: <code>andrewinua/validator-transparency-dashboard</code> • <a href="#" id="open-live">Open live (soon)</a>
+    </div>
+  </div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
