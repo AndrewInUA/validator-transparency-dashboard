@@ -1,50 +1,40 @@
 /**
  * Validator Transparency Dashboard – app.js
  *
- * What this file does:
- * 1. Reads your validator vote account (CONFIG section).
+ * 1. Reads your validator vote account (CONFIG).
  * 2. Fetches live data from Solana JSON-RPC:
  *    - commission
- *    - epoch credits → relative “uptime”
+ *    - uptime proxy from epochCredits
  *    - delinquent / healthy status
  * 3. Fetches live Jito status from your Vercel proxy.
- * 4. Renders the Trust Card + sparkline on the page.
- *
- * You can flip between live and mock data with USE_LIVE.
+ * 4. Renders the Trust Card + sparkline + last updated timestamp.
  */
 
-// ───────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────
 // CONFIG
-// ───────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────
 
 // If true → use Solana RPC + Jito proxy.
-// If false → use the MOCK object at the bottom (for demo / offline).
+// If false → use MOCK_DATA below.
 const USE_LIVE = true;
 
-// Your validator identity for the dashboard.
-// name: how it’s displayed
-// voteKey: vote account public key (the one in the Solana explorer)
+// Default validator for the dashboard.
 const VALIDATOR = {
   name: "AndrewInUA",
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 
-// Jito proxy hosted on Vercel. This is the backend we wrote in api/jito.js.
-// It calls https://kobe.mainnet.jito.network/api/v1/validators on your behalf
-// and returns JSON like { jito: true/false, ... }.
+// Your Vercel Jito proxy (api/jito.js).
 const JITO_PROXY =
   "https://validator-transparency-dashboard.vercel.app/api/jito";
 
 
-// ───────────────────────────────────────────────────────────────
-// URL OVERRIDES (optional)
-// ───────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────
+// URL overrides (?vote=&name=) – optional
+// ──────────────────────────────────────────────
 //
-// This lets *other* validators re-use the same page without forking.
-// Example:
-//   https://.../validator-transparency-dashboard/?vote=VOTE_PUBKEY&name=MyNode
-//
-// It will override VALIDATOR.voteKey and VALIDATOR.name on the fly.
+// This lets any other validator reuse the same page without forking:
+//   https://.../dashboard/?vote=VOTE_PUBKEY&name=NiceValidator
 
 (function applyUrlOverrides() {
   const params = new URLSearchParams(window.location.search);
@@ -56,12 +46,9 @@ const JITO_PROXY =
 })();
 
 
-// ───────────────────────────────────────────────────────────────
-// MOCK DATA (for demo/testing)
-// ───────────────────────────────────────────────────────────────
-//
-// Used only when USE_LIVE === false.
-// You can tweak these to show a nice static card when offline.
+// ──────────────────────────────────────────────
+// MOCK DATA (used only if USE_LIVE === false)
+// ──────────────────────────────────────────────
 
 const MOCK_DATA = {
   commissionHistory: [8, 8, 8, 7, 7, 7, 6, 6, 6, 6],
@@ -71,26 +58,23 @@ const MOCK_DATA = {
 };
 
 
-// ───────────────────────────────────────────────────────────────
-// SMALL HELPERS
-// ───────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────
 
 /**
- * Draws a simple line chart (sparkline) for the commission history.
- * @param {HTMLCanvasElement} canvas
- * @param {number[]} values
+ * Draws a simple sparkline for commission history.
  */
 function drawSpark(canvas, values) {
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
 
-  // Clear previous drawing
   ctx.clearRect(0, 0, w, h);
 
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const pad = 4; // padding inside the canvas
+  const pad = 4;
 
   ctx.beginPath();
 
@@ -108,50 +92,36 @@ function drawSpark(canvas, values) {
 }
 
 /**
- * Fetch Jito status from your Vercel proxy.
- * Returns true if the proxy says jito: true, otherwise false.
+ * Ask the Vercel proxy if this vote account runs Jito.
+ * api/jito.js returns { jito: true/false, ... }.
  */
 async function fetchJitoStatus(voteKey) {
-  // If you ever want to run without Jito proxy, just set JITO_PROXY = "".
   if (!JITO_PROXY) return false;
 
   try {
     const url = `${JITO_PROXY}?vote=${encodeURIComponent(voteKey)}`;
     const res = await fetch(url);
-
     if (!res.ok) throw new Error(`Jito proxy HTTP ${res.status}`);
 
     const json = await res.json();
     console.log("Jito proxy response:", json);
-
-    // Our api/jito.js sets { jito: running_jito }
     return !!json.jito;
   } catch (err) {
     console.warn("Jito check failed:", err);
-    // On error we show OFF rather than breaking the whole card.
     return false;
   }
 }
 
 
-// ───────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────
 // LIVE DATA: Solana JSON-RPC
-// ───────────────────────────────────────────────────────────────
-//
-// Main job:
-//  - call getVoteAccounts on one of the RPCs below,
-//  - find your vote account,
-//  - compute stats (commission, uptime, status),
-//  - call Jito proxy for jito: ON/OFF,
-//  - return a { commissionHistory, uptimeLast5EpochsPct, jito, status } object.
-//
+// ──────────────────────────────────────────────
 
 async function fetchLive() {
-  // RPC endpoints to try in order; first successful one wins.
   const RPCS = [
-    "https://solana-mainnet.g.alchemy.com/v2/demo", // CORS-friendly demo
-    "https://api.mainnet-beta.solana.com",          // official
-    "https://rpc.ankr.com/solana"                   // extra fallback
+    "https://solana-mainnet.g.alchemy.com/v2/demo",
+    "https://api.mainnet-beta.solana.com",
+    "https://rpc.ankr.com/solana"
   ];
 
   const requestBody = {
@@ -161,7 +131,6 @@ async function fetchLive() {
     params: [{ commitment: "finalized" }]
   };
 
-  // Fallback shape when everything fails or vote account not found.
   const EMPTY = {
     commissionHistory: Array(10).fill(0),
     uptimeLast5EpochsPct: 0,
@@ -169,7 +138,6 @@ async function fetchLive() {
     status: "error"
   };
 
-  // Try each RPC one by one
   for (const rpc of RPCS) {
     try {
       const res = await fetch(rpc, {
@@ -188,7 +156,6 @@ async function fetchLive() {
       const delinquent = json?.result?.delinquent || [];
       const all = current.concat(delinquent);
 
-      // Find our vote account in the list
       const me = all.find((v) => v.votePubkey === VALIDATOR.voteKey);
 
       if (!me) {
@@ -196,22 +163,17 @@ async function fetchLive() {
         return { ...EMPTY, status: "not found" };
       }
 
-      // Commission is directly provided as an integer (e.g. 0, 5, 6)
       const commission = Number(me.commission ?? 0);
-
-      // Determine delinquent vs healthy based on which array it came from.
       const isDelinquent = delinquent.some(
         (v) => v.votePubkey === me.votePubkey
       );
       const status = isDelinquent ? "delinquent" : "healthy";
 
-      // Uptime approximation based on recent epochCredits.
-      // epochCredits is [[epoch, credits, prev_credits], ...].
+      // Uptime approximation from epochCredits [[epoch, credits, prevCredits], ...]
       let uptimePct = 0;
-
       try {
         const credits = me.epochCredits || [];
-        const last6 = credits.slice(-6); // last 6 epochs (if available)
+        const last6 = credits.slice(-6);
         const deltas = [];
 
         for (let i = 1; i < last6.length; i++) {
@@ -221,22 +183,19 @@ async function fetchLive() {
           deltas.push(delta);
         }
 
-        // Last 5 deltas → relative “voting uptime”
         const window = deltas.slice(-5);
-        const maxDelta = Math.max(...window, 1); // avoid division by 0
+        const maxDelta = Math.max(...window, 1);
 
         const avgRelative = window.length
           ? window.reduce((sum, d) => sum + d / maxDelta, 0) / window.length
           : 0;
 
-        // Convert 0–1 range to percentage with 2 decimal places
         uptimePct = Math.round(avgRelative * 10000) / 100;
       } catch (err) {
         console.warn("Uptime calculation error:", err);
         uptimePct = 0;
       }
 
-      // Jito ON/OFF from our proxy
       const jito = await fetchJitoStatus(VALIDATOR.voteKey);
 
       console.log("LIVE via RPC:", rpc, {
@@ -254,7 +213,7 @@ async function fetchLive() {
       };
     } catch (err) {
       console.warn("RPC failed:", rpc, err.message || err);
-      // Move on to the next RPC in the list
+      // Try the next RPC
     }
   }
 
@@ -263,22 +222,21 @@ async function fetchLive() {
 }
 
 
-// ───────────────────────────────────────────────────────────────
-// MAIN: fetch data + render UI
-// ───────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────
+// MAIN: fetch + render
+// ──────────────────────────────────────────────
 
 async function main() {
-  // Show validator name immediately (even before data loads)
+  // Show validator name immediately
   const nameEl = document.getElementById("validator-name");
   if (nameEl) {
     nameEl.textContent = `Validator: ${VALIDATOR.name}`;
   }
 
-  // Decide which data source to use
   const data = USE_LIVE ? await fetchLive() : MOCK_DATA;
   console.log("Dashboard mode:", USE_LIVE ? "LIVE" : "MOCK", data);
 
-  // ── Jito badge ──────────────────────────────────────────────
+  // Jito badge
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
     jitoBadge.textContent = `Jito: ${data.jito ? "ON" : "OFF"}`;
@@ -286,7 +244,7 @@ async function main() {
     jitoBadge.classList.add(data.jito ? "ok" : "warn");
   }
 
-  // ── Commission & uptime ─────────────────────────────────────
+  // Commission / uptime
   const history = data.commissionHistory || [];
   const latestCommission = history.length
     ? Number(history[history.length - 1])
@@ -304,7 +262,7 @@ async function main() {
       `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
   }
 
-  // ── Status badge ────────────────────────────────────────────
+  // Status
   const statusEl = document.getElementById("status");
   if (statusEl) {
     statusEl.textContent = data.status || "—";
@@ -312,7 +270,21 @@ async function main() {
     statusEl.classList.add(data.status === "healthy" ? "ok" : "warn");
   }
 
-  // ── Sparkline chart ─────────────────────────────────────────
+  // Last updated timestamp
+  const tsEl = document.getElementById("last-updated");
+  if (tsEl) {
+    const ts = new Date();
+    const fmt = ts.toLocaleString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      day: "2-digit",
+      month: "short"
+    });
+    tsEl.textContent = `Last updated: ${fmt}`;
+  }
+
+  // Sparkline
   const sparkCanvas = document.getElementById("spark");
   if (sparkCanvas) {
     const series = history.length ? history : Array(10).fill(0);
@@ -332,5 +304,4 @@ async function main() {
   }
 }
 
-// Kick everything off
 main();
