@@ -2,11 +2,11 @@
  * Validator Transparency Dashboard – app.js
  *
  * 1. Reads your validator vote account (CONFIG).
- * 2. Fetches live data via your Vercel RPC proxy:
+ * 2. Fetches live data from Solana JSON-RPC:
  *    - commission
  *    - uptime proxy from epochCredits
  *    - delinquent / healthy status
- * 3. Fetches live Jito status from your Vercel Jito proxy.
+ * 3. Fetches live Jito status from your Vercel proxy.
  * 4. Renders the Trust Card + sparkline + last updated timestamp.
  */
 
@@ -14,7 +14,7 @@
 // CONFIG
 // ──────────────────────────────────────────────
 
-// If true → use live data via proxies.
+// If true → use Solana RPC + Jito proxy.
 // If false → use MOCK_DATA below.
 const USE_LIVE = true;
 
@@ -24,13 +24,12 @@ const VALIDATOR = {
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 
-// Your Vercel proxies.
+// Your dedicated Helius RPC URL
+const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8c0db429-5430-4151-95f3-7487584d0a36";
+
+// Your Vercel Jito proxy (api/jito.js).
 const JITO_PROXY =
   "https://validator-transparency-dashboard.vercel.app/api/jito";
-
-const RPC_PROXY =
-  "https://validator-transparency-dashboard.vercel.app/api/rpc";
-
 
 // ──────────────────────────────────────────────
 // URL overrides (?vote=&name=) – optional
@@ -48,7 +47,6 @@ const RPC_PROXY =
   if (name) VALIDATOR.name = name.trim();
 })();
 
-
 // ──────────────────────────────────────────────
 // MOCK DATA (used only if USE_LIVE === false)
 // ──────────────────────────────────────────────
@@ -59,15 +57,6 @@ const MOCK_DATA = {
   jito: true,
   status: "healthy"
 };
-
-// Fallback state when proxies / RPC fail.
-const EMPTY_STATE = {
-  commissionHistory: Array(10).fill(0),
-  uptimeLast5EpochsPct: 0,
-  jito: false,
-  status: "error"
-};
-
 
 // ──────────────────────────────────────────────
 // HELPERS
@@ -104,7 +93,7 @@ function drawSpark(canvas, values) {
 
 /**
  * Ask the Vercel proxy if this vote account runs Jito.
- * api/jito.js should return { jito: true/false, ... }.
+ * api/jito.js returns { jito: true/false, ... }.
  */
 async function fetchJitoStatus(voteKey) {
   if (!JITO_PROXY) return false;
@@ -123,85 +112,114 @@ async function fetchJitoStatus(voteKey) {
   }
 }
 
-
 // ──────────────────────────────────────────────
-// LIVE DATA: via Vercel RPC proxy
+// LIVE DATA: Solana JSON-RPC
 // ──────────────────────────────────────────────
-//
-// Expects /api/rpc?vote=<VOTEKEY> to return:
-// {
-//   ok: true,
-//   data: { ...voteAccountFields },
-//   delinquent: false
-// }
 
 async function fetchLive() {
-  if (!RPC_PROXY) {
-    console.error("RPC_PROXY not configured");
-    return EMPTY_STATE;
-  }
+  // First try your Helius RPC, then a couple of public fallbacks
+  const RPCS = [
+    HELIUS_RPC,
+    "https://api.mainnet-beta.solana.com",
+    "https://rpc.ankr.com/solana"
+  ];
 
-  try {
-    const url = `${RPC_PROXY}?vote=${encodeURIComponent(VALIDATOR.voteKey)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`RPC proxy HTTP ${res.status}`);
+  const requestBody = {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "getVoteAccounts",
+    params: [{ commitment: "finalized" }]
+  };
 
-    const json = await res.json();
-    console.log("RPC proxy response:", json);
+  const EMPTY = {
+    commissionHistory: Array(10).fill(0),
+    uptimeLast5EpochsPct: 0,
+    jito: false,
+    status: "error"
+  };
 
-    if (!json || !json.ok || !json.data) {
-      console.warn("RPC proxy: no data for this vote account");
-      return { ...EMPTY_STATE, status: "not found" };
-    }
-
-    const me = json.data;
-
-    const commission = Number(me.commission ?? 0);
-
-    // Uptime approximation from epochCredits [[epoch, credits, prevCredits], ...]
-    let uptimePct = 0;
+  for (const rpc of RPCS) {
     try {
-      const credits = me.epochCredits || [];
-      const last6 = credits.slice(-6);
-      const deltas = [];
+      const res = await fetch(rpc, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json"
+        },
+        body: JSON.stringify(requestBody)
+      });
 
-      for (let i = 1; i < last6.length; i++) {
-        const prevCredits = last6[i - 1]?.[1] ?? 0;
-        const curCredits = last6[i]?.[1] ?? 0;
-        const delta = Math.max(0, curCredits - prevCredits);
-        deltas.push(delta);
+      if (!res.ok) throw new Error(`RPC ${rpc} → HTTP ${res.status}`);
+
+      const json = await res.json();
+      const current = json?.result?.current || [];
+      const delinquent = json?.result?.delinquent || [];
+      const all = current.concat(delinquent);
+
+      const me = all.find((v) => v.votePubkey === VALIDATOR.voteKey);
+
+      if (!me) {
+        console.warn("Vote account not found via RPC:", rpc);
+        return { ...EMPTY, status: "not found" };
       }
 
-      const window = deltas.slice(-5);
-      const maxDelta = Math.max(...window, 1);
+      const commission = Number(me.commission ?? 0);
+      const isDelinquent = delinquent.some(
+        (v) => v.votePubkey === me.votePubkey
+      );
+      const status = isDelinquent ? "delinquent" : "healthy";
 
-      const avgRelative = window.length
-        ? window.reduce((sum, d) => sum + d / maxDelta, 0) / window.length
-        : 0;
+      // Uptime approximation from epochCredits [[epoch, credits, prevCredits], ...]
+      let uptimePct = 0;
+      try {
+        const credits = me.epochCredits || [];
+        const last6 = credits.slice(-6);
+        const deltas = [];
 
-      uptimePct = Math.round(avgRelative * 10000) / 100;
+        for (let i = 1; i < last6.length; i++) {
+          const prevCredits = last6[i - 1]?.[1] ?? 0;
+          const curCredits = last6[i]?.[1] ?? 0;
+          const delta = Math.max(0, curCredits - prevCredits);
+          deltas.push(delta);
+        }
+
+        const window = deltas.slice(-5);
+        const maxDelta = Math.max(...window, 1);
+
+        const avgRelative = window.length
+          ? window.reduce((sum, d) => sum + d / maxDelta, 0) / window.length
+          : 0;
+
+        uptimePct = Math.round(avgRelative * 10000) / 100;
+      } catch (err) {
+        console.warn("Uptime calculation error:", err);
+        uptimePct = 0;
+      }
+
+      const jito = await fetchJitoStatus(VALIDATOR.voteKey);
+
+      console.log("LIVE via RPC:", rpc, {
+        commission,
+        status,
+        uptimePct,
+        jito
+      });
+
+      return {
+        commissionHistory: Array(10).fill(commission),
+        uptimeLast5EpochsPct: uptimePct,
+        jito,
+        status
+      };
     } catch (err) {
-      console.warn("Uptime calculation error:", err);
-      uptimePct = 0;
+      console.warn("RPC failed:", rpc, err.message || err);
+      // Try the next RPC
     }
-
-    const jito = await fetchJitoStatus(VALIDATOR.voteKey);
-
-    const isDelinquent = !!json.delinquent;
-    const status = isDelinquent ? "delinquent" : "healthy";
-
-    return {
-      commissionHistory: Array(10).fill(commission),
-      uptimeLast5EpochsPct: uptimePct,
-      jito,
-      status
-    };
-  } catch (err) {
-    console.error("fetchLive via RPC proxy failed:", err);
-    return EMPTY_STATE;
   }
-}
 
+  console.error("All RPCs failed – returning empty state");
+  return EMPTY;
+}
 
 // ──────────────────────────────────────────────
 // MAIN: fetch + render
@@ -217,10 +235,18 @@ async function main() {
   let data;
 
   try {
+    // Try to get real data
     data = USE_LIVE ? await fetchLive() : MOCK_DATA;
   } catch (err) {
     console.error("Fatal error in fetchLive:", err);
-    data = EMPTY_STATE;
+
+    // Absolute fallback – make sure we *always* have something to render
+    data = {
+      commissionHistory: Array(10).fill(0),
+      uptimeLast5EpochsPct: 0,
+      jito: false,
+      status: "error"
+    };
   }
 
   console.log("Dashboard mode:", USE_LIVE ? "LIVE" : "MOCK", data);
