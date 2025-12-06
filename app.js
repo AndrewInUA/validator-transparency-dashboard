@@ -233,10 +233,26 @@ async function main() {
     nameEl.textContent = `Validator: ${VALIDATOR.name}`;
   }
 
-  const data = USE_LIVE ? await fetchLive() : MOCK_DATA;
+  let data;
+
+  try {
+    // Try to get real data
+    data = USE_LIVE ? await fetchLive() : MOCK_DATA;
+  } catch (err) {
+    console.error("Fatal error in fetchLive:", err);
+
+    // Absolute fallback – make sure we *always* have something to render
+    data = {
+      commissionHistory: Array(10).fill(0),
+      uptimeLast5EpochsPct: 0,
+      jito: false,
+      status: "error"
+    };
+  }
+
   console.log("Dashboard mode:", USE_LIVE ? "LIVE" : "MOCK", data);
 
-  // Jito badge
+  // ── Jito badge ─────────────────────────────────────────────
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
     jitoBadge.textContent = `Jito: ${data.jito ? "ON" : "OFF"}`;
@@ -244,7 +260,7 @@ async function main() {
     jitoBadge.classList.add(data.jito ? "ok" : "warn");
   }
 
-  // Commission / uptime
+  // ── Commission / uptime ────────────────────────────────────
   const history = data.commissionHistory || [];
   const latestCommission = history.length
     ? Number(history[history.length - 1])
@@ -262,7 +278,7 @@ async function main() {
       `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
   }
 
-  // Status
+  // ── Status ─────────────────────────────────────────────────
   const statusEl = document.getElementById("status");
   if (statusEl) {
     statusEl.textContent = data.status || "—";
@@ -270,7 +286,7 @@ async function main() {
     statusEl.classList.add(data.status === "healthy" ? "ok" : "warn");
   }
 
-  // Last updated timestamp
+  // ── Last updated ───────────────────────────────────────────
   const tsEl = document.getElementById("last-updated");
   if (tsEl) {
     const ts = new Date();
@@ -284,7 +300,7 @@ async function main() {
     tsEl.textContent = `Last updated: ${fmt}`;
   }
 
-  // Sparkline
+  // ── Sparkline ──────────────────────────────────────────────
   const sparkCanvas = document.getElementById("spark");
   if (sparkCanvas) {
     const series = history.length ? history : Array(10).fill(0);
