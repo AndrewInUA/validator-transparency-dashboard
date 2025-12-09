@@ -25,7 +25,8 @@ const VALIDATOR = {
 };
 
 // Your dedicated Helius RPC URL
-const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8c0db429-5430-4151-95f3-7487584d0a36";
+const HELIUS_RPC =
+  "https://mainnet.helius-rpc.com/?api-key=8c0db429-5430-4151-95f3-7487584d0a36";
 
 // Your Vercel Jito proxy (api/jito.js).
 const JITO_PROXY =
@@ -316,6 +317,32 @@ async function main() {
             : 0
         }%`;
     }
+  }
+
+  // ── Share URL helper ───────────────────────────────────────
+  const shareInput = document.getElementById("share-url");
+  const shareBtn = document.getElementById("copy-share");
+
+  if (shareInput && shareBtn) {
+    const base = window.location.origin + window.location.pathname;
+    shareInput.value =
+      `${base}?vote=${VALIDATOR.voteKey}&name=${encodeURIComponent(VALIDATOR.name)}`;
+
+    shareBtn.onclick = () => {
+      navigator.clipboard
+        .writeText(shareInput.value)
+        .then(() => {
+          shareBtn.textContent = "Copied!";
+          setTimeout(() => {
+            shareBtn.textContent = "Copy";
+          }, 1200);
+        })
+        .catch(() => {
+          // Fallback: select text so user can copy manually
+          shareInput.focus();
+          shareInput.select();
+        });
+    };
   }
 }
 
