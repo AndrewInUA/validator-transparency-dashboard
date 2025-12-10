@@ -19,54 +19,49 @@
     .warn { background:#40221a; border-color:#61352a; }
     .kpi { font-size: 28px; font-weight: 800; }
     .spark { width: 100%; height: 60px; display:block; }
-    .footer { margin-top:24px; font-size:13px; color:#93a6c8; }
-    a { color:#8bd5ff; text-decoration:none; }
 
-    /* Tiny line under trust card */
+    /* Last updated line under Trust Card */
     .tiny-note {
       margin-top: 8px;
       font-size: 12px;
       opacity: 0.7;
     }
 
-    /* Share card styles */
-    .share-row {
+    /* Footer layout */
+    .footer {
+      margin-top: 24px;
+      font-size: 13px;
+      color: #93a6c8;
+    }
+
+    .footer-wrap {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 8px;
-      margin-top: 10px;
-      flex-wrap: nowrap;
     }
 
-    .share-input {
-      flex: 1;
-      padding: 8px;
-      border-radius: 10px;
-      border: 1px solid #2a3561;
-      background: #121827;
-      color: #e6eaf2;
-      font-size: 13px;
+    .footer-main {
+      line-height: 1.4;
     }
 
-    .share-input:focus {
-      outline: none;
-      border-color: #8bd5ff;
+    .footer-note {
+      font-size: 12px;
+      opacity: 0.85;
     }
 
-    .share-btn {
-      padding: 8px 12px;
-      border-radius: 8px;
-      background: #1a2240;
-      border: 1px solid #2a3561;
-      color: #8bd5ff;
-      cursor: pointer;
-      font-size: 13px;
-      white-space: nowrap;
+    @media (min-width: 900px) {
+      .footer-wrap {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .footer-note {
+        max-width: 320px;
+        text-align: right;
+      }
     }
 
-    .share-btn:hover {
-      border-color: #8bd5ff;
-    }
+    a { color:#8bd5ff; text-decoration:none; }
   </style>
 </head>
 <body>
@@ -77,50 +72,31 @@
     </p>
 
     <div class="grid">
-      <!-- Left column: Trust card + Share card -->
-      <div>
-        <div class="card" id="trust-card">
-          <p class="title">Trust Card</p>
-          <div class="row">
-            <span id="validator-name" class="badge">Validator: —</span>
-            <span id="jito-badge" class="badge">Jito: —</span>
+      <div class="card" id="trust-card">
+        <p class="title">Trust Card</p>
+        <div class="row">
+          <span id="validator-name" class="badge">Validator: —</span>
+          <span id="jito-badge" class="badge">Jito: —</span>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div>
+            <div class="muted">Commission</div>
+            <div id="commission" class="kpi">—%</div>
           </div>
-          <div class="row" style="margin-top:12px">
-            <div>
-              <div class="muted">Commission</div>
-              <div id="commission" class="kpi">—%</div>
-            </div>
-            <div>
-        <div>
-  <div class="muted">
-    Uptime (last 5 epochs, RPC proxy)
-  </div>
-  <div id="uptime" class="kpi">—%</div>
-</div>
-            <div>
-              <div class="muted">Status</div>
-              <div id="status" class="kpi">—</div>
-            </div>
+          <div>
+            <div class="muted">Uptime (last 5 epochs)</div>
+            <div id="uptime" class="kpi">—%</div>
           </div>
-
-          <!-- Last updated line -->
-          <div id="last-updated" class="tiny-note">Last updated: —</div>
+          <div>
+            <div class="muted">Status</div>
+            <div id="status" class="kpi">—</div>
+          </div>
         </div>
 
-        <!-- NEW: Share this dashboard card -->
-        <div class="card" style="margin-top:12px;">
-          <p class="title">Share this dashboard</p>
-          <p class="muted">
-            Any validator can view their stats by adding <code>?vote=</code> and <code>?name=</code> to the URL.
-          </p>
-          <div class="share-row">
-            <input id="share-url" class="share-input" readonly value="Loading..."/>
-            <button id="copy-share" class="share-btn">Copy</button>
-          </div>
-        </div>
+        <!-- Last updated line -->
+        <div id="last-updated" class="tiny-note">Last updated: —</div>
       </div>
 
-      <!-- Right column: Commission history -->
       <div class="card">
         <p class="title">Commission history (last 10)</p>
         <canvas id="spark" class="spark" width="600" height="60"></canvas>
@@ -128,18 +104,25 @@
       </div>
     </div>
 
-<div class="footer">
-  <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br/>
-  <span class="muted" style="font-size:12px; opacity:0.7;">
-    Uptime is an approximation based on <code>epochCredits</code> from
-    the <code>getVoteAccounts</code> Solana JSON-RPC endpoint.
-  </span><br/>
-  Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
-  <a href="https://andrewinua.github.io/validator-transparency-dashboard/" id="open-live">Open on GitHub Pages</a>
-</div>
+    <div class="footer">
+      <div class="footer-wrap">
+        <div class="footer-main">
+          <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br/>
+          Repo idea: <code>andrewinua/validator-transparency-dashboard</code> ·
+          <a href="https://andrewinua.github.io/validator-transparency-dashboard/">
+            Open on GitHub Pages
+          </a>
+        </div>
+        <div class="footer-note">
+          <strong>Note on uptime:</strong>
+          this is an approximation based on <code>epochCredits</code> from the
+          Solana <code>getVoteAccounts</code> JSON-RPC endpoint (last 5 epochs via your RPC proxy).
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Bump ?v=20 (or any new number) when you change app.js -->
-  <script src="./app.js?v=20" defer></script>
+  <!-- Bump ?v whenever app.js changes to avoid caching -->
+  <script src="./app.js?v=21" defer></script>
 </body>
 </html>
