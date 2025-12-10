@@ -4,93 +4,241 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>AndrewInUA Validator Dashboard</title>
-
   <style>
-    :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; }
-    body { margin: 0; background: #0b0f1a; color: #e6eaf2; }
-    .wrap { max-width: 960px; margin: 40px auto; padding: 0 16px; }
-    .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
-    @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: #121827; border: 1px solid #1f2a44; border-radius: 16px; padding: 16px; }
-    .muted { color: #9fb0ce; font-size: 14px; }
-    .title { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
-    .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #1a2240; border: 1px solid #2a3561; }
-    .ok { background:#0f3a2b; border-color:#1f6c51; }
-    .warn { background:#40221a; border-color:#61352a; }
-    .kpi { font-size: 28px; font-weight: 800; }
-    .spark { width: 100%; height: 60px; display:block; }
-
-    .footer { margin-top:24px; font-size:13px; color:#93a6c8; line-height: 1.45; }
-
-    /* Tiny last-updated line */
+    :root {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
+    }
+    body {
+      margin: 0;
+      background: #050814;
+      color: #e6eaf2;
+    }
+    .wrap {
+      max-width: 1060px;
+      margin: 40px auto;
+      padding: 0 16px 40px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      font-weight: 800;
+    }
+    .muted {
+      color: #9fb0ce;
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+      align-items: flex-start;
+    }
+    @media (min-width: 960px) {
+      .grid {
+        grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      }
+    }
+    .card {
+      background: #121827;
+      border: 1px solid #1f2a44;
+      border-radius: 16px;
+      padding: 16px 18px 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1a2240;
+      border: 1px solid #2a3561;
+      letter-spacing: 0.01em;
+    }
+    .ok {
+      background: #0f3a2b;
+      border-color: #1f6c51;
+    }
+    .warn {
+      background: #40221a;
+      border-color: #61352a;
+    }
+    .kpi {
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .kpi-label {
+      font-size: 13px;
+      color: #9fb0ce;
+      margin-bottom: 2px;
+    }
+    .kpi-col {
+      min-width: 120px;
+    }
     .tiny-note {
       margin-top: 8px;
       font-size: 12px;
-      opacity: 0.7;
+      opacity: 0.8;
+      color: #9fb0ce;
+    }
+    .spark {
+      width: 100%;
+      height: 60px;
+      display: block;
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: 13px;
+      color: #93a6c8;
+      line-height: 1.5;
+    }
+    a {
+      color: #8bd5ff;
+      text-decoration: none;
     }
 
-    /* NEW — Information tooltip icon */
+    /* Share card */
+    .share-text {
+      font-size: 13px;
+      color: #9fb0ce;
+      margin: 4px 0 10px;
+    }
+    .share-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .share-input {
+      flex: 1;
+      font-size: 13px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #273553;
+      background: #050814;
+      color: #dbe4ff;
+      outline: none;
+      min-width: 0;
+    }
+    .share-input:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+    .share-btn {
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid #3b82f6;
+      background: #2563eb;
+      color: #f9fafb;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .share-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* Little info dot */
     .info-dot {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
-      border: 1px solid #9fb0ce;
-      color: #9fb0ce;
+      border: 1px solid #3b4a7e;
       font-size: 10px;
-      margin-left: 4px;
+      margin-left: 6px;
+      color: #cbd5ff;
       cursor: help;
+      background: radial-gradient(circle at 30% 20%, #3b82f6, #111827);
+    }
+
+    .method {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #9fb0ce;
+      max-width: 720px;
     }
   </style>
 </head>
-
 <body>
   <div class="wrap">
-    <h1 style="margin:0 0 8px">Validator Transparency Dashboard</h1>
+    <h1>Validator Transparency Dashboard</h1>
     <p class="muted">
-      Built by AndrewInUA — starter demo with live data from Solana RPC and Jito.
+      Built by AndrewInUA — live view with commission, epoch performance (proxy), and Jito status.
     </p>
 
     <div class="grid">
-      <!-- Trust Card -->
-      <div class="card" id="trust-card">
-        <p class="title">Trust Card</p>
+      <!-- LEFT COLUMN: Trust card + share card -->
+      <div class="col-left">
+        <div class="card" id="trust-card">
+          <p class="title">Trust Card</p>
 
-        <div class="row">
-          <span id="validator-name" class="badge">Validator: —</span>
-          <span id="jito-badge" class="badge">Jito: —</span>
-        </div>
-
-        <div class="row" style="margin-top:12px">
-          <div>
-            <div class="muted">Commission</div>
-            <div id="commission" class="kpi">—%</div>
+          <div class="row">
+            <span id="validator-name" class="badge">Validator: —</span>
+            <span id="jito-badge" class="badge">Jito: —</span>
           </div>
 
-          <div>
-            <div class="muted">
-              Uptime (last 5 epochs)
-              <span
-                class="info-dot"
-                title="Uptime is an approximation based on epochCredits from the Solana getVoteAccounts JSON-RPC endpoint (last 5 epochs via your RPC proxy)."
-              >i</span>
+          <div class="row" style="margin-top: 14px">
+            <div class="kpi-col">
+              <div class="kpi-label">Commission</div>
+              <div id="commission" class="kpi">—%</div>
             </div>
-            <div id="uptime" class="kpi">—%</div>
+
+            <div class="kpi-col">
+              <div class="kpi-label">
+                Epoch performance (proxy)
+                <span
+                  class="info-dot"
+                  title="This is NOT real uptime. It’s a relative 0–100% score based on how steadily this validator earned voting credits over the last 5 epochs, using epochCredits from getVoteAccounts. Real uptime requires node-level metrics or monitoring."
+                >i</span>
+              </div>
+              <div id="uptime" class="kpi">—%</div>
+            </div>
+
+            <div class="kpi-col">
+              <div class="kpi-label">Status</div>
+              <div id="status" class="kpi">—</div>
+            </div>
           </div>
 
-          <div>
-            <div class="muted">Status</div>
-            <div id="status" class="kpi">—</div>
+          <div id="last-updated" class="tiny-note">
+            Last updated: —
           </div>
         </div>
 
-        <div id="last-updated" class="tiny-note">Last updated: —</div>
+        <!-- Share this dashboard -->
+        <div class="card" style="margin-top: 14px">
+          <p class="title">Share this dashboard</p>
+          <p class="share-text">
+            Any validator can view their stats here by adding
+            <code>?vote=</code> and <code>?name=</code> to the URL.
+          </p>
+          <div class="share-row">
+            <input
+              id="share-url"
+              class="share-input"
+              type="text"
+              value="Loading..."
+              readonly
+              disabled
+            />
+            <button id="share-copy" class="share-btn">Copy</button>
+          </div>
+        </div>
       </div>
 
-      <!-- Commission History -->
+      <!-- RIGHT COLUMN: Commission history -->
       <div class="card">
         <p class="title">Commission history (last 10)</p>
         <canvas id="spark" class="spark" width="600" height="60"></canvas>
@@ -98,57 +246,27 @@
       </div>
     </div>
 
-    <!-- Share card -->
-    <div class="card" style="margin-top:24px">
-      <p class="title">Share this dashboard</p>
-      <p class="muted">
-        Any validator can view their stats by adding <code>?vote=</code> and <code>?name=</code> to the URL.
-      </p>
-
-      <div class="row" style="margin-top:6px">
-        <input
-          id="share-url"
-          value="Loading..."
-          readonly
-          style="flex:1; padding:10px; border-radius:8px; border:1px solid #2a3561; background:#0f1525; color:#e6eaf2;"
-        />
-        <button
-          id="copy-btn"
-          style="padding:10px 16px; border-radius:8px; background:#1a2240; border:1px solid #2a3561; color:#e6eaf2; cursor:pointer;"
-        >Copy</button>
-      </div>
-    </div>
-
-    <!-- Footer -->
+    <!-- FOOTER / METHODOLOGY -->
     <div class="footer">
       <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br/>
       Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
-      <a href="https://andrewinua.github.io/validator-transparency-dashboard/" style="color:#8bd5ff">Open on GitHub Pages</a>
-      <br/><br/>
-      <span class="muted">
-        Uptime source: <code>epochCredits</code> from Solana <code>getVoteAccounts</code> (last 5 epochs).
-      </span>
+      <a href="https://andrewinua.github.io/validator-transparency-dashboard/">Open on GitHub Pages</a>
+
+      <p class="method">
+        <strong>Methodology.</strong>
+        “Epoch performance (proxy)” is <em>not</em> true uptime. The dashboard
+        takes the last 6 entries of <code>epochCredits</code> from
+        <code>getVoteAccounts</code>, looks at how much voting credits increased
+        from epoch to epoch, and compares each epoch to your best recent one.
+        Those relative values are averaged into a 0–100% score over the last
+        5 epochs. It’s a quick way to see whether a validator has been voting
+        consistently <em>recently</em>, but real uptime still requires
+        node-level monitoring and logs.
+      </p>
     </div>
   </div>
 
-  <!-- JS -->
+  <!-- Keep the version bump so you can force-refresh JS if needed -->
   <script src="./app.js?v=21" defer></script>
-
-  <script>
-    // Share URL auto-fill + copy button
-    window.addEventListener("DOMContentLoaded", () => {
-      const input = document.getElementById("share-url");
-      const copyBtn = document.getElementById("copy-btn");
-
-      input.value = window.location.href;
-
-      copyBtn.onclick = () => {
-        navigator.clipboard.writeText(input.value);
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => copyBtn.textContent = "Copy", 1200);
-      };
-    });
-  </script>
-
 </body>
 </html>
