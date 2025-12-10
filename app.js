@@ -4,10 +4,10 @@
  * 1. Reads your validator vote account (CONFIG).
  * 2. Fetches live data from Solana JSON-RPC:
  *    - commission
- *    - uptime proxy from epochCredits
+ *    - epoch performance proxy from epochCredits
  *    - delinquent / healthy status
  * 3. Fetches live Jito status from your Vercel proxy.
- * 4. Renders the Trust Card + sparkline + last updated timestamp.
+ * 4. Renders Trust Card, sparkline, last updated timestamp, and share URL.
  */
 
 // ──────────────────────────────────────────────
@@ -33,7 +33,7 @@ const JITO_PROXY =
   "https://validator-transparency-dashboard.vercel.app/api/jito";
 
 // ──────────────────────────────────────────────
-// URL overrides (?vote=&name=) – optional
+// URL overrides (?vote=&name=)
 // ──────────────────────────────────────────────
 //
 // This lets any other validator reuse the same page without forking:
@@ -113,6 +113,44 @@ async function fetchJitoStatus(voteKey) {
   }
 }
 
+/**
+ * Build the canonical share URL for the current validator.
+ * Always includes ?vote= and ?name=.
+ */
+function buildShareUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("vote", VALIDATOR.voteKey);
+  url.searchParams.set("name", VALIDATOR.name);
+  // normalize (no extra hash params etc.)
+  return `${url.origin}${url.pathname}?${url.searchParams.toString()}`;
+}
+
+/**
+ * Populate the “Share this dashboard” input and wire up Copy button.
+ */
+function updateShareBox() {
+  const input = document.getElementById("share-url");
+  if (!input) return;
+
+  const link = buildShareUrl();
+  input.value = link;
+
+  const copyBtn = document.getElementById("copy-btn");
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(link);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
+      } catch (err) {
+        console.warn("Clipboard copy failed:", err);
+        copyBtn.textContent = "Error";
+        setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
+      }
+    };
+  }
+}
+
 // ──────────────────────────────────────────────
 // LIVE DATA: Solana JSON-RPC
 // ──────────────────────────────────────────────
@@ -170,7 +208,7 @@ async function fetchLive() {
       );
       const status = isDelinquent ? "delinquent" : "healthy";
 
-      // Uptime approximation from epochCredits [[epoch, credits, prevCredits], ...]
+      // Epoch performance approximation from epochCredits [[epoch, credits, prevCredits], ...]
       let uptimePct = 0;
       try {
         const credits = me.epochCredits || [];
@@ -193,7 +231,7 @@ async function fetchLive() {
 
         uptimePct = Math.round(avgRelative * 10000) / 100;
       } catch (err) {
-        console.warn("Uptime calculation error:", err);
+        console.warn("Epoch performance calculation error:", err);
         uptimePct = 0;
       }
 
@@ -260,7 +298,7 @@ async function main() {
     jitoBadge.classList.add(data.jito ? "ok" : "warn");
   }
 
-  // ── Commission / uptime ────────────────────────────────────
+  // ── Commission / epoch performance ─────────────────────────
   const history = data.commissionHistory || [];
   const latestCommission = history.length
     ? Number(history[history.length - 1])
@@ -268,14 +306,16 @@ async function main() {
 
   const commissionEl = document.getElementById("commission");
   if (commissionEl) {
-    commissionEl.textContent =
-      `${Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0}%`;
+    commissionEl.textContent = `${
+      Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0
+    }%`;
   }
 
   const uptimeEl = document.getElementById("uptime");
   if (uptimeEl) {
-    uptimeEl.textContent =
-      `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
+    uptimeEl.textContent = `${Number(
+      data.uptimeLast5EpochsPct || 0
+    ).toFixed(2)}%`;
   }
 
   // ── Status ─────────────────────────────────────────────────
@@ -310,40 +350,14 @@ async function main() {
     if (labelEl) {
       const min = Math.min(...series);
       const max = Math.max(...series);
-      labelEl.textContent =
-        `Min ${min}% • Max ${max}% • Latest ${
-          Number.isFinite(latestCommission)
-            ? latestCommission.toFixed(0)
-            : 0
-        }%`;
+      labelEl.textContent = `Min ${min}% • Max ${max}% • Latest ${
+        Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0
+      }%`;
     }
   }
 
-  // ── Share URL helper ───────────────────────────────────────
-  const shareInput = document.getElementById("share-url");
-  const shareBtn = document.getElementById("copy-share");
-
-  if (shareInput && shareBtn) {
-    const base = window.location.origin + window.location.pathname;
-    shareInput.value =
-      `${base}?vote=${VALIDATOR.voteKey}&name=${encodeURIComponent(VALIDATOR.name)}`;
-
-    shareBtn.onclick = () => {
-      navigator.clipboard
-        .writeText(shareInput.value)
-        .then(() => {
-          shareBtn.textContent = "Copied!";
-          setTimeout(() => {
-            shareBtn.textContent = "Copy";
-          }, 1200);
-        })
-        .catch(() => {
-          // Fallback: select text so user can copy manually
-          shareInput.focus();
-          shareInput.select();
-        });
-    };
-  }
+  // ── Share URL ──────────────────────────────────────────────
+  updateShareBox();
 }
 
 main();
