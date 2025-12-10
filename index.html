@@ -91,9 +91,12 @@
               <div id="commission" class="kpi">—%</div>
             </div>
             <div>
-              <div class="muted">Uptime (last 5 epochs)</div>
-              <div id="uptime" class="kpi">—%</div>
-            </div>
+        <div>
+  <div class="muted">
+    Uptime (last 5 epochs, RPC proxy)
+  </div>
+  <div id="uptime" class="kpi">—%</div>
+</div>
             <div>
               <div class="muted">Status</div>
               <div id="status" class="kpi">—</div>
@@ -125,11 +128,15 @@
       </div>
     </div>
 
-    <div class="footer">
-      <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br/>
-      Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
-      <a href="https://andrewinua.github.io/validator-transparency-dashboard/" id="open-live">Open on GitHub Pages</a>
-    </div>
+<div class="footer">
+  <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br/>
+  <span class="muted" style="font-size:12px; opacity:0.7;">
+    Uptime is an approximation based on <code>epochCredits</code> from
+    the <code>getVoteAccounts</code> Solana JSON-RPC endpoint.
+  </span><br/>
+  Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
+  <a href="https://andrewinua.github.io/validator-transparency-dashboard/" id="open-live">Open on GitHub Pages</a>
+</div>
   </div>
 
   <!-- Bump ?v=20 (or any new number) when you change app.js -->
