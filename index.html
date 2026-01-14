@@ -1,124 +1,115 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Validator Transparency Dashboard</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Solana Validator Dashboard</title>
+
   <style>
-    :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; }
-    body { margin: 0; background: #0b0f1a; color: #e6eaf2; }
-    .wrap { max-width: 960px; margin: 40px auto; padding: 0 16px; }
-    .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
-    @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: #121827; border: 1px solid #1f2a44; border-radius: 16px; padding: 16px; }
-    .muted { color: #9fb0ce; font-size: 14px; }
-    .title { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
-    .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #1a2240; border: 1px solid #2a3561; }
-    .ok { background:#0f3a2b; border-color:#1f6c51; }
-    .warn { background:#40221a; border-color:#61352a; }
-    .kpi { font-size: 28px; font-weight: 800; }
-    .spark { width: 100%; height: 60px; display:block; }
-    .footer { margin-top:24px; font-size:13px; color:#93a6c8; }
-    a { color:#8bd5ff; text-decoration:none; }
-
-    .tiny-note { margin-top: 8px; font-size: 12px; opacity: 0.75; }
-
-    /* Share block */
-    .share-row { display:flex; gap:10px; align-items:center; margin-top:10px; }
-    .share-input {
-      flex: 1;
-      background:#0f1524;
-      border:1px solid #263455;
-      border-radius:12px;
-      color:#e6eaf2;
-      padding:10px 12px;
-      font-size:13px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: #0b0b0f;
+      color: #eaeaf0;
     }
-    .btn {
-      background:#1a2240;
-      border:1px solid #2a3561;
-      color:#e6eaf2;
-      border-radius:12px;
-      padding:10px 14px;
-      cursor:pointer;
-      font-weight:600;
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
     }
-    .btn:hover { filter: brightness(1.1); }
-    .share-hint { margin-top:8px; font-size:12px; color:#93a6c8; }
-    code { background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 8px; }
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 18px 16px;
+      margin: 14px 0;
+    }
+    code {
+      background: rgba(255,255,255,0.08);
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+    a { color: #9ad7ff; }
+    .muted { opacity: 0.8; }
+    .error { color: #ff6b6b; }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.35);
+      color: #eaeaf0;
+      outline: none;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: #eaeaf0;
+      cursor: pointer;
+    }
+    button:hover { background: rgba(255,255,255,0.10); }
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <h1 style="margin:0 0 8px">Validator Transparency Dashboard</h1>
-    <p class="muted">
-      Live view with commission, epoch performance (proxy), status, and Jito flag.
-    </p>
+    <h1>Solana Validator Dashboard</h1>
 
-    <div class="grid">
-      <div class="card" id="trust-card">
-        <p class="title">Trust Card</p>
-
-        <div class="row">
-          <span id="validator-name" class="badge">Validator: —</span>
-          <span id="jito-badge" class="badge">Jito: —</span>
-        </div>
-
-        <div class="row" style="margin-top:12px">
-          <div>
-            <div class="muted">Commission</div>
-            <div id="commission" class="kpi">—%</div>
-          </div>
-
-          <div>
-            <div class="muted">Epoch performance (proxy)</div>
-            <div id="uptime" class="kpi">—%</div>
-          </div>
-
-          <div>
-            <div class="muted">Status</div>
-            <div id="status" class="kpi">—</div>
-          </div>
-        </div>
-
-        <div id="last-updated" class="tiny-note">Last updated: —</div>
+    <div class="card">
+      <div class="muted">
+        <!-- ✅ THIS IS THE PART FROM YOUR SCREENSHOT -->
+        open a link with <code>?vote=</code> (vote account address).
       </div>
 
-      <div class="card">
-        <p class="title">Commission history (last 10)</p>
-        <canvas id="spark" class="spark" width="600" height="60"></canvas>
-        <p class="muted" id="spark-label">—</p>
+      <div style="margin-top:12px">
+        <label class="muted" for="vote">Vote account</label>
+        <input id="vote" placeholder="Paste vote account address…" />
+        <button id="openBtn">Open dashboard</button>
+        <div id="hint" class="muted" style="margin-top:10px"></div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:16px">
-      <p class="title">Share this dashboard</p>
-      <p class="muted" style="margin-top:0">
-        Any validator can view their stats here by opening a link with <code>?vote=</code> (vote account) and optional <code>&name=</code>.
-      </p>
-
-      <div class="share-row">
-        <input id="share-link" class="share-input" value="Loading…" readonly />
-        <button id="copy-share" class="btn">Copy</button>
-      </div>
-
-      <div id="copy-status" class="share-hint"></div>
-      <div class="share-hint">
-        Important: use the <b>vote account</b> address (votePubkey), not the identity address.
-      </div>
-    </div>
-
-    <div class="footer">
-      Repo: <code>andrewinua/validator-transparency-dashboard</code> •
-      <a href="https://andrewinua.github.io/validator-transparency-dashboard/">Open on GitHub Pages</a>
+    <div class="card">
+      <div id="state" class="muted">No vote account in URL yet.</div>
+      <div id="example" class="muted" style="margin-top:10px"></div>
     </div>
   </div>
 
-  <!-- bump this when you change app.js -->
-  <script src="./app.js?v=31" defer></script>
+  <script>
+    function qs(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    const voteFromUrl = qs("vote");
+    const stateEl = document.getElementById("state");
+    const exampleEl = document.getElementById("example");
+    const inputEl = document.getElementById("vote");
+    const hintEl = document.getElementById("hint");
+
+    function makeUrl(vote) {
+      const base = window.location.origin + window.location.pathname;
+      return base + "?vote=" + encodeURIComponent(vote);
+    }
+
+    if (voteFromUrl) {
+      stateEl.textContent = "Loaded vote account: " + voteFromUrl;
+      exampleEl.innerHTML = "Share link: <code>" + makeUrl(voteFromUrl) + "</code>";
+      document.title = "Validator – " + voteFromUrl.slice(0, 4) + "…" + voteFromUrl.slice(-4);
+    }
+
+    document.getElementById("openBtn").addEventListener("click", () => {
+      const vote = (inputEl.value || "").trim();
+      if (!vote) {
+        hintEl.innerHTML = '<span class="error">Please paste a vote account address.</span>';
+        return;
+      }
+      window.location.href = makeUrl(vote);
+    });
+  </script>
 </body>
 </html>
