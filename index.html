@@ -1,321 +1,124 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AndrewInUA Validator Dashboard</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Validator Transparency Dashboard</title>
   <style>
-    :root {
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
-    }
-    body {
-      margin: 0;
-      background: #050816;
-      color: #e6eaf2;
-    }
-    .wrap {
-      max-width: 1080px;
-      margin: 40px auto;
-      padding: 0 16px 40px;
-    }
-    h1 {
-      margin: 0 0 6px;
-      font-size: 30px;
-      font-weight: 800;
-    }
-    .lead {
-      margin: 0 0 24px;
-      font-size: 14px;
-      color: #9fb0ce;
-    }
+    :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; }
+    body { margin: 0; background: #0b0f1a; color: #e6eaf2; }
+    .wrap { max-width: 960px; margin: 40px auto; padding: 0 16px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 900px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: #121827; border: 1px solid #1f2a44; border-radius: 16px; padding: 16px; }
+    .muted { color: #9fb0ce; font-size: 14px; }
+    .title { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+    .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #1a2240; border: 1px solid #2a3561; }
+    .ok { background:#0f3a2b; border-color:#1f6c51; }
+    .warn { background:#40221a; border-color:#61352a; }
+    .kpi { font-size: 28px; font-weight: 800; }
+    .spark { width: 100%; height: 60px; display:block; }
+    .footer { margin-top:24px; font-size:13px; color:#93a6c8; }
+    a { color:#8bd5ff; text-decoration:none; }
 
-    .grid {
-      display: grid;
-      gap: 16px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 900px) {
-      .grid {
-        grid-template-columns: 1.1fr 1.2fr;
-      }
-    }
+    .tiny-note { margin-top: 8px; font-size: 12px; opacity: 0.75; }
 
-    .card {
-      background: #121827;
-      border: 1px solid #1f2a44;
-      border-radius: 18px;
-      padding: 18px 18px 16px;
-      box-sizing: border-box;
-    }
-    .muted {
-      color: #9fb0ce;
-      font-size: 14px;
-    }
-    .small {
-      font-size: 12px;
-    }
-    .title {
-      font-size: 20px;
-      font-weight: 700;
-      margin: 0 0 10px;
-    }
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .kpi-row {
-      margin-top: 14px;
-      display: flex;
-      gap: 28px;
-      flex-wrap: wrap;
-    }
-    .kpi-block {
-      min-width: 90px;
-    }
-    .badge {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #1a2240;
-      border: 1px solid #2a3561;
-    }
-    .ok {
-      background: #0f3a2b;
-      border-color: #1f6c51;
-    }
-    .warn {
-      background: #40221a;
-      border-color: #61352a;
-    }
-    .kpi {
-      font-size: 28px;
-      font-weight: 800;
-    }
-    .status-pill {
-      display: inline-block;
-      padding: 4px 14px;
-      border-radius: 999px;
-      font-weight: 800;
-      font-size: 22px;
-      line-height: 1.2;
-      background: #0f3a2b;
-      border: 1px solid #1f6c51;
-    }
-
-    /* Sparkline */
-    .spark {
-      width: 100%;
-      height: 60px;
-      display: block;
-    }
-
-    /* Info dot + tooltip (CSS-only) */
-    .info-dot {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      background: #1e293b;
-      color: #9fb0ce;
-      font-size: 11px;
-      cursor: default;
-      position: relative;
-      margin-left: 4px;
-    }
-    .info-dot::after {
-      content: attr(data-tip);
-      position: absolute;
-      left: 50%;
-      top: 120%;
-      transform: translateX(-50%);
-      max-width: 280px;
-      background: #020617;
-      color: #e5e7eb;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #1e293b;
-      font-size: 11px;
-      line-height: 1.3;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .12s ease-out;
-      z-index: 20;
-      white-space: normal;
-    }
-    .info-dot:hover::after {
-      opacity: 1;
-    }
-
-    /* Last updated line */
-    .last-updated {
-      margin-top: 12px;
-      font-size: 12px;
-      color: #97a4c6;
-    }
-
-    /* Share card */
-    .share-card {
-      margin-top: 16px;
-    }
-    .share-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin: 0 0 6px;
-    }
-    .share-help {
-      font-size: 13px;
-      color: #9fb0ce;
-      margin-bottom: 10px;
-    }
-    .share-row {
-      display: flex;
-      align-items: stretch;
-      gap: 8px;
-    }
+    /* Share block */
+    .share-row { display:flex; gap:10px; align-items:center; margin-top:10px; }
     .share-input {
       flex: 1;
-      border-radius: 999px;
-      border: 1px solid #283554;
-      background: #020617;
-      color: #e5e7eb;
-      padding: 10px 14px;
-      font-size: 13px;
-      outline: none;
-      min-width: 0;
+      background:#0f1524;
+      border:1px solid #263455;
+      border-radius:12px;
+      color:#e6eaf2;
+      padding:10px 12px;
+      font-size:13px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
-    .share-input:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 1px #0ea5e9;
+    .btn {
+      background:#1a2240;
+      border:1px solid #2a3561;
+      color:#e6eaf2;
+      border-radius:12px;
+      padding:10px 14px;
+      cursor:pointer;
+      font-weight:600;
     }
-    .share-copy-btn {
-      border-radius: 999px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      padding: 0 18px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .share-copy-btn:hover {
-      background: #1d4ed8;
-    }
-
-    /* Footer / methodology */
-    .footer {
-      margin-top: 22px;
-      font-size: 13px;
-      color: #93a6c8;
-    }
-    .footer strong {
-      color: #c7d2fe;
-    }
-    a {
-      color: #8bd5ff;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
+    .btn:hover { filter: brightness(1.1); }
+    .share-hint { margin-top:8px; font-size:12px; color:#93a6c8; }
+    code { background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 8px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Validator Transparency Dashboard</h1>
-    <p class="lead">
-      Built by AndrewInUA — live view with commission, epoch performance (proxy), and Jito status.
+    <h1 style="margin:0 0 8px">Validator Transparency Dashboard</h1>
+    <p class="muted">
+      Live view with commission, epoch performance (proxy), status, and Jito flag.
     </p>
 
     <div class="grid">
-      <!-- Trust card -->
-      <div class="card">
+      <div class="card" id="trust-card">
         <p class="title">Trust Card</p>
+
         <div class="row">
           <span id="validator-name" class="badge">Validator: —</span>
           <span id="jito-badge" class="badge">Jito: —</span>
         </div>
 
-        <div class="kpi-row">
-          <div class="kpi-block">
+        <div class="row" style="margin-top:12px">
+          <div>
             <div class="muted">Commission</div>
             <div id="commission" class="kpi">—%</div>
           </div>
 
-          <div class="kpi-block">
-            <div class="muted">
-              Epoch performance (proxy)
-              <span
-                class="info-dot"
-                data-tip="Epoch performance (proxy) is a 0–100% consistency score based on how steadily this validator earned voting credits across recent epochs, using epochCredits from getVoteAccounts on a Solana JSON-RPC endpoint. It highlights recent voting behaviour; real-time uptime still comes from your node-level monitoring and logs."
-              >i</span>
-            </div>
+          <div>
+            <div class="muted">Epoch performance (proxy)</div>
             <div id="uptime" class="kpi">—%</div>
           </div>
 
-          <div class="kpi-block">
+          <div>
             <div class="muted">Status</div>
-            <div id="status" class="status-pill">—</div>
+            <div id="status" class="kpi">—</div>
           </div>
         </div>
 
-        <div id="last-updated" class="last-updated">Last updated: —</div>
+        <div id="last-updated" class="tiny-note">Last updated: —</div>
       </div>
 
-      <!-- Commission history -->
       <div class="card">
         <p class="title">Commission history (last 10)</p>
         <canvas id="spark" class="spark" width="600" height="60"></canvas>
-        <p class="muted small" id="spark-label">Min –% • Max –% • Latest –%</p>
+        <p class="muted" id="spark-label">—</p>
       </div>
     </div>
 
-    <!-- Share this dashboard -->
-    <div class="card share-card">
-      <p class="share-title">Share this dashboard</p>
-      <p class="share-help">
-        Any validator can view their stats here by adding <code>?vote=</code> and
-        <code>?name=</code> to the URL.
+    <div class="card" style="margin-top:16px">
+      <p class="title">Share this dashboard</p>
+      <p class="muted" style="margin-top:0">
+        Any validator can view their stats here by opening a link with <code>?vote=</code> (vote account) and optional <code>&name=</code>.
       </p>
+
       <div class="share-row">
-        <input
-          id="share-url"
-          class="share-input"
-          type="text"
-          readonly
-          value="Loading..."
-        />
-        <button id="copy-btn" class="share-copy-btn">Copy</button>
+        <input id="share-link" class="share-input" value="Loading…" readonly />
+        <button id="copy-share" class="btn">Copy</button>
+      </div>
+
+      <div id="copy-status" class="share-hint"></div>
+      <div class="share-hint">
+        Important: use the <b>vote account</b> address (votePubkey), not the identity address.
       </div>
     </div>
 
-    <!-- Footer / methodology -->
     <div class="footer">
-      <p>
-        <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br />
-        Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
-        <a href="https://andrewinua.github.io/validator-transparency-dashboard/">Open on GitHub Pages</a>
-      </p>
-      <p>
-        <strong>Methodology.</strong>
-        “Epoch performance (proxy)” is a relative consistency score derived from
-        <code>epochCredits</code> returned by
-        <code>getVoteAccounts</code>. The dashboard takes the last six entries,
-        looks at how voting credits changed from epoch to epoch, and compares each
-        epoch with the best recent one. Those relative values are averaged into a
-        0–100% score over the last five epochs. It’s a quick way to see how
-        consistently a validator has been voting in recent epochs, while detailed
-        uptime still comes from node-level monitoring and logs.
-      </p>
+      Repo: <code>andrewinua/validator-transparency-dashboard</code> •
+      <a href="https://andrewinua.github.io/validator-transparency-dashboard/">Open on GitHub Pages</a>
     </div>
   </div>
 
-  <!-- bump query string to bust cache whenever app.js changes -->
-  <script src="./app.js?v=23" defer></script>
+  <!-- bump this when you change app.js -->
+  <script src="./app.js?v=31" defer></script>
 </body>
 </html>
