@@ -257,7 +257,9 @@ async function main() {
   applyUrlOverrides();
 
   // Render header bits immediately
-  setText("validator-name", `Validator: ${VALIDATOR.name}`);
+const short = (s) => (s && s.length > 10 ? `${s.slice(0,4)}…${s.slice(-4)}` : s || "—");
+const displayName = VALIDATOR.name?.trim() ? VALIDATOR.name.trim() : short(VALIDATOR.voteKey);
+setText("validator-name", `Validator: ${displayName}`);
   renderShareBlock();
 
   let data = USE_LIVE ? await fetchLive() : MOCK_DATA;
