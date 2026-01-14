@@ -41,6 +41,20 @@ function getParam(name) {
   return null;
 }
 
+// ✅ New: robust vote getter (trims + ignores empty)
+function getVoteFromUrl() {
+  const v = getParam("vote");
+  const trimmed = (v || "").trim();
+  return trimmed.length ? trimmed : null;
+}
+
+// ✅ New: optional display name from URL (trims + ignores empty)
+function getNameFromUrl() {
+  const n = getParam("name");
+  const trimmed = (n || "").trim();
+  return trimmed.length ? trimmed : null;
+}
+
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
@@ -94,9 +108,12 @@ function EpochPerformanceInfo() {
 // --------------------------------------------------
 
 (async function main() {
-  const voteOverride = getParam("vote");
-  const voteKey = voteOverride || VALIDATOR.voteKey;
-  const name = VALIDATOR.name;
+  // ✅ Use robust getters
+  const voteFromUrl = getVoteFromUrl();
+  const nameFromUrl = getNameFromUrl();
+
+  const voteKey = voteFromUrl || VALIDATOR.voteKey;
+  const name = nameFromUrl || VALIDATOR.name;
 
   const root = document.getElementById("app");
   root.innerHTML = "";
@@ -104,6 +121,13 @@ function EpochPerformanceInfo() {
   // Header
   root.appendChild(
     el("h1", { class: "title" }, ["Validator Transparency Dashboard"])
+  );
+
+  // ✅ Debug line (temporary, helps verify vote parsing)
+  root.appendChild(
+    el("div", { class: "muted" }, [
+      `DEBUG — voteFromUrl: ${voteFromUrl || "(none)"} | voteUsed: ${voteKey}`,
+    ])
   );
 
   // Trust card
@@ -124,7 +148,7 @@ function EpochPerformanceInfo() {
     el("div", { class: "metric" }, [
       el("div", { class: "label" }, ["Epoch performance (proxy)"]),
       el("div", { class: "value" }, [epochPerformance]),
-      EpochPerformanceInfo(), // 👈 explanation injected here
+      EpochPerformanceInfo(),
     ])
   );
 
