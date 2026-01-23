@@ -35,9 +35,6 @@ const JITO_PROXY =
 // ──────────────────────────────────────────────
 // URL overrides (?vote=&name=) + #vote= (GitHub Pages)
 // ──────────────────────────────────────────────
-//
-// Important: we DO NOT mutate VALIDATOR anymore.
-// We compute CURRENT.* once and use it everywhere.
 
 function getParam(name) {
   // 1) Query string (?vote=...)
@@ -70,6 +67,11 @@ function computeCurrentValidator() {
 }
 
 const CURRENT = computeCurrentValidator();
+
+function shortKey(k) {
+  if (!k) return "—";
+  return k.length > 12 ? `${k.slice(0, 4)}…${k.slice(-4)}` : k;
+}
 
 // ──────────────────────────────────────────────
 // MOCK DATA (used only if USE_LIVE === false)
@@ -128,7 +130,7 @@ async function fetchJitoStatus(voteKey) {
     if (!res.ok) throw new Error(`Jito proxy HTTP ${res.status}`);
 
     const json = await res.json();
-    console.log("Jito proxy response:", json);
+    console.log("Jito proxy response:", json, "voteKey:", voteKey);
     return !!json.jito;
   } catch (err) {
     console.warn("Jito check failed:", err);
@@ -138,18 +140,17 @@ async function fetchJitoStatus(voteKey) {
 
 /**
  * Build the canonical share URL for the current validator.
- * Default: vote-only link (name is optional).
+ * Default: vote-only link (name optional).
  * Supports GitHub Pages by using #vote= when hosted on github.io.
  */
 function buildShareUrl() {
   const base = `${window.location.origin}${window.location.pathname}`;
   const isGitHubPages = window.location.hostname.includes("github.io");
 
-  // vote-only by default
   const params = new URLSearchParams();
   params.set("vote", CURRENT.voteKey);
 
-  // Optional: include name only if it was provided in URL (keeps UX flexible)
+  // optional – only include name if user supplied it
   if (CURRENT.nameFromUrl) params.set("name", CURRENT.nameFromUrl);
 
   return isGitHubPages ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
@@ -186,7 +187,6 @@ function updateShareBox() {
 // ──────────────────────────────────────────────
 
 async function fetchLive(voteKey) {
-  // First try your Helius RPC, then a couple of public fallbacks
   const RPCS = [
     HELIUS_RPC,
     "https://api.mainnet-beta.solana.com",
@@ -204,7 +204,10 @@ async function fetchLive(voteKey) {
     commissionHistory: Array(10).fill(0),
     uptimeLast5EpochsPct: 0,
     jito: false,
-    status: "error"
+    status: "error",
+    votePubkey: null,
+    nodePubkey: null,
+    epochCreditsLen: 0
   };
 
   for (const rpc of RPCS) {
@@ -267,6 +270,9 @@ async function fetchLive(voteKey) {
 
       console.log("LIVE via RPC:", rpc, {
         voteKey,
+        votePubkey: me.votePubkey,
+        nodePubkey: me.nodePubkey,
+        epochCreditsLen: (me.epochCredits || []).length,
         commission,
         status,
         uptimePct,
@@ -277,11 +283,13 @@ async function fetchLive(voteKey) {
         commissionHistory: Array(10).fill(commission),
         uptimeLast5EpochsPct: uptimePct,
         jito,
-        status
+        status,
+        votePubkey: me.votePubkey,
+        nodePubkey: me.nodePubkey || null,
+        epochCreditsLen: (me.epochCredits || []).length
       };
     } catch (err) {
       console.warn("RPC failed:", rpc, err.message || err);
-      // Try the next RPC
     }
   }
 
@@ -294,34 +302,58 @@ async function fetchLive(voteKey) {
 // ──────────────────────────────────────────────
 
 async function main() {
-  // Show validator name immediately
   const nameEl = document.getElementById("validator-name");
   if (nameEl) {
-    nameEl.textContent = `Validator: ${CURRENT.name}`;
+    // placeholder until we know nodePubkey
+    const label = CURRENT.nameFromUrl
+      ? CURRENT.nameFromUrl
+      : `vote ${shortKey(CURRENT.voteKey)}`;
+    nameEl.textContent = `Validator: ${label}`;
   }
 
   let data;
 
   try {
-    // Try to get real data
     data = USE_LIVE ? await fetchLive(CURRENT.voteKey) : MOCK_DATA;
   } catch (err) {
     console.error("Fatal error in fetchLive:", err);
-
-    // Absolute fallback – make sure we *always* have something to render
     data = {
       commissionHistory: Array(10).fill(0),
       uptimeLast5EpochsPct: 0,
       jito: false,
-      status: "error"
+      status: "error",
+      votePubkey: null,
+      nodePubkey: null,
+      epochCreditsLen: 0
     };
   }
 
   console.log("Dashboard mode:", USE_LIVE ? "LIVE" : "MOCK", {
     ...data,
-    voteKey: CURRENT.voteKey,
-    name: CURRENT.name
+    voteUsed: CURRENT.voteKey,
+    nameUsed: CURRENT.name
   });
+
+  console.log(
+    "[DEBUG] voteUsed:",
+    CURRENT.voteKey,
+    "voteFound:",
+    data.votePubkey,
+    "node:",
+    data.nodePubkey,
+    "epochCreditsLen:",
+    data.epochCreditsLen
+  );
+
+  // Update label once we know actual pubkeys
+  if (nameEl) {
+    const finalLabel = CURRENT.nameFromUrl
+      ? CURRENT.nameFromUrl
+      : (data.nodePubkey
+          ? `node ${shortKey(data.nodePubkey)}`
+          : `vote ${shortKey(CURRENT.voteKey)}`);
+    nameEl.textContent = `Validator: ${finalLabel}`;
+  }
 
   // ── Jito badge ─────────────────────────────────────────────
   const jitoBadge = document.getElementById("jito-badge");
