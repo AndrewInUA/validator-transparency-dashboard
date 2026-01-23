@@ -18,7 +18,7 @@
 // If false → use MOCK_DATA below.
 const USE_LIVE = true;
 
-// Default validator for the dashboard.
+// Default validator for the dashboard (fallback only).
 const VALIDATOR = {
   name: "AndrewInUA",
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
@@ -33,20 +33,43 @@ const JITO_PROXY =
   "https://validator-transparency-dashboard.vercel.app/api/jito";
 
 // ──────────────────────────────────────────────
-// URL overrides (?vote=&name=)
+// URL overrides (?vote=&name=) + #vote= (GitHub Pages)
 // ──────────────────────────────────────────────
 //
-// This lets any other validator reuse the same page without forking:
-//   https://.../dashboard/?vote=VOTE_PUBKEY&name=NiceValidator
+// Important: we DO NOT mutate VALIDATOR anymore.
+// We compute CURRENT.* once and use it everywhere.
 
-(function applyUrlOverrides() {
-  const params = new URLSearchParams(window.location.search);
-  const vote = params.get("vote");
-  const name = params.get("name");
+function getParam(name) {
+  // 1) Query string (?vote=...)
+  const qs = new URLSearchParams(window.location.search);
+  if (qs.has(name)) return qs.get(name);
 
-  if (vote) VALIDATOR.voteKey = vote.trim();
-  if (name) VALIDATOR.name = name.trim();
-})();
+  // 2) Hash (#vote=...) – GitHub Pages compatible
+  const hash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  const hs = new URLSearchParams(hash);
+  if (hs.has(name)) return hs.get(name);
+
+  return null;
+}
+
+function computeCurrentValidator() {
+  const voteRaw = getParam("vote");
+  const nameRaw = getParam("name");
+
+  const vote = (voteRaw || "").trim();
+  const name = (nameRaw || "").trim();
+
+  return {
+    voteKey: vote.length ? vote : VALIDATOR.voteKey,
+    name: name.length ? name : VALIDATOR.name,
+    voteFromUrl: vote.length ? vote : null,
+    nameFromUrl: name.length ? name : null
+  };
+}
+
+const CURRENT = computeCurrentValidator();
 
 // ──────────────────────────────────────────────
 // MOCK DATA (used only if USE_LIVE === false)
@@ -115,14 +138,21 @@ async function fetchJitoStatus(voteKey) {
 
 /**
  * Build the canonical share URL for the current validator.
- * Always includes ?vote= and ?name=.
+ * Default: vote-only link (name is optional).
+ * Supports GitHub Pages by using #vote= when hosted on github.io.
  */
 function buildShareUrl() {
-  const url = new URL(window.location.href);
-  url.searchParams.set("vote", VALIDATOR.voteKey);
-  url.searchParams.set("name", VALIDATOR.name);
-  // normalize (no extra hash params etc.)
-  return `${url.origin}${url.pathname}?${url.searchParams.toString()}`;
+  const base = `${window.location.origin}${window.location.pathname}`;
+  const isGitHubPages = window.location.hostname.includes("github.io");
+
+  // vote-only by default
+  const params = new URLSearchParams();
+  params.set("vote", CURRENT.voteKey);
+
+  // Optional: include name only if it was provided in URL (keeps UX flexible)
+  if (CURRENT.nameFromUrl) params.set("name", CURRENT.nameFromUrl);
+
+  return isGitHubPages ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
 }
 
 /**
@@ -155,7 +185,7 @@ function updateShareBox() {
 // LIVE DATA: Solana JSON-RPC
 // ──────────────────────────────────────────────
 
-async function fetchLive() {
+async function fetchLive(voteKey) {
   // First try your Helius RPC, then a couple of public fallbacks
   const RPCS = [
     HELIUS_RPC,
@@ -195,17 +225,15 @@ async function fetchLive() {
       const delinquent = json?.result?.delinquent || [];
       const all = current.concat(delinquent);
 
-      const me = all.find((v) => v.votePubkey === VALIDATOR.voteKey);
+      const me = all.find((v) => v.votePubkey === voteKey);
 
       if (!me) {
-        console.warn("Vote account not found via RPC:", rpc);
+        console.warn("Vote account not found via RPC:", rpc, "voteKey:", voteKey);
         return { ...EMPTY, status: "not found" };
       }
 
       const commission = Number(me.commission ?? 0);
-      const isDelinquent = delinquent.some(
-        (v) => v.votePubkey === me.votePubkey
-      );
+      const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
       const status = isDelinquent ? "delinquent" : "healthy";
 
       // Epoch performance approximation from epochCredits [[epoch, credits, prevCredits], ...]
@@ -235,9 +263,10 @@ async function fetchLive() {
         uptimePct = 0;
       }
 
-      const jito = await fetchJitoStatus(VALIDATOR.voteKey);
+      const jito = await fetchJitoStatus(voteKey);
 
       console.log("LIVE via RPC:", rpc, {
+        voteKey,
         commission,
         status,
         uptimePct,
@@ -268,14 +297,14 @@ async function main() {
   // Show validator name immediately
   const nameEl = document.getElementById("validator-name");
   if (nameEl) {
-    nameEl.textContent = `Validator: ${VALIDATOR.name}`;
+    nameEl.textContent = `Validator: ${CURRENT.name}`;
   }
 
   let data;
 
   try {
     // Try to get real data
-    data = USE_LIVE ? await fetchLive() : MOCK_DATA;
+    data = USE_LIVE ? await fetchLive(CURRENT.voteKey) : MOCK_DATA;
   } catch (err) {
     console.error("Fatal error in fetchLive:", err);
 
@@ -288,7 +317,11 @@ async function main() {
     };
   }
 
-  console.log("Dashboard mode:", USE_LIVE ? "LIVE" : "MOCK", data);
+  console.log("Dashboard mode:", USE_LIVE ? "LIVE" : "MOCK", {
+    ...data,
+    voteKey: CURRENT.voteKey,
+    name: CURRENT.name
+  });
 
   // ── Jito badge ─────────────────────────────────────────────
   const jitoBadge = document.getElementById("jito-badge");
@@ -313,9 +346,7 @@ async function main() {
 
   const uptimeEl = document.getElementById("uptime");
   if (uptimeEl) {
-    uptimeEl.textContent = `${Number(
-      data.uptimeLast5EpochsPct || 0
-    ).toFixed(2)}%`;
+    uptimeEl.textContent = `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
   }
 
   // ── Status ─────────────────────────────────────────────────
