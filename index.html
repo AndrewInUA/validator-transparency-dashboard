@@ -207,7 +207,7 @@
       background: #1d4ed8;
     }
 
-    /* NEW: Pools badges */
+    /* Pools badges */
     .pool-badges {
       display: flex;
       flex-wrap: wrap;
@@ -304,7 +304,7 @@
       </div>
     </div>
 
-    <!-- NEW: Profitability + Pools -->
+    <!-- Profitability + Pools -->
     <div class="card share-card">
       <p class="share-title">Profitability (APY) & Pool presence</p>
       <p class="share-help">
@@ -323,8 +323,10 @@
         </div>
 
         <div class="kpi-block">
-          <div class="muted">Trillium overall APY</div>
+          <div class="muted">Trillium delegator total APY</div>
           <div id="apy-trillium" class="kpi">—%</div>
+          <!-- Optional but helpful: real status instead of silently showing 0.00% -->
+          <div class="last-updated" id="trillium-status">Source: Trillium —</div>
         </div>
 
         <div class="kpi-block">
