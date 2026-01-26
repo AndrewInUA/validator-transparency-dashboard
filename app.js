@@ -8,27 +8,23 @@
  *    - delinquent / healthy status
  * 3. Fetches live Jito status from your Vercel proxy.
  * 4. Renders Trust Card, sparkline, last updated timestamp, and share URL.
+ * 5. Fetches APY + stake pool presence from /api/ratings (Stakewiz + Trillium).
  */
 
 // ──────────────────────────────────────────────
 // CONFIG
 // ──────────────────────────────────────────────
 
-// If true → use Solana RPC + Jito proxy.
-// If false → use MOCK_DATA below.
 const USE_LIVE = true;
 
-// Default validator for the dashboard (fallback only).
 const VALIDATOR = {
   name: "AndrewInUA",
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 
-// Your dedicated Helius RPC URL
 const HELIUS_RPC =
   "https://mainnet.helius-rpc.com/?api-key=8c0db429-5430-4151-95f3-7487584d0a36";
 
-// Your Vercel Jito proxy (api/jito.js).
 const JITO_PROXY =
   "https://validator-transparency-dashboard.vercel.app/api/jito";
 
@@ -37,11 +33,9 @@ const JITO_PROXY =
 // ──────────────────────────────────────────────
 
 function getParam(name) {
-  // 1) Query string (?vote=...)
   const qs = new URLSearchParams(window.location.search);
   if (qs.has(name)) return qs.get(name);
 
-  // 2) Hash (#vote=...) – GitHub Pages compatible
   const hash = window.location.hash.startsWith("#")
     ? window.location.hash.slice(1)
     : window.location.hash;
@@ -88,9 +82,6 @@ const MOCK_DATA = {
 // HELPERS
 // ──────────────────────────────────────────────
 
-/**
- * Draws a simple sparkline for commission history.
- */
 function drawSpark(canvas, values) {
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
@@ -117,10 +108,6 @@ function drawSpark(canvas, values) {
   ctx.stroke();
 }
 
-/**
- * Ask the Vercel proxy if this vote account runs Jito.
- * api/jito.js returns { jito: true/false, ... }.
- */
 async function fetchJitoStatus(voteKey) {
   if (!JITO_PROXY) return false;
 
@@ -138,27 +125,17 @@ async function fetchJitoStatus(voteKey) {
   }
 }
 
-/**
- * Build the canonical share URL for the current validator.
- * Default: vote-only link (name optional).
- * Supports GitHub Pages by using #vote= when hosted on github.io.
- */
 function buildShareUrl() {
   const base = `${window.location.origin}${window.location.pathname}`;
   const isGitHubPages = window.location.hostname.includes("github.io");
 
   const params = new URLSearchParams();
   params.set("vote", CURRENT.voteKey);
-
-  // optional – only include name if user supplied it
   if (CURRENT.nameFromUrl) params.set("name", CURRENT.nameFromUrl);
 
   return isGitHubPages ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
 }
 
-/**
- * Populate the “Share this dashboard” input and wire up Copy button.
- */
 function updateShareBox() {
   const input = document.getElementById("share-url");
   if (!input) return;
@@ -179,6 +156,86 @@ function updateShareBox() {
         setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
       }
     };
+  }
+}
+
+// ──────────────────────────────────────────────
+// NEW: ratings + pools (via our API)
+// ──────────────────────────────────────────────
+
+function fmtPct(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "—%";
+  return `${n.toFixed(2)}%`;
+}
+
+function fmtSol(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "—";
+  // keep it readable, not too many decimals
+  return n >= 1000 ? n.toFixed(0) : n.toFixed(2);
+}
+
+async function fetchRatings(voteKey) {
+  const url = `/api/ratings?vote=${encodeURIComponent(voteKey)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`/api/ratings -> HTTP ${res.status}`);
+  return res.json();
+}
+
+function renderRatings(r) {
+  const elMedian = document.getElementById("apy-median");
+  const elStakewiz = document.getElementById("apy-stakewiz");
+  const elTrillium = document.getElementById("apy-trillium");
+  const elPoolsCount = document.getElementById("pools-count");
+  const elPoolsTotals = document.getElementById("pools-totals");
+  const elPoolsList = document.getElementById("pools-list");
+  const elSourcesNote = document.getElementById("apy-sources-note");
+
+  if (elMedian) elMedian.textContent = fmtPct(r?.derived?.apy_median);
+  if (elStakewiz) elStakewiz.textContent = fmtPct(r?.sources?.stakewiz?.total_apy);
+  if (elTrillium) elTrillium.textContent = fmtPct(r?.sources?.trillium?.total_overall_apy);
+
+  const pools = Array.isArray(r?.pools?.stake_pools) ? r.pools.stake_pools : [];
+  if (elPoolsCount) elPoolsCount.textContent = pools.length ? String(pools.length) : "—";
+
+  if (elPoolsTotals) {
+    const a = fmtSol(r?.pools?.total_from_stake_pools);
+    const b = fmtSol(r?.pools?.total_not_from_stake_pools);
+    elPoolsTotals.textContent = `Stake from pools: ${a} SOL • Not from pools: ${b} SOL`;
+  }
+
+  if (elPoolsList) {
+    elPoolsList.innerHTML = "";
+    // show top 12 pools to avoid massive list
+    const top = pools.slice(0, 12);
+
+    if (!top.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted small";
+      empty.textContent = "No stake pool data available for this validator (or source unavailable).";
+      elPoolsList.appendChild(empty);
+    } else {
+      for (const p of top) {
+        const b = document.createElement("span");
+        b.className = "pool-badge";
+        b.textContent = `${p.name}: ${fmtSol(p.sol)} SOL`;
+        elPoolsList.appendChild(b);
+      }
+
+      if (pools.length > top.length) {
+        const more = document.createElement("span");
+        more.className = "pool-badge";
+        more.textContent = `+${pools.length - top.length} more`;
+        elPoolsList.appendChild(more);
+      }
+    }
+  }
+
+  if (elSourcesNote) {
+    const swOk = r?.sources?.stakewiz && !r?.sources?.stakewiz?.error;
+    const trOk = r?.sources?.trillium && !r?.sources?.trillium?.error;
+    elSourcesNote.textContent = `Sources: Stakewiz ${swOk ? "OK" : "—"} • Trillium ${trOk ? "OK" : "—"}`;
   }
 }
 
@@ -239,7 +296,6 @@ async function fetchLive(voteKey) {
       const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
       const status = isDelinquent ? "delinquent" : "healthy";
 
-      // Epoch performance approximation from epochCredits [[epoch, credits, prevCredits], ...]
       let uptimePct = 0;
       try {
         const credits = me.epochCredits || [];
@@ -268,17 +324,6 @@ async function fetchLive(voteKey) {
 
       const jito = await fetchJitoStatus(voteKey);
 
-      console.log("LIVE via RPC:", rpc, {
-        voteKey,
-        votePubkey: me.votePubkey,
-        nodePubkey: me.nodePubkey,
-        epochCreditsLen: (me.epochCredits || []).length,
-        commission,
-        status,
-        uptimePct,
-        jito
-      });
-
       return {
         commissionHistory: Array(10).fill(commission),
         uptimeLast5EpochsPct: uptimePct,
@@ -298,13 +343,12 @@ async function fetchLive(voteKey) {
 }
 
 // ──────────────────────────────────────────────
-// MAIN: fetch + render
+// MAIN
 // ──────────────────────────────────────────────
 
 async function main() {
   const nameEl = document.getElementById("validator-name");
   if (nameEl) {
-    // placeholder until we know nodePubkey
     const label = CURRENT.nameFromUrl
       ? CURRENT.nameFromUrl
       : `vote ${shortKey(CURRENT.voteKey)}`;
@@ -328,24 +372,6 @@ async function main() {
     };
   }
 
-  console.log("Dashboard mode:", USE_LIVE ? "LIVE" : "MOCK", {
-    ...data,
-    voteUsed: CURRENT.voteKey,
-    nameUsed: CURRENT.name
-  });
-
-  console.log(
-    "[DEBUG] voteUsed:",
-    CURRENT.voteKey,
-    "voteFound:",
-    data.votePubkey,
-    "node:",
-    data.nodePubkey,
-    "epochCreditsLen:",
-    data.epochCreditsLen
-  );
-
-  // Update label once we know actual pubkeys
   if (nameEl) {
     const finalLabel = CURRENT.nameFromUrl
       ? CURRENT.nameFromUrl
@@ -355,7 +381,7 @@ async function main() {
     nameEl.textContent = `Validator: ${finalLabel}`;
   }
 
-  // ── Jito badge ─────────────────────────────────────────────
+  // ── Jito badge
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
     jitoBadge.textContent = `Jito: ${data.jito ? "ON" : "OFF"}`;
@@ -363,11 +389,9 @@ async function main() {
     jitoBadge.classList.add(data.jito ? "ok" : "warn");
   }
 
-  // ── Commission / epoch performance ─────────────────────────
+  // ── Commission / epoch performance
   const history = data.commissionHistory || [];
-  const latestCommission = history.length
-    ? Number(history[history.length - 1])
-    : 0;
+  const latestCommission = history.length ? Number(history[history.length - 1]) : 0;
 
   const commissionEl = document.getElementById("commission");
   if (commissionEl) {
@@ -381,7 +405,7 @@ async function main() {
     uptimeEl.textContent = `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
   }
 
-  // ── Status ─────────────────────────────────────────────────
+  // ── Status
   const statusEl = document.getElementById("status");
   if (statusEl) {
     statusEl.textContent = data.status || "—";
@@ -389,7 +413,7 @@ async function main() {
     statusEl.classList.add(data.status === "healthy" ? "ok" : "warn");
   }
 
-  // ── Last updated ───────────────────────────────────────────
+  // ── Last updated
   const tsEl = document.getElementById("last-updated");
   if (tsEl) {
     const ts = new Date();
@@ -403,7 +427,7 @@ async function main() {
     tsEl.textContent = `Last updated: ${fmt}`;
   }
 
-  // ── Sparkline ──────────────────────────────────────────────
+  // ── Sparkline
   const sparkCanvas = document.getElementById("spark");
   if (sparkCanvas) {
     const series = history.length ? history : Array(10).fill(0);
@@ -419,8 +443,16 @@ async function main() {
     }
   }
 
-  // ── Share URL ──────────────────────────────────────────────
+  // ── Share URL
   updateShareBox();
+
+  // ── NEW: APY + Pools
+  try {
+    const ratings = await fetchRatings(CURRENT.voteKey);
+    renderRatings(ratings);
+  } catch (e) {
+    console.warn("ratings fetch failed:", e);
+  }
 }
 
 main();
