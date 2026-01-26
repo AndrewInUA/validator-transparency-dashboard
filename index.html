@@ -207,6 +207,22 @@
       background: #1d4ed8;
     }
 
+    /* NEW: Pools badges */
+    .pool-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pool-badge {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #2a3561;
+      background: #0b1022;
+      color: #cbd5e1;
+    }
+
     /* Footer / methodology */
     .footer {
       margin-top: 22px;
@@ -283,15 +299,45 @@
         <code>&amp;name=</code> is optional.
       </p>
       <div class="share-row">
-        <input
-          id="share-url"
-          class="share-input"
-          type="text"
-          readonly
-          value="Loading..."
-        />
+        <input id="share-url" class="share-input" type="text" readonly value="Loading..." />
         <button id="copy-btn" class="share-copy-btn">Copy</button>
       </div>
+    </div>
+
+    <!-- NEW: Profitability + Pools -->
+    <div class="card share-card">
+      <p class="share-title">Profitability (APY) & Pool presence</p>
+      <p class="share-help">
+        APY is aggregated from public sources (Stakewiz + Trillium). Pool presence shows stake pools delegating to this validator (via Trillium).
+      </p>
+
+      <div class="kpi-row">
+        <div class="kpi-block">
+          <div class="muted">APY (median)</div>
+          <div id="apy-median" class="kpi">—%</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">Stakewiz total APY</div>
+          <div id="apy-stakewiz" class="kpi">—%</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">Trillium overall APY</div>
+          <div id="apy-trillium" class="kpi">—%</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">Pools delegating</div>
+          <div id="pools-count" class="kpi">—</div>
+        </div>
+      </div>
+
+      <div class="last-updated" id="pools-totals">Stake from pools: — SOL • Not from pools: — SOL</div>
+
+      <div class="pool-badges" id="pools-list"></div>
+
+      <div class="last-updated" id="apy-sources-note">Sources: —</div>
     </div>
 
     <!-- Footer / methodology -->
@@ -316,6 +362,6 @@
   </div>
 
   <!-- bump query string to bust cache whenever app.js changes -->
-  <script src="./app.js?v=23" defer></script>
+  <script src="./app.js?v=24" defer></script>
 </body>
 </html>
