@@ -160,7 +160,7 @@ function updateShareBox() {
 }
 
 // ──────────────────────────────────────────────
-// NEW: ratings + pools (via our API)
+// ratings + pools (via our API)
 // ──────────────────────────────────────────────
 
 function fmtPct(v) {
@@ -172,7 +172,6 @@ function fmtPct(v) {
 function fmtSol(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return "—";
-  // keep it readable, not too many decimals
   return n >= 1000 ? n.toFixed(0) : n.toFixed(2);
 }
 
@@ -183,10 +182,37 @@ async function fetchRatings(voteKey) {
   return res.json();
 }
 
+/**
+ * Trillium APY selection (fixes the 0.00% issue):
+ * Prefer "average_delegator_total_apy" (correct total APY for delegators).
+ * Fallback to older fields if your API currently returns them.
+ */
+function pickTrilliumApy(trilliumObj) {
+  if (!trilliumObj) return null;
+
+  // ✅ Correct (matches Trillium dataset field name)
+  if (Number.isFinite(Number(trilliumObj.average_delegator_total_apy))) {
+    return Number(trilliumObj.average_delegator_total_apy);
+  }
+
+  // Common alternative naming patterns (in case your API mapped it differently)
+  if (Number.isFinite(Number(trilliumObj.delegator_total_apy))) {
+    return Number(trilliumObj.delegator_total_apy);
+  }
+
+  // Older / less ideal fallback (overall APY)
+  if (Number.isFinite(Number(trilliumObj.total_overall_apy))) {
+    return Number(trilliumObj.total_overall_apy);
+  }
+
+  return null;
+}
+
 function renderRatings(r) {
   const elMedian = document.getElementById("apy-median");
   const elStakewiz = document.getElementById("apy-stakewiz");
   const elTrillium = document.getElementById("apy-trillium");
+  const elTrilliumStatus = document.getElementById("trillium-status"); // optional element in index.html
   const elPoolsCount = document.getElementById("pools-count");
   const elPoolsTotals = document.getElementById("pools-totals");
   const elPoolsList = document.getElementById("pools-list");
@@ -194,7 +220,18 @@ function renderRatings(r) {
 
   if (elMedian) elMedian.textContent = fmtPct(r?.derived?.apy_median);
   if (elStakewiz) elStakewiz.textContent = fmtPct(r?.sources?.stakewiz?.total_apy);
-  if (elTrillium) elTrillium.textContent = fmtPct(r?.sources?.trillium?.total_overall_apy);
+
+  // ✅ FIX: Use delegator total APY from Trillium when available
+  const trilliumObj = r?.sources?.trillium;
+  const trilliumApy = pickTrilliumApy(trilliumObj);
+
+  if (elTrillium) elTrillium.textContent = fmtPct(trilliumApy);
+
+  // Optional: show real Trillium status under the Trillium KPI (if element exists)
+  if (elTrilliumStatus) {
+    const trOk = trilliumObj && !trilliumObj?.error && trilliumApy !== null;
+    elTrilliumStatus.textContent = trOk ? "Source: Trillium OK" : "Source: Trillium error";
+  }
 
   const pools = Array.isArray(r?.pools?.stake_pools) ? r.pools.stake_pools : [];
   if (elPoolsCount) elPoolsCount.textContent = pools.length ? String(pools.length) : "—";
@@ -207,7 +244,6 @@ function renderRatings(r) {
 
   if (elPoolsList) {
     elPoolsList.innerHTML = "";
-    // show top 12 pools to avoid massive list
     const top = pools.slice(0, 12);
 
     if (!top.length) {
@@ -234,7 +270,7 @@ function renderRatings(r) {
 
   if (elSourcesNote) {
     const swOk = r?.sources?.stakewiz && !r?.sources?.stakewiz?.error;
-    const trOk = r?.sources?.trillium && !r?.sources?.trillium?.error;
+    const trOk = trilliumObj && !trilliumObj?.error && trilliumApy !== null;
     elSourcesNote.textContent = `Sources: Stakewiz ${swOk ? "OK" : "—"} • Trillium ${trOk ? "OK" : "—"}`;
   }
 }
@@ -446,7 +482,7 @@ async function main() {
   // ── Share URL
   updateShareBox();
 
-  // ── NEW: APY + Pools
+  // ── APY + Pools
   try {
     const ratings = await fetchRatings(CURRENT.voteKey);
     renderRatings(ratings);
