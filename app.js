@@ -161,7 +161,6 @@ async function fetchRatings(voteKey) {
 
 function pickTrilliumApy(trilliumObj) {
   if (!trilliumObj) return null;
-  // prefer delegator-focused metrics if present
   const candidates = [
     trilliumObj.average_delegator_total_apy,
     trilliumObj.delegator_total_apy,
@@ -275,7 +274,6 @@ async function fetchLive(voteKey) {
       const all = current.concat(delinquent);
 
       const me = all.find((v) => v.votePubkey === voteKey);
-
       if (!me) return { ...EMPTY, status: "not found" };
 
       const commission = Number(me.commission ?? 0);
@@ -364,7 +362,6 @@ function computeStability({ live, ratings, poolsCount }) {
 
   const nowStatus = live?.status || "—";
   const nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
-  const latestCommission = Number(live?.commissionHistory?.slice(-1)?.[0] ?? live?.commissionHistory?.slice(-1)?.[0] ?? 0);
 
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
@@ -437,7 +434,7 @@ function computeStability({ live, ratings, poolsCount }) {
     pills.push({
       ok: delinquentCount === 0,
       text: delinquentCount === 0 ? "No delinquency observed" : `Delinquency seen (${delinquentCount}/${n})`,
-      tip: "Based on the validator’s status (healthy vs delinquent) observed across locally stored snapshots. This is not a full network history — it reflects what this browser has seen over time."
+      tip: "Based on the validator’s status (healthy vs delinquent) observed across locally stored snapshots. This is not full network history — it reflects what this browser has seen over time."
     });
   } else {
     pills.push({
@@ -467,7 +464,7 @@ function computeStability({ live, ratings, poolsCount }) {
     pills.push({
       ok: false,
       text: "APY agreement: unavailable",
-      tip: "Δ (delta) means the absolute difference between Stakewiz total APY and Trillium APY. If one source is missing, agreement can’t be computed."
+      tip: "Δ (delta) is the absolute difference between Stakewiz total APY and Trillium APY. If one source is missing, agreement can’t be computed."
     });
   } else if (apyDiff <= 0.75) {
     pills.push({
@@ -489,32 +486,31 @@ function computeStability({ live, ratings, poolsCount }) {
     });
   }
 
-  // Voting consistency pill (better thresholds + better wording)
-  let vcText = "Voting consistency unavailable";
+  // Voting consistency pill (UI grammar: colon style)
+  let vcText = "Voting consistency: unavailable";
   let vcOk = false;
-  let vcTip =
-    "This uses ‘Epoch performance (proxy)’ — a relative 0–100% consistency score derived from epochCredits deltas across recent epochs (getVoteAccounts). It is not uptime and not guaranteed to be 100% even for strong validators.";
+  const vcTip =
+    "Uses ‘Epoch performance (proxy)’ — a relative 0–100% consistency score derived from epochCredits deltas across recent epochs (getVoteAccounts). It is not uptime and not guaranteed to be 100% even for strong validators.";
 
   if (Number.isFinite(nowUptime)) {
     if (nowUptime >= 95) {
-      vcText = `Voting consistency strong (${nowUptime.toFixed(2)}%)`;
+      vcText = `Voting consistency: strong (${nowUptime.toFixed(2)}%)`;
       vcOk = true;
     } else if (nowUptime >= 90) {
-      vcText = `Voting consistency good (${nowUptime.toFixed(2)}%)`;
-      vcOk = true; // still green — realistic range
+      vcText = `Voting consistency: good (${nowUptime.toFixed(2)}%)`;
+      vcOk = true;
     } else {
-      vcText = `Voting consistency needs attention (${nowUptime.toFixed(2)}%)`;
+      vcText = `Voting consistency: needs attention (${nowUptime.toFixed(2)}%)`;
       vcOk = false;
     }
   }
-
   pills.push({ ok: vcOk, text: vcText, tip: vcTip });
 
   // Pools pill
   pills.push({
     ok: Number.isFinite(poolsCount) && poolsCount > 0,
     text: Number.isFinite(poolsCount) && poolsCount > 0 ? `Stake pool presence (${poolsCount})` : "No stake pool presence",
-    tip: "Stake pool presence is derived from Trillium stake_pools data. It signals whether stake pools are delegating to this validator (often a stronger trust signal than retail stake alone)."
+    tip: "Stake pool presence is derived from Trillium stake_pools data. It signals whether stake pools are delegating to this validator."
   });
 
   // One-line “formula” explanation (displayed on page)
@@ -542,7 +538,7 @@ function renderStability(st) {
       const span = document.createElement("span");
       span.className = `pill ${p.ok ? "pill-ok" : "pill-warn"}`;
       span.textContent = p.text;
-      if (p.tip) span.title = p.tip; // native tooltip on hover
+      if (p.tip) span.title = p.tip;
       elPills.appendChild(span);
     }
   }
