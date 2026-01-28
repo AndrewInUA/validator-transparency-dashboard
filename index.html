@@ -223,6 +223,24 @@
       color: #cbd5e1;
     }
 
+    /* NEW: Stability pills */
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pill {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #2a3561;
+      background: #0b1022;
+      color: #cbd5e1;
+    }
+    .pill-ok { background: #0f3a2b; border-color: #1f6c51; color: #d1fae5; }
+    .pill-warn { background: #40221a; border-color: #61352a; color: #fee2e2; }
+
     /* Footer / methodology */
     .footer {
       margin-top: 22px;
@@ -334,10 +352,35 @@
       </div>
 
       <div class="last-updated" id="pools-totals">Stake from pools: — SOL • Not from pools: — SOL</div>
-
       <div class="pool-badges" id="pools-list"></div>
-
       <div class="last-updated" id="apy-sources-note">Sources: —</div>
+    </div>
+
+    <!-- NEW: Validator Stability -->
+    <div class="card share-card">
+      <p class="share-title">Validator stability</p>
+      <p class="share-help">
+        A lightweight stability snapshot based on recent voting consistency, source agreement (Stakewiz vs Trillium), and observed behaviour over time.
+        Tracking is stored locally in your browser (no server database).
+      </p>
+
+      <div class="kpi-row">
+        <div class="kpi-block">
+          <div class="muted">Stability</div>
+          <div id="stability-score" class="kpi">—</div>
+        </div>
+        <div class="kpi-block">
+          <div class="muted">Assessment</div>
+          <div id="stability-label" class="kpi">—</div>
+        </div>
+        <div class="kpi-block">
+          <div class="muted">Tracking</div>
+          <div id="stability-tracking" class="kpi">—</div>
+        </div>
+      </div>
+
+      <div class="pill-row" id="stability-pills"></div>
+      <div class="last-updated" id="stability-note">—</div>
     </div>
 
     <!-- Footer / methodology -->
@@ -362,6 +405,6 @@
   </div>
 
   <!-- bump query string to bust cache whenever app.js changes -->
-  <script src="./app.js?v=25" defer></script>
+  <script src="./app.js?v=26" defer></script>
 </body>
 </html>
