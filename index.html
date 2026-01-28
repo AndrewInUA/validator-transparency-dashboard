@@ -35,9 +35,7 @@
       grid-template-columns: 1fr;
     }
     @media (min-width: 900px) {
-      .grid {
-        grid-template-columns: 1.1fr 1.2fr;
-      }
+      .grid { grid-template-columns: 1.1fr 1.2fr; }
     }
 
     .card {
@@ -51,9 +49,7 @@
       color: #9fb0ce;
       font-size: 14px;
     }
-    .small {
-      font-size: 12px;
-    }
+    .small { font-size: 12px; }
     .title {
       font-size: 20px;
       font-weight: 700;
@@ -71,9 +67,7 @@
       gap: 28px;
       flex-wrap: wrap;
     }
-    .kpi-block {
-      min-width: 90px;
-    }
+    .kpi-block { min-width: 90px; }
     .badge {
       font-size: 12px;
       padding: 4px 10px;
@@ -125,7 +119,7 @@
       cursor: default;
       position: relative;
       margin-left: 6px;
-      vertical-align: middle;
+      border: 1px solid #2a3561;
     }
     .info-dot::after {
       content: attr(data-tip);
@@ -140,17 +134,15 @@
       border-radius: 8px;
       border: 1px solid #1e293b;
       font-size: 11px;
-      line-height: 1.3;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+      line-height: 1.35;
+      box-shadow: 0 10px 30px rgba(0,0,0,.6);
       opacity: 0;
       pointer-events: none;
       transition: opacity .12s ease-out;
       z-index: 20;
       white-space: normal;
     }
-    .info-dot:hover::after {
-      opacity: 1;
-    }
+    .info-dot:hover::after { opacity: 1; }
 
     /* Last updated line */
     .last-updated {
@@ -160,9 +152,7 @@
     }
 
     /* Share card */
-    .share-card {
-      margin-top: 16px;
-    }
+    .share-card { margin-top: 16px; }
     .share-title {
       font-size: 18px;
       font-weight: 700;
@@ -204,9 +194,7 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .share-copy-btn:hover {
-      background: #1d4ed8;
-    }
+    .share-copy-btn:hover { background: #1d4ed8; }
 
     /* Pools badges */
     .pool-badges {
@@ -229,36 +217,36 @@
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 12px;
     }
     .pill {
       font-size: 12px;
-      padding: 6px 10px;
+      padding: 7px 12px;
       border-radius: 999px;
       border: 1px solid #2a3561;
       background: #0b1022;
       color: #cbd5e1;
     }
-    .pill-ok { background: #0f3a2b; border-color: #1f6c51; color: #d1fae5; }
-    .pill-warn { background: #40221a; border-color: #61352a; color: #fee2e2; }
+    .pill-ok {
+      background: #0f3a2b;
+      border-color: #1f6c51;
+      color: #d7ffe9;
+    }
+    .pill-warn {
+      background: #40221a;
+      border-color: #61352a;
+      color: #ffd7cf;
+    }
 
-    /* Footer */
+    /* Footer / methodology */
     .footer {
       margin-top: 22px;
       font-size: 13px;
       color: #93a6c8;
     }
-    .footer strong {
-      color: #c7d2fe;
-    }
-    a {
-      color: #8bd5ff;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    code { color: #c7d2fe; }
+    .footer strong { color: #c7d2fe; }
+    a { color: #8bd5ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -288,7 +276,7 @@
               Epoch performance (proxy)
               <span
                 class="info-dot"
-                data-tip="A 0–100% consistency score based on how steadily this validator earned voting credits across recent epochs (from getVoteAccounts → epochCredits). It is not the same as uptime; it reflects recent voting consistency."
+                data-tip="A 0–100% consistency score derived from epochCredits deltas across recent epochs (getVoteAccounts). It’s not node uptime; even strong validators won’t always show 100%."
               >i</span>
             </div>
             <div id="uptime" class="kpi">—%</div>
@@ -326,7 +314,7 @@
 
     <!-- Profitability + Pools -->
     <div class="card share-card">
-      <p class="share-title">Profitability (APY) & Pool presence</p>
+      <p class="share-title">Profitability (APY) &amp; Pool presence</p>
       <p class="share-help">
         APY is aggregated from public sources (Stakewiz + Trillium). Pool presence shows stake pools delegating to this validator (via Trillium).
       </p>
@@ -358,39 +346,35 @@
       <div class="last-updated" id="apy-sources-note">Sources: —</div>
     </div>
 
-    <!-- Validator Stability -->
+    <!-- NEW: Validator stability -->
     <div class="card share-card">
-      <p class="share-title">
-        Validator stability
-        <span
-          class="info-dot"
-          data-tip="Stability is a lightweight snapshot derived from: (1) current voting consistency (epoch performance proxy), (2) current status (healthy/delinquent), (3) APY source agreement between Stakewiz and Trillium, (4) stake pool presence, and (5) observed behaviour over time (stored locally in your browser)."
-        >i</span>
-      </p>
+      <div class="row" style="justify-content: space-between;">
+        <p class="share-title" style="margin:0;">
+          Validator stability
+          <span
+            class="info-dot"
+            data-tip="A lightweight stability snapshot: combines current status + recent voting consistency + source agreement (Stakewiz vs Trillium) + locally observed behaviour over time. Tracking is stored locally in your browser (no server database)."
+          >i</span>
+        </p>
+      </div>
 
-      <p class="share-help">
+      <p class="share-help" style="margin-top:8px;">
         Tracking is stored locally in your browser (no server database). Over time, stability becomes more informative.
       </p>
 
-      <div class="kpi-row">
+      <div class="kpi-row" style="margin-top:10px;">
         <div class="kpi-block">
           <div class="muted">
             Stability
-            <span
-              class="info-dot"
-              data-tip="0–100 score (shown as X/100). It penalizes observed delinquency, frequent commission changes, low recent voting consistency, large APY disagreement between sources, and lack of stake pool presence. This is a summary signal, not an official network metric."
-            >i</span>
+            <span class="info-dot" data-tip="Starts at 100 and applies penalties based on the rules shown below.">i</span>
           </div>
-          <div id="stability-score" class="kpi">—</div>
+          <div id="stability-score" class="kpi">—/100</div>
         </div>
 
         <div class="kpi-block">
           <div class="muted">
             Assessment
-            <span
-              class="info-dot"
-              data-tip="Human label derived from the Stability score: Strong (≥85), Good (70–84), Watch (50–69), Risk (<50)."
-            >i</span>
+            <span class="info-dot" data-tip="A simple label derived from the stability score (Strong / Good / Watch / Risk).">i</span>
           </div>
           <div id="stability-label" class="kpi">—</div>
         </div>
@@ -398,21 +382,19 @@
         <div class="kpi-block">
           <div class="muted">
             Tracking
-            <span
-              class="info-dot"
-              data-tip="How much local history exists for this vote account in your browser. More history = better stability signal. Different devices/browsers have separate tracking."
-            >i</span>
+            <span class="info-dot" data-tip="How much local history this browser has stored for this vote account (snapshots saved roughly every 30 minutes).">i</span>
           </div>
           <div id="stability-tracking" class="kpi">—</div>
         </div>
       </div>
 
       <div class="pill-row" id="stability-pills"></div>
-      <div class="last-updated" id="stability-note">—</div>
-      <div class="last-updated" id="stability-formula">—</div>
+
+      <div class="last-updated" id="stability-note">Tracking: —</div>
+      <div class="muted small" id="stability-formula" style="margin-top:8px;"></div>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer / methodology -->
     <div class="footer">
       <p>
         <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br />
@@ -426,11 +408,14 @@
         <code>getVoteAccounts</code>. The dashboard takes the last six entries,
         looks at how voting credits changed from epoch to epoch, and compares each
         epoch with the best recent one. Those relative values are averaged into a
-        0–100% score over the last five epochs.
+        0–100% score over the last five epochs. It’s a quick way to see how
+        consistently a validator has been voting in recent epochs, while detailed
+        uptime still comes from node-level monitoring and logs.
       </p>
     </div>
   </div>
 
-  <script src="./app.js?v=27" defer></script>
+  <!-- bump query string to bust cache whenever app.js changes -->
+  <script src="./app.js?v=25" defer></script>
 </body>
 </html>
