@@ -1,19 +1,8 @@
 /**
  * Validator Transparency Dashboard – app.js
  *
- * 1. Reads your validator vote account (CONFIG).
- * 2. Fetches live data from Solana JSON-RPC:
- *    - commission
- *    - epoch performance proxy from epochCredits
- *    - delinquent / healthy status
- * 3. Fetches live Jito status from your Vercel proxy.
- * 4. Renders Trust Card, sparkline, last updated timestamp, and share URL.
- * 5. Fetches APY + stake pool presence from /api/ratings (Stakewiz + Trillium).
+ * Adds: Validator stability block (local tracking via localStorage)
  */
-
-// ──────────────────────────────────────────────
-// CONFIG
-// ──────────────────────────────────────────────
 
 const USE_LIVE = true;
 
@@ -68,17 +57,6 @@ function shortKey(k) {
 }
 
 // ──────────────────────────────────────────────
-// MOCK DATA (used only if USE_LIVE === false)
-// ──────────────────────────────────────────────
-
-const MOCK_DATA = {
-  commissionHistory: [8, 8, 8, 7, 7, 7, 6, 6, 6, 6],
-  uptimeLast5EpochsPct: 99.2,
-  jito: true,
-  status: "healthy"
-};
-
-// ──────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────
 
@@ -115,9 +93,7 @@ async function fetchJitoStatus(voteKey) {
     const url = `${JITO_PROXY}?vote=${encodeURIComponent(voteKey)}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Jito proxy HTTP ${res.status}`);
-
     const json = await res.json();
-    console.log("Jito proxy response:", json, "voteKey:", voteKey);
     return !!json.jito;
   } catch (err) {
     console.warn("Jito check failed:", err);
@@ -159,10 +135,6 @@ function updateShareBox() {
   }
 }
 
-// ──────────────────────────────────────────────
-// ratings + pools (via our API)
-// ──────────────────────────────────────────────
-
 function fmtPct(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return "—%";
@@ -182,29 +154,18 @@ async function fetchRatings(voteKey) {
   return res.json();
 }
 
-/**
- * Trillium APY selection (fixes the 0.00% issue):
- * Prefer "average_delegator_total_apy" (correct total APY for delegators).
- * Fallback to older fields if your API currently returns them.
- */
 function pickTrilliumApy(trilliumObj) {
   if (!trilliumObj) return null;
 
-  // ✅ Correct (matches Trillium dataset field name)
   if (Number.isFinite(Number(trilliumObj.average_delegator_total_apy))) {
     return Number(trilliumObj.average_delegator_total_apy);
   }
-
-  // Common alternative naming patterns (in case your API mapped it differently)
   if (Number.isFinite(Number(trilliumObj.delegator_total_apy))) {
     return Number(trilliumObj.delegator_total_apy);
   }
-
-  // Older / less ideal fallback (overall APY)
   if (Number.isFinite(Number(trilliumObj.total_overall_apy))) {
     return Number(trilliumObj.total_overall_apy);
   }
-
   return null;
 }
 
@@ -212,7 +173,6 @@ function renderRatings(r) {
   const elMedian = document.getElementById("apy-median");
   const elStakewiz = document.getElementById("apy-stakewiz");
   const elTrillium = document.getElementById("apy-trillium");
-  const elTrilliumStatus = document.getElementById("trillium-status"); // optional element in index.html
   const elPoolsCount = document.getElementById("pools-count");
   const elPoolsTotals = document.getElementById("pools-totals");
   const elPoolsList = document.getElementById("pools-list");
@@ -221,17 +181,9 @@ function renderRatings(r) {
   if (elMedian) elMedian.textContent = fmtPct(r?.derived?.apy_median);
   if (elStakewiz) elStakewiz.textContent = fmtPct(r?.sources?.stakewiz?.total_apy);
 
-  // ✅ FIX: Use delegator total APY from Trillium when available
   const trilliumObj = r?.sources?.trillium;
   const trilliumApy = pickTrilliumApy(trilliumObj);
-
   if (elTrillium) elTrillium.textContent = fmtPct(trilliumApy);
-
-  // Optional: show real Trillium status under the Trillium KPI (if element exists)
-  if (elTrilliumStatus) {
-    const trOk = trilliumObj && !trilliumObj?.error && trilliumApy !== null;
-    elTrilliumStatus.textContent = trOk ? "Source: Trillium OK" : "Source: Trillium error";
-  }
 
   const pools = Array.isArray(r?.pools?.stake_pools) ? r.pools.stake_pools : [];
   if (elPoolsCount) elPoolsCount.textContent = pools.length ? String(pools.length) : "—";
@@ -307,10 +259,7 @@ async function fetchLive(voteKey) {
     try {
       const res = await fetch(rpc, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          accept: "application/json"
-        },
+        headers: { "content-type": "application/json", accept: "application/json" },
         body: JSON.stringify(requestBody)
       });
 
@@ -341,8 +290,7 @@ async function fetchLive(voteKey) {
         for (let i = 1; i < last6.length; i++) {
           const prevCredits = last6[i - 1]?.[1] ?? 0;
           const curCredits = last6[i]?.[1] ?? 0;
-          const delta = Math.max(0, curCredits - prevCredits);
-          deltas.push(delta);
+          deltas.push(Math.max(0, curCredits - prevCredits));
         }
 
         const window = deltas.slice(-5);
@@ -379,22 +327,208 @@ async function fetchLive(voteKey) {
 }
 
 // ──────────────────────────────────────────────
+// NEW: STABILITY (local tracking)
+// ──────────────────────────────────────────────
+
+function safeJsonParse(s) {
+  try { return JSON.parse(s); } catch { return null; }
+}
+
+function lsKeyForVote(voteKey) {
+  return `vtd_snapshots_${voteKey}`;
+}
+
+function loadSnapshots(voteKey) {
+  try {
+    const raw = localStorage.getItem(lsKeyForVote(voteKey));
+    const arr = safeJsonParse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSnapshots(voteKey, snaps) {
+  try {
+    localStorage.setItem(lsKeyForVote(voteKey), JSON.stringify(snaps));
+  } catch {
+    // ignore (private mode / blocked storage)
+  }
+}
+
+function pushSnapshotIfNeeded(voteKey, snap) {
+  const snaps = loadSnapshots(voteKey);
+
+  // Avoid saving too often (min 30 minutes between saves)
+  const last = snaps.length ? snaps[snaps.length - 1] : null;
+  if (last && Number.isFinite(last.t) && (snap.t - last.t) < 30 * 60 * 1000) {
+    return snaps;
+  }
+
+  snaps.push(snap);
+
+  // Keep last 120 snapshots (lightweight)
+  const trimmed = snaps.slice(-120);
+  saveSnapshots(voteKey, trimmed);
+  return trimmed;
+}
+
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
+
+function computeStability({ live, ratings, poolsCount }) {
+  const snaps = loadSnapshots(CURRENT.voteKey);
+
+  const n = snaps.length;
+  const nowStatus = live?.status || "—";
+  const nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
+  const nowCommission = Number(live?.commissionHistory?.slice(-1)?.[0] ?? live?.commissionHistory?.slice(-1)?.[0] ?? live?.commissionHistory?.slice(-1)?.[0] ?? 0);
+
+  const sw = Number(ratings?.sources?.stakewiz?.total_apy);
+  const tr = pickTrilliumApy(ratings?.sources?.trillium);
+  const apyDiff = (Number.isFinite(sw) && Number.isFinite(tr)) ? Math.abs(sw - tr) : null;
+
+  // Historical delinquencies / commission changes
+  let delinquentCount = 0;
+  let commissionChanges = 0;
+
+  for (let i = 0; i < snaps.length; i++) {
+    if (snaps[i]?.status && snaps[i].status !== "healthy") delinquentCount++;
+    if (i > 0 && Number.isFinite(snaps[i].commission) && Number.isFinite(snaps[i - 1].commission)) {
+      if (snaps[i].commission !== snaps[i - 1].commission) commissionChanges++;
+    }
+  }
+
+  const delinquentRate = n ? (delinquentCount / n) : 0;
+
+  // Score model (simple, explainable)
+  let score = 100;
+
+  if (nowStatus === "delinquent") score -= 40;
+  score -= delinquentRate * 40;
+
+  score -= clamp(commissionChanges * 5, 0, 20);
+
+  if (nowUptime < 95) score -= clamp((95 - nowUptime) * 1.5, 0, 20);
+
+  if (apyDiff !== null && apyDiff > 1) score -= clamp((apyDiff - 1) * 5, 0, 15);
+
+  if (!Number.isFinite(poolsCount) || poolsCount <= 0) score -= 10;
+
+  score = clamp(Math.round(score), 0, 100);
+
+  let label = "—";
+  if (score >= 85) label = "Strong";
+  else if (score >= 70) label = "Good";
+  else if (score >= 50) label = "Watch";
+  else label = "Risk";
+
+  // Tracking window
+  let trackingText = "Today";
+  let trackingNote = "Tracking: first visit (data will build over time).";
+
+  if (n >= 2) {
+    const t0 = snaps[0].t;
+    const t1 = snaps[n - 1].t;
+    const days = Math.max(0, (t1 - t0) / (24 * 3600 * 1000));
+    const daysNice = days >= 1 ? `${days.toFixed(0)}d` : `${Math.max(1, (days * 24).toFixed(0))}h`;
+    trackingText = `${daysNice}`;
+    trackingNote = `Tracking: ${n} snapshots stored locally in your browser.`;
+  }
+
+  // Pills
+  const pills = [];
+
+  // Delinquency pill
+  if (n >= 2) {
+    pills.push({
+      ok: delinquentCount === 0,
+      text: delinquentCount === 0 ? "No delinquency observed" : `Delinquency seen (${delinquentCount}/${n})`
+    });
+  } else {
+    pills.push({ ok: nowStatus === "healthy", text: nowStatus === "healthy" ? "Healthy now" : `Status: ${nowStatus}` });
+  }
+
+  // Commission stability
+  if (n >= 2) {
+    pills.push({
+      ok: commissionChanges === 0,
+      text: commissionChanges === 0 ? "Commission stable" : `Commission changed (${commissionChanges})`
+    });
+  } else {
+    pills.push({ ok: true, text: "Commission tracking builds over time" });
+  }
+
+  // Source agreement
+  if (apyDiff === null) {
+    pills.push({ ok: false, text: "APY agreement: unavailable" });
+  } else if (apyDiff <= 0.75) {
+    pills.push({ ok: true, text: `APY sources aligned (Δ ${apyDiff.toFixed(2)}%)` });
+  } else if (apyDiff <= 1.5) {
+    pills.push({ ok: true, text: `APY sources close (Δ ${apyDiff.toFixed(2)}%)` });
+  } else {
+    pills.push({ ok: false, text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)` });
+  }
+
+  // Voting consistency
+  pills.push({
+    ok: nowUptime >= 95,
+    text: nowUptime >= 95 ? `Voting consistency strong (${nowUptime.toFixed(2)}%)` : `Voting consistency low (${nowUptime.toFixed(2)}%)`
+  });
+
+  // Pools
+  pills.push({
+    ok: Number.isFinite(poolsCount) && poolsCount > 0,
+    text: Number.isFinite(poolsCount) && poolsCount > 0 ? `Stake pool presence (${poolsCount})` : "No stake pool presence"
+  });
+
+  return { score, label, trackingText, trackingNote, pills };
+}
+
+function renderStability(st) {
+  const elScore = document.getElementById("stability-score");
+  const elLabel = document.getElementById("stability-label");
+  const elTracking = document.getElementById("stability-tracking");
+  const elPills = document.getElementById("stability-pills");
+  const elNote = document.getElementById("stability-note");
+
+  if (elScore) elScore.textContent = `${st.score}`;
+  if (elLabel) elLabel.textContent = st.label;
+  if (elTracking) elTracking.textContent = st.trackingText;
+
+  if (elPills) {
+    elPills.innerHTML = "";
+    for (const p of st.pills) {
+      const span = document.createElement("span");
+      span.className = `pill ${p.ok ? "pill-ok" : "pill-warn"}`;
+      span.textContent = p.text;
+      elPills.appendChild(span);
+    }
+  }
+
+  if (elNote) elNote.textContent = st.trackingNote;
+}
+
+// ──────────────────────────────────────────────
 // MAIN
 // ──────────────────────────────────────────────
 
 async function main() {
   const nameEl = document.getElementById("validator-name");
   if (nameEl) {
-    const label = CURRENT.nameFromUrl
-      ? CURRENT.nameFromUrl
-      : `vote ${shortKey(CURRENT.voteKey)}`;
+    const label = CURRENT.nameFromUrl ? CURRENT.nameFromUrl : `vote ${shortKey(CURRENT.voteKey)}`;
     nameEl.textContent = `Validator: ${label}`;
   }
 
   let data;
-
   try {
-    data = USE_LIVE ? await fetchLive(CURRENT.voteKey) : MOCK_DATA;
+    data = USE_LIVE ? await fetchLive(CURRENT.voteKey) : {
+      commissionHistory: [0,0,0,0,0,0,0,0,0,0],
+      uptimeLast5EpochsPct: 99.2,
+      jito: true,
+      status: "healthy"
+    };
   } catch (err) {
     console.error("Fatal error in fetchLive:", err);
     data = {
@@ -411,13 +545,11 @@ async function main() {
   if (nameEl) {
     const finalLabel = CURRENT.nameFromUrl
       ? CURRENT.nameFromUrl
-      : (data.nodePubkey
-          ? `node ${shortKey(data.nodePubkey)}`
-          : `vote ${shortKey(CURRENT.voteKey)}`);
+      : (data.nodePubkey ? `node ${shortKey(data.nodePubkey)}` : `vote ${shortKey(CURRENT.voteKey)}`);
     nameEl.textContent = `Validator: ${finalLabel}`;
   }
 
-  // ── Jito badge
+  // Jito badge
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
     jitoBadge.textContent = `Jito: ${data.jito ? "ON" : "OFF"}`;
@@ -425,23 +557,17 @@ async function main() {
     jitoBadge.classList.add(data.jito ? "ok" : "warn");
   }
 
-  // ── Commission / epoch performance
+  // Commission / epoch performance
   const history = data.commissionHistory || [];
   const latestCommission = history.length ? Number(history[history.length - 1]) : 0;
 
   const commissionEl = document.getElementById("commission");
-  if (commissionEl) {
-    commissionEl.textContent = `${
-      Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0
-    }%`;
-  }
+  if (commissionEl) commissionEl.textContent = `${Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0}%`;
 
   const uptimeEl = document.getElementById("uptime");
-  if (uptimeEl) {
-    uptimeEl.textContent = `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
-  }
+  if (uptimeEl) uptimeEl.textContent = `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
 
-  // ── Status
+  // Status
   const statusEl = document.getElementById("status");
   if (statusEl) {
     statusEl.textContent = data.status || "—";
@@ -449,7 +575,7 @@ async function main() {
     statusEl.classList.add(data.status === "healthy" ? "ok" : "warn");
   }
 
-  // ── Last updated
+  // Last updated
   const tsEl = document.getElementById("last-updated");
   if (tsEl) {
     const ts = new Date();
@@ -463,7 +589,7 @@ async function main() {
     tsEl.textContent = `Last updated: ${fmt}`;
   }
 
-  // ── Sparkline
+  // Sparkline
   const sparkCanvas = document.getElementById("spark");
   if (sparkCanvas) {
     const series = history.length ? history : Array(10).fill(0);
@@ -473,22 +599,41 @@ async function main() {
     if (labelEl) {
       const min = Math.min(...series);
       const max = Math.max(...series);
-      labelEl.textContent = `Min ${min}% • Max ${max}% • Latest ${
-        Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0
-      }%`;
+      labelEl.textContent = `Min ${min}% • Max ${max}% • Latest ${Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0}%`;
     }
   }
 
-  // ── Share URL
+  // Share URL
   updateShareBox();
 
-  // ── APY + Pools
+  // Ratings + Pools + Stability
+  let ratings = null;
   try {
-    const ratings = await fetchRatings(CURRENT.voteKey);
+    ratings = await fetchRatings(CURRENT.voteKey);
     renderRatings(ratings);
   } catch (e) {
     console.warn("ratings fetch failed:", e);
   }
+
+  // Save snapshot (local)
+  const sw = Number(ratings?.sources?.stakewiz?.total_apy);
+  const tr = pickTrilliumApy(ratings?.sources?.trillium);
+  const poolsCount = Array.isArray(ratings?.pools?.stake_pools) ? ratings.pools.stake_pools.length : null;
+
+  const snap = {
+    t: Date.now(),
+    status: data.status || null,
+    commission: Number.isFinite(latestCommission) ? latestCommission : null,
+    uptime: Number.isFinite(Number(data.uptimeLast5EpochsPct)) ? Number(data.uptimeLast5EpochsPct) : null,
+    sw_apy: Number.isFinite(sw) ? sw : null,
+    tr_apy: Number.isFinite(tr) ? tr : null,
+    pools: Number.isFinite(poolsCount) ? poolsCount : null
+  };
+  pushSnapshotIfNeeded(CURRENT.voteKey, snap);
+
+  // Compute + render stability
+  const st = computeStability({ live: data, ratings, poolsCount });
+  renderStability(st);
 }
 
 main();
