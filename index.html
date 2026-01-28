@@ -124,7 +124,8 @@
       font-size: 11px;
       cursor: default;
       position: relative;
-      margin-left: 4px;
+      margin-left: 6px;
+      vertical-align: middle;
     }
     .info-dot::after {
       content: attr(data-tip);
@@ -132,7 +133,7 @@
       left: 50%;
       top: 120%;
       transform: translateX(-50%);
-      max-width: 280px;
+      max-width: 320px;
       background: #020617;
       color: #e5e7eb;
       padding: 8px 10px;
@@ -223,7 +224,7 @@
       color: #cbd5e1;
     }
 
-    /* NEW: Stability pills */
+    /* Stability pills */
     .pill-row {
       display: flex;
       flex-wrap: wrap;
@@ -241,7 +242,7 @@
     .pill-ok { background: #0f3a2b; border-color: #1f6c51; color: #d1fae5; }
     .pill-warn { background: #40221a; border-color: #61352a; color: #fee2e2; }
 
-    /* Footer / methodology */
+    /* Footer */
     .footer {
       margin-top: 22px;
       font-size: 13px;
@@ -257,6 +258,7 @@
     a:hover {
       text-decoration: underline;
     }
+    code { color: #c7d2fe; }
   </style>
 </head>
 <body>
@@ -286,7 +288,7 @@
               Epoch performance (proxy)
               <span
                 class="info-dot"
-                data-tip="Epoch performance (proxy) is a 0–100% consistency score based on how steadily this validator earned voting credits across recent epochs, using epochCredits from getVoteAccounts on a Solana JSON-RPC endpoint. It highlights recent voting behaviour; real-time uptime still comes from your node-level monitoring and logs."
+                data-tip="A 0–100% consistency score based on how steadily this validator earned voting credits across recent epochs (from getVoteAccounts → epochCredits). It is not the same as uptime; it reflects recent voting consistency."
               >i</span>
             </div>
             <div id="uptime" class="kpi">—%</div>
@@ -356,34 +358,61 @@
       <div class="last-updated" id="apy-sources-note">Sources: —</div>
     </div>
 
-    <!-- NEW: Validator Stability -->
+    <!-- Validator Stability -->
     <div class="card share-card">
-      <p class="share-title">Validator stability</p>
+      <p class="share-title">
+        Validator stability
+        <span
+          class="info-dot"
+          data-tip="Stability is a lightweight snapshot derived from: (1) current voting consistency (epoch performance proxy), (2) current status (healthy/delinquent), (3) APY source agreement between Stakewiz and Trillium, (4) stake pool presence, and (5) observed behaviour over time (stored locally in your browser)."
+        >i</span>
+      </p>
+
       <p class="share-help">
-        A lightweight stability snapshot based on recent voting consistency, source agreement (Stakewiz vs Trillium), and observed behaviour over time.
-        Tracking is stored locally in your browser (no server database).
+        Tracking is stored locally in your browser (no server database). Over time, stability becomes more informative.
       </p>
 
       <div class="kpi-row">
         <div class="kpi-block">
-          <div class="muted">Stability</div>
+          <div class="muted">
+            Stability
+            <span
+              class="info-dot"
+              data-tip="0–100 score (shown as X/100). It penalizes observed delinquency, frequent commission changes, low recent voting consistency, large APY disagreement between sources, and lack of stake pool presence. This is a summary signal, not an official network metric."
+            >i</span>
+          </div>
           <div id="stability-score" class="kpi">—</div>
         </div>
+
         <div class="kpi-block">
-          <div class="muted">Assessment</div>
+          <div class="muted">
+            Assessment
+            <span
+              class="info-dot"
+              data-tip="Human label derived from the Stability score: Strong (≥85), Good (70–84), Watch (50–69), Risk (<50)."
+            >i</span>
+          </div>
           <div id="stability-label" class="kpi">—</div>
         </div>
+
         <div class="kpi-block">
-          <div class="muted">Tracking</div>
+          <div class="muted">
+            Tracking
+            <span
+              class="info-dot"
+              data-tip="How much local history exists for this vote account in your browser. More history = better stability signal. Different devices/browsers have separate tracking."
+            >i</span>
+          </div>
           <div id="stability-tracking" class="kpi">—</div>
         </div>
       </div>
 
       <div class="pill-row" id="stability-pills"></div>
       <div class="last-updated" id="stability-note">—</div>
+      <div class="last-updated" id="stability-formula">—</div>
     </div>
 
-    <!-- Footer / methodology -->
+    <!-- Footer -->
     <div class="footer">
       <p>
         <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br />
@@ -397,14 +426,11 @@
         <code>getVoteAccounts</code>. The dashboard takes the last six entries,
         looks at how voting credits changed from epoch to epoch, and compares each
         epoch with the best recent one. Those relative values are averaged into a
-        0–100% score over the last five epochs. It’s a quick way to see how
-        consistently a validator has been voting in recent epochs, while detailed
-        uptime still comes from node-level monitoring and logs.
+        0–100% score over the last five epochs.
       </p>
     </div>
   </div>
 
-  <!-- bump query string to bust cache whenever app.js changes -->
-  <script src="./app.js?v=26" defer></script>
+  <script src="./app.js?v=27" defer></script>
 </body>
 </html>
