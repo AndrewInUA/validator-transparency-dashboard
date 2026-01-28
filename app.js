@@ -1,7 +1,10 @@
 /**
  * Validator Transparency Dashboard – app.js
  *
- * Adds: Validator stability block (local tracking via localStorage)
+ * Adds: Validator stability block + tooltips/explanations
+ * Notes:
+ * - Stability tracking is stored locally in the browser (localStorage).
+ * - Δ means “difference” between Stakewiz and Trillium APY.
  */
 
 const USE_LIVE = true;
@@ -72,11 +75,9 @@ function drawSpark(canvas, values) {
   const pad = 4;
 
   ctx.beginPath();
-
   values.forEach((v, i) => {
     const x = pad + (i * (w - 2 * pad)) / (values.length - 1);
     const y = h - pad - ((v - min) / ((max - min) || 1)) * (h - 2 * pad);
-
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
@@ -147,6 +148,10 @@ function fmtSol(v) {
   return n >= 1000 ? n.toFixed(0) : n.toFixed(2);
 }
 
+// ──────────────────────────────────────────────
+// Ratings API (your Vercel function)
+// ──────────────────────────────────────────────
+
 async function fetchRatings(voteKey) {
   const url = `/api/ratings?vote=${encodeURIComponent(voteKey)}`;
   const res = await fetch(url);
@@ -156,15 +161,15 @@ async function fetchRatings(voteKey) {
 
 function pickTrilliumApy(trilliumObj) {
   if (!trilliumObj) return null;
-
-  if (Number.isFinite(Number(trilliumObj.average_delegator_total_apy))) {
-    return Number(trilliumObj.average_delegator_total_apy);
-  }
-  if (Number.isFinite(Number(trilliumObj.delegator_total_apy))) {
-    return Number(trilliumObj.delegator_total_apy);
-  }
-  if (Number.isFinite(Number(trilliumObj.total_overall_apy))) {
-    return Number(trilliumObj.total_overall_apy);
+  // prefer delegator-focused metrics if present
+  const candidates = [
+    trilliumObj.average_delegator_total_apy,
+    trilliumObj.delegator_total_apy,
+    trilliumObj.total_overall_apy
+  ];
+  for (const c of candidates) {
+    const n = Number(c);
+    if (Number.isFinite(n)) return n;
   }
   return null;
 }
@@ -210,7 +215,6 @@ function renderRatings(r) {
         b.textContent = `${p.name}: ${fmtSol(p.sol)} SOL`;
         elPoolsList.appendChild(b);
       }
-
       if (pools.length > top.length) {
         const more = document.createElement("span");
         more.className = "pool-badge";
@@ -272,37 +276,30 @@ async function fetchLive(voteKey) {
 
       const me = all.find((v) => v.votePubkey === voteKey);
 
-      if (!me) {
-        console.warn("Vote account not found via RPC:", rpc, "voteKey:", voteKey);
-        return { ...EMPTY, status: "not found" };
-      }
+      if (!me) return { ...EMPTY, status: "not found" };
 
       const commission = Number(me.commission ?? 0);
       const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
       const status = isDelinquent ? "delinquent" : "healthy";
 
+      // Epoch performance proxy (relative consistency)
       let uptimePct = 0;
       try {
         const credits = me.epochCredits || [];
         const last6 = credits.slice(-6);
         const deltas = [];
-
         for (let i = 1; i < last6.length; i++) {
           const prevCredits = last6[i - 1]?.[1] ?? 0;
           const curCredits = last6[i]?.[1] ?? 0;
           deltas.push(Math.max(0, curCredits - prevCredits));
         }
-
         const window = deltas.slice(-5);
         const maxDelta = Math.max(...window, 1);
-
         const avgRelative = window.length
           ? window.reduce((sum, d) => sum + d / maxDelta, 0) / window.length
           : 0;
-
         uptimePct = Math.round(avgRelative * 10000) / 100;
-      } catch (err) {
-        console.warn("Epoch performance calculation error:", err);
+      } catch {
         uptimePct = 0;
       }
 
@@ -322,22 +319,19 @@ async function fetchLive(voteKey) {
     }
   }
 
-  console.error("All RPCs failed – returning empty state");
   return EMPTY;
 }
 
 // ──────────────────────────────────────────────
-// NEW: STABILITY (local tracking)
+// STABILITY (local tracking + explanations)
 // ──────────────────────────────────────────────
 
 function safeJsonParse(s) {
   try { return JSON.parse(s); } catch { return null; }
 }
-
 function lsKeyForVote(voteKey) {
   return `vtd_snapshots_${voteKey}`;
 }
-
 function loadSnapshots(voteKey) {
   try {
     const raw = localStorage.getItem(lsKeyForVote(voteKey));
@@ -347,73 +341,71 @@ function loadSnapshots(voteKey) {
     return [];
   }
 }
-
 function saveSnapshots(voteKey, snaps) {
-  try {
-    localStorage.setItem(lsKeyForVote(voteKey), JSON.stringify(snaps));
-  } catch {
-    // ignore (private mode / blocked storage)
-  }
+  try { localStorage.setItem(lsKeyForVote(voteKey), JSON.stringify(snaps)); } catch {}
 }
-
 function pushSnapshotIfNeeded(voteKey, snap) {
   const snaps = loadSnapshots(voteKey);
-
-  // Avoid saving too often (min 30 minutes between saves)
   const last = snaps.length ? snaps[snaps.length - 1] : null;
-  if (last && Number.isFinite(last.t) && (snap.t - last.t) < 30 * 60 * 1000) {
-    return snaps;
-  }
+
+  // save at most once per 30 minutes
+  if (last && Number.isFinite(last.t) && (snap.t - last.t) < 30 * 60 * 1000) return snaps;
 
   snaps.push(snap);
-
-  // Keep last 120 snapshots (lightweight)
   const trimmed = snaps.slice(-120);
   saveSnapshots(voteKey, trimmed);
   return trimmed;
 }
-
-function clamp(n, a, b) {
-  return Math.max(a, Math.min(b, n));
-}
+function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
 
 function computeStability({ live, ratings, poolsCount }) {
   const snaps = loadSnapshots(CURRENT.voteKey);
-
   const n = snaps.length;
+
   const nowStatus = live?.status || "—";
   const nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
-  const nowCommission = Number(live?.commissionHistory?.slice(-1)?.[0] ?? live?.commissionHistory?.slice(-1)?.[0] ?? live?.commissionHistory?.slice(-1)?.[0] ?? 0);
+  const latestCommission = Number(live?.commissionHistory?.slice(-1)?.[0] ?? live?.commissionHistory?.slice(-1)?.[0] ?? 0);
 
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
+
+  // Δ = absolute APY difference between sources
   const apyDiff = (Number.isFinite(sw) && Number.isFinite(tr)) ? Math.abs(sw - tr) : null;
 
-  // Historical delinquencies / commission changes
+  // historical counts
   let delinquentCount = 0;
   let commissionChanges = 0;
-
   for (let i = 0; i < snaps.length; i++) {
     if (snaps[i]?.status && snaps[i].status !== "healthy") delinquentCount++;
     if (i > 0 && Number.isFinite(snaps[i].commission) && Number.isFinite(snaps[i - 1].commission)) {
       if (snaps[i].commission !== snaps[i - 1].commission) commissionChanges++;
     }
   }
-
   const delinquentRate = n ? (delinquentCount / n) : 0;
 
-  // Score model (simple, explainable)
+  // Explainable score model
   let score = 100;
 
+  // current delinquency is a strong penalty
   if (nowStatus === "delinquent") score -= 40;
+
+  // observed delinquency history
   score -= delinquentRate * 40;
 
+  // commission changes over time
   score -= clamp(commissionChanges * 5, 0, 20);
 
-  if (nowUptime < 95) score -= clamp((95 - nowUptime) * 1.5, 0, 20);
+  // voting consistency (proxy)
+  if (Number.isFinite(nowUptime) && nowUptime < 95) {
+    score -= clamp((95 - nowUptime) * 1.5, 0, 20);
+  }
 
-  if (apyDiff !== null && apyDiff > 1) score -= clamp((apyDiff - 1) * 5, 0, 15);
+  // APY disagreement between sources
+  if (apyDiff !== null && apyDiff > 1) {
+    score -= clamp((apyDiff - 1) * 5, 0, 15);
+  }
 
+  // no stake pool presence
   if (!Number.isFinite(poolsCount) || poolsCount <= 0) score -= 10;
 
   score = clamp(Math.round(score), 0, 100);
@@ -424,7 +416,7 @@ function computeStability({ live, ratings, poolsCount }) {
   else if (score >= 50) label = "Watch";
   else label = "Risk";
 
-  // Tracking window
+  // tracking window display
   let trackingText = "Today";
   let trackingNote = "Tracking: first visit (data will build over time).";
 
@@ -437,53 +429,99 @@ function computeStability({ live, ratings, poolsCount }) {
     trackingNote = `Tracking: ${n} snapshots stored locally in your browser.`;
   }
 
-  // Pills
+  // pills with tooltips
   const pills = [];
 
-  // Delinquency pill
+  // Status / delinquency pill
   if (n >= 2) {
     pills.push({
       ok: delinquentCount === 0,
-      text: delinquentCount === 0 ? "No delinquency observed" : `Delinquency seen (${delinquentCount}/${n})`
+      text: delinquentCount === 0 ? "No delinquency observed" : `Delinquency seen (${delinquentCount}/${n})`,
+      tip: "Based on the validator’s status (healthy vs delinquent) observed across locally stored snapshots. This is not a full network history — it reflects what this browser has seen over time."
     });
   } else {
-    pills.push({ ok: nowStatus === "healthy", text: nowStatus === "healthy" ? "Healthy now" : `Status: ${nowStatus}` });
+    pills.push({
+      ok: nowStatus === "healthy",
+      text: nowStatus === "healthy" ? "Healthy now" : `Status: ${nowStatus}`,
+      tip: "Current Solana RPC snapshot status from getVoteAccounts: healthy means voting; delinquent means not voting properly."
+    });
   }
 
-  // Commission stability
+  // Commission stability pill
   if (n >= 2) {
     pills.push({
       ok: commissionChanges === 0,
-      text: commissionChanges === 0 ? "Commission stable" : `Commission changed (${commissionChanges})`
+      text: commissionChanges === 0 ? "Commission stable" : `Commission changed (${commissionChanges})`,
+      tip: "Commission stability is estimated from locally stored snapshots. If commission changes frequently, stability is penalized."
     });
   } else {
-    pills.push({ ok: true, text: "Commission tracking builds over time" });
+    pills.push({
+      ok: true,
+      text: "Commission tracking builds over time",
+      tip: "Commission change detection needs multiple snapshots stored over time in your browser."
+    });
   }
 
-  // Source agreement
+  // APY agreement pill (Δ)
   if (apyDiff === null) {
-    pills.push({ ok: false, text: "APY agreement: unavailable" });
+    pills.push({
+      ok: false,
+      text: "APY agreement: unavailable",
+      tip: "Δ (delta) means the absolute difference between Stakewiz total APY and Trillium APY. If one source is missing, agreement can’t be computed."
+    });
   } else if (apyDiff <= 0.75) {
-    pills.push({ ok: true, text: `APY sources aligned (Δ ${apyDiff.toFixed(2)}%)` });
+    pills.push({
+      ok: true,
+      text: `APY sources aligned (Δ ${apyDiff.toFixed(2)}%)`,
+      tip: "Δ (delta) is the absolute APY difference between Stakewiz and Trillium. Smaller Δ means sources agree closely, which increases confidence."
+    });
   } else if (apyDiff <= 1.5) {
-    pills.push({ ok: true, text: `APY sources close (Δ ${apyDiff.toFixed(2)}%)` });
+    pills.push({
+      ok: true,
+      text: `APY sources close (Δ ${apyDiff.toFixed(2)}%)`,
+      tip: "Moderate Δ can happen due to different estimation windows/methodologies. This is still acceptable but less tight alignment than ‘aligned’."
+    });
   } else {
-    pills.push({ ok: false, text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)` });
+    pills.push({
+      ok: false,
+      text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)`,
+      tip: "Large Δ suggests sources disagree notably. That can be due to different windows, missing data, or methodology differences."
+    });
   }
 
-  // Voting consistency
-  pills.push({
-    ok: nowUptime >= 95,
-    text: nowUptime >= 95 ? `Voting consistency strong (${nowUptime.toFixed(2)}%)` : `Voting consistency low (${nowUptime.toFixed(2)}%)`
-  });
+  // Voting consistency pill (better thresholds + better wording)
+  let vcText = "Voting consistency unavailable";
+  let vcOk = false;
+  let vcTip =
+    "This uses ‘Epoch performance (proxy)’ — a relative 0–100% consistency score derived from epochCredits deltas across recent epochs (getVoteAccounts). It is not uptime and not guaranteed to be 100% even for strong validators.";
 
-  // Pools
+  if (Number.isFinite(nowUptime)) {
+    if (nowUptime >= 95) {
+      vcText = `Voting consistency strong (${nowUptime.toFixed(2)}%)`;
+      vcOk = true;
+    } else if (nowUptime >= 90) {
+      vcText = `Voting consistency good (${nowUptime.toFixed(2)}%)`;
+      vcOk = true; // still green — realistic range
+    } else {
+      vcText = `Voting consistency needs attention (${nowUptime.toFixed(2)}%)`;
+      vcOk = false;
+    }
+  }
+
+  pills.push({ ok: vcOk, text: vcText, tip: vcTip });
+
+  // Pools pill
   pills.push({
     ok: Number.isFinite(poolsCount) && poolsCount > 0,
-    text: Number.isFinite(poolsCount) && poolsCount > 0 ? `Stake pool presence (${poolsCount})` : "No stake pool presence"
+    text: Number.isFinite(poolsCount) && poolsCount > 0 ? `Stake pool presence (${poolsCount})` : "No stake pool presence",
+    tip: "Stake pool presence is derived from Trillium stake_pools data. It signals whether stake pools are delegating to this validator (often a stronger trust signal than retail stake alone)."
   });
 
-  return { score, label, trackingText, trackingNote, pills };
+  // One-line “formula” explanation (displayed on page)
+  const formulaLine =
+    "Stability score starts at 100 and applies penalties for: delinquency (current/history), frequent commission changes (local history), low recent voting consistency (<95%), large APY disagreement (Δ > 1%), and missing stake pool presence.";
+
+  return { score, label, trackingText, trackingNote, pills, formulaLine };
 }
 
 function renderStability(st) {
@@ -492,8 +530,9 @@ function renderStability(st) {
   const elTracking = document.getElementById("stability-tracking");
   const elPills = document.getElementById("stability-pills");
   const elNote = document.getElementById("stability-note");
+  const elFormula = document.getElementById("stability-formula");
 
-  if (elScore) elScore.textContent = `${st.score}`;
+  if (elScore) elScore.textContent = `${st.score}/100`;
   if (elLabel) elLabel.textContent = st.label;
   if (elTracking) elTracking.textContent = st.trackingText;
 
@@ -503,11 +542,13 @@ function renderStability(st) {
       const span = document.createElement("span");
       span.className = `pill ${p.ok ? "pill-ok" : "pill-warn"}`;
       span.textContent = p.text;
+      if (p.tip) span.title = p.tip; // native tooltip on hover
       elPills.appendChild(span);
     }
   }
 
   if (elNote) elNote.textContent = st.trackingNote;
+  if (elFormula) elFormula.textContent = st.formulaLine;
 }
 
 // ──────────────────────────────────────────────
@@ -521,17 +562,18 @@ async function main() {
     nameEl.textContent = `Validator: ${label}`;
   }
 
-  let data;
+  let live;
   try {
-    data = USE_LIVE ? await fetchLive(CURRENT.voteKey) : {
-      commissionHistory: [0,0,0,0,0,0,0,0,0,0],
+    live = USE_LIVE ? await fetchLive(CURRENT.voteKey) : {
+      commissionHistory: Array(10).fill(0),
       uptimeLast5EpochsPct: 99.2,
       jito: true,
-      status: "healthy"
+      status: "healthy",
+      nodePubkey: null
     };
   } catch (err) {
     console.error("Fatal error in fetchLive:", err);
-    data = {
+    live = {
       commissionHistory: Array(10).fill(0),
       uptimeLast5EpochsPct: 0,
       jito: false,
@@ -545,34 +587,35 @@ async function main() {
   if (nameEl) {
     const finalLabel = CURRENT.nameFromUrl
       ? CURRENT.nameFromUrl
-      : (data.nodePubkey ? `node ${shortKey(data.nodePubkey)}` : `vote ${shortKey(CURRENT.voteKey)}`);
+      : (live.nodePubkey ? `node ${shortKey(live.nodePubkey)}` : `vote ${shortKey(CURRENT.voteKey)}`);
     nameEl.textContent = `Validator: ${finalLabel}`;
   }
 
   // Jito badge
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
-    jitoBadge.textContent = `Jito: ${data.jito ? "ON" : "OFF"}`;
+    jitoBadge.textContent = `Jito: ${live.jito ? "ON" : "OFF"}`;
     jitoBadge.classList.remove("ok", "warn");
-    jitoBadge.classList.add(data.jito ? "ok" : "warn");
+    jitoBadge.classList.add(live.jito ? "ok" : "warn");
   }
 
-  // Commission / epoch performance
-  const history = data.commissionHistory || [];
+  // Commission
+  const history = live.commissionHistory || [];
   const latestCommission = history.length ? Number(history[history.length - 1]) : 0;
 
   const commissionEl = document.getElementById("commission");
   if (commissionEl) commissionEl.textContent = `${Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0}%`;
 
+  // Epoch performance proxy
   const uptimeEl = document.getElementById("uptime");
-  if (uptimeEl) uptimeEl.textContent = `${Number(data.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
+  if (uptimeEl) uptimeEl.textContent = `${Number(live.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
 
   // Status
   const statusEl = document.getElementById("status");
   if (statusEl) {
-    statusEl.textContent = data.status || "—";
+    statusEl.textContent = live.status || "—";
     statusEl.classList.remove("ok", "warn");
-    statusEl.classList.add(data.status === "healthy" ? "ok" : "warn");
+    statusEl.classList.add(live.status === "healthy" ? "ok" : "warn");
   }
 
   // Last updated
@@ -615,16 +658,16 @@ async function main() {
     console.warn("ratings fetch failed:", e);
   }
 
-  // Save snapshot (local)
+  const poolsCount = Array.isArray(ratings?.pools?.stake_pools) ? ratings.pools.stake_pools.length : null;
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
-  const poolsCount = Array.isArray(ratings?.pools?.stake_pools) ? ratings.pools.stake_pools.length : null;
 
+  // Save local snapshot
   const snap = {
     t: Date.now(),
-    status: data.status || null,
+    status: live.status || null,
     commission: Number.isFinite(latestCommission) ? latestCommission : null,
-    uptime: Number.isFinite(Number(data.uptimeLast5EpochsPct)) ? Number(data.uptimeLast5EpochsPct) : null,
+    uptime: Number.isFinite(Number(live.uptimeLast5EpochsPct)) ? Number(live.uptimeLast5EpochsPct) : null,
     sw_apy: Number.isFinite(sw) ? sw : null,
     tr_apy: Number.isFinite(tr) ? tr : null,
     pools: Number.isFinite(poolsCount) ? poolsCount : null
@@ -632,7 +675,7 @@ async function main() {
   pushSnapshotIfNeeded(CURRENT.voteKey, snap);
 
   // Compute + render stability
-  const st = computeStability({ live: data, ratings, poolsCount });
+  const st = computeStability({ live, ratings, poolsCount });
   renderStability(st);
 }
 
