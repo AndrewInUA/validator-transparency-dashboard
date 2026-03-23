@@ -253,7 +253,7 @@
   <div class="wrap">
     <h1>Validator Transparency Dashboard</h1>
     <p class="lead">
-      Built by AndrewInUA — live view with commission, epoch performance (proxy), and Jito status.
+      Built by AndrewInUA — live view with commission, voting consistency, and Jito status.
     </p>
 
     <div class="grid">
@@ -273,10 +273,10 @@
 
           <div class="kpi-block">
             <div class="muted">
-              Epoch performance (proxy)
+              Voting consistency
               <span
                 class="info-dot"
-                data-tip="A 0–100% consistency score derived from epochCredits deltas across recent epochs (getVoteAccounts). It’s not node uptime; even strong validators won’t always show 100%."
+                data-tip="Voting consistency is calculated from vote credits across recent epochs. It shows how stable the validator’s voting performance is over time. Higher values indicate more reliable behavior."
               >i</span>
             </div>
             <div id="uptime" class="kpi">—%</div>
@@ -403,7 +403,7 @@
       </p>
       <p>
         <strong>Methodology.</strong>
-        “Epoch performance (proxy)” is a relative consistency score derived from
+        “Voting consistency” is a relative consistency score derived from
         <code>epochCredits</code> returned by
         <code>getVoteAccounts</code>. The dashboard takes the last six entries,
         looks at how voting credits changed from epoch to epoch, and compares each
