@@ -6,16 +6,21 @@
   <title>AndrewInUA Validator Dashboard</title>
   <style>
     :root {
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
     }
 
     * { box-sizing: border-box; }
 
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       background: #050816;
       color: #e6eaf2;
       overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
     }
 
     .wrap {
@@ -27,9 +32,10 @@
     h1 {
       margin: 0 0 6px;
       font-size: 30px;
-      line-height: 1.1;
+      line-height: 1.08;
       font-weight: 800;
       letter-spacing: -0.02em;
+      word-break: break-word;
     }
 
     .lead {
@@ -37,6 +43,7 @@
       font-size: 14px;
       line-height: 1.5;
       color: #9fb0ce;
+      overflow-wrap: anywhere;
     }
 
     .grid {
@@ -46,30 +53,38 @@
     }
 
     @media (min-width: 900px) {
-      .grid { grid-template-columns: 1.1fr 1.2fr; }
+      .grid {
+        grid-template-columns: 1.1fr 1.2fr;
+      }
     }
 
     .card {
-      background: #121827;
+      background: linear-gradient(180deg, #121827 0%, #10172a 100%);
       border: 1px solid #1f2a44;
       border-radius: 18px;
       padding: 18px 18px 16px;
       overflow: hidden;
+      min-width: 0;
+    }
+
+    .title,
+    .share-title {
+      margin: 0 0 10px;
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 700;
+      word-break: break-word;
     }
 
     .muted {
       color: #9fb0ce;
       font-size: 14px;
-      line-height: 1.4;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
     }
 
-    .small { font-size: 12px; }
-
-    .title {
-      font-size: 20px;
-      font-weight: 700;
-      line-height: 1.25;
-      margin: 0 0 10px;
+    .small {
+      font-size: 12px;
     }
 
     .row {
@@ -89,22 +104,30 @@
     }
 
     .kpi-block {
-      min-width: 90px;
-      flex: 0 1 auto;
       min-width: 0;
+      flex: 0 1 auto;
+    }
+
+    .kpi {
+      font-size: 28px;
+      line-height: 1.08;
+      font-weight: 800;
+      word-break: break-word;
     }
 
     .badge {
       display: inline-flex;
       align-items: center;
+      gap: 6px;
       max-width: 100%;
       font-size: 12px;
-      line-height: 1.3;
+      line-height: 1.35;
       padding: 4px 10px;
       border-radius: 999px;
       background: #1a2240;
       border: 1px solid #2a3561;
-      word-break: break-word;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .ok {
@@ -115,13 +138,6 @@
     .warn {
       background: #40221a;
       border-color: #61352a;
-    }
-
-    .kpi {
-      font-size: 28px;
-      line-height: 1.1;
-      font-weight: 800;
-      word-break: break-word;
     }
 
     .status-pill {
@@ -136,10 +152,11 @@
       line-height: 1.2;
       background: #0f3a2b;
       border: 1px solid #1f6c51;
-      word-break: break-word;
+      white-space: normal;
+      text-align: center;
+      overflow-wrap: anywhere;
     }
 
-    /* Sparkline */
     .spark {
       width: 100%;
       max-width: 100%;
@@ -147,70 +164,16 @@
       display: block;
     }
 
-    /* Info dot + tooltip */
-    .info-dot {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      vertical-align: middle;
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      background: #1e293b;
-      color: #9fb0ce;
-      font-size: 11px;
-      cursor: help;
-      position: relative;
-      margin-left: 6px;
-      border: 1px solid #2a3561;
-      flex: 0 0 auto;
-    }
-
-    .info-dot::after {
-      content: attr(data-tip);
-      position: absolute;
-      left: 50%;
-      top: calc(100% + 8px);
-      transform: translateX(-50%);
-      width: min(320px, calc(100vw - 32px));
-      background: #020617;
-      color: #e5e7eb;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #1e293b;
-      font-size: 11px;
-      line-height: 1.35;
-      box-shadow: 0 10px 30px rgba(0,0,0,.6);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .12s ease-out;
-      z-index: 20;
-      white-space: normal;
-    }
-
-    .info-dot:hover::after,
-    .info-dot:focus-visible::after,
-    .info-dot:active::after {
-      opacity: 1;
-    }
-
-    /* Last updated line */
     .last-updated {
       margin-top: 12px;
       font-size: 12px;
       line-height: 1.45;
       color: #97a4c6;
-      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
-    /* Share card */
-    .share-card { margin-top: 16px; }
-
-    .share-title {
-      font-size: 18px;
-      line-height: 1.3;
-      font-weight: 700;
-      margin: 0 0 6px;
+    .share-card {
+      margin-top: 16px;
     }
 
     .share-help {
@@ -218,6 +181,7 @@
       line-height: 1.5;
       color: #9fb0ce;
       margin-bottom: 10px;
+      overflow-wrap: anywhere;
     }
 
     .share-row {
@@ -259,17 +223,24 @@
       min-height: 40px;
     }
 
-    .share-copy-btn:hover { background: #1d4ed8; }
+    .share-copy-btn:hover {
+      background: #1d4ed8;
+    }
 
-    /* Pools badges */
-    .pool-badges {
+    .pool-badges,
+    .pill-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       margin-top: 10px;
+      min-width: 0;
     }
 
-    .pool-badge {
+    .pool-badge,
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
       font-size: 12px;
       line-height: 1.35;
       padding: 6px 10px;
@@ -277,28 +248,10 @@
       border: 1px solid #2a3561;
       background: #0b1022;
       color: #cbd5e1;
-      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
       word-break: break-word;
-    }
-
-    /* Stability pills */
-    .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .pill {
-      font-size: 12px;
-      line-height: 1.35;
-      padding: 7px 12px;
-      border-radius: 999px;
-      border: 1px solid #2a3561;
-      background: #0b1022;
-      color: #cbd5e1;
-      max-width: 100%;
-      word-break: break-word;
+      cursor: default;
     }
 
     .pill-ok {
@@ -313,15 +266,17 @@
       color: #ffd7cf;
     }
 
-    /* Footer / methodology */
     .footer {
       margin-top: 22px;
       font-size: 13px;
       line-height: 1.6;
       color: #93a6c8;
+      overflow-wrap: anywhere;
     }
 
-    .footer strong { color: #c7d2fe; }
+    .footer strong {
+      color: #c7d2fe;
+    }
 
     a {
       color: #8bd5ff;
@@ -329,109 +284,217 @@
       overflow-wrap: anywhere;
     }
 
-    a:hover { text-decoration: underline; }
+    a:hover {
+      text-decoration: underline;
+    }
 
     code {
       word-break: break-word;
       overflow-wrap: anywhere;
     }
 
-    /* Mobile polish */
+    .info-dot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: #1e293b;
+      color: #9fb0ce;
+      font-size: 11px;
+      cursor: pointer;
+      position: relative;
+      margin-left: 6px;
+      border: 1px solid #2a3561;
+      flex: 0 0 auto;
+      user-select: none;
+    }
+
+    .info-dot::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
+      width: min(320px, calc(100vw - 32px));
+      background: #020617;
+      color: #e5e7eb;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      font-size: 11px;
+      line-height: 1.35;
+      box-shadow: 0 10px 30px rgba(0,0,0,.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .12s ease-out;
+      z-index: 20;
+      white-space: normal;
+    }
+
+    .info-dot:hover::after,
+    .info-dot:focus-visible::after,
+    .info-dot.tooltip-open::after,
+    .info-dot:active::after {
+      opacity: 1;
+    }
+
+    .mobile-tooltip {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      background: #020617;
+      color: #e5e7eb;
+      border: 1px solid #243046;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.45;
+      box-shadow: 0 18px 45px rgba(0,0,0,.55);
+      z-index: 9999;
+      display: none;
+    }
+
+    .mobile-tooltip.show {
+      display: block;
+    }
+
+    .mobile-tooltip-close {
+      margin-top: 10px;
+      display: inline-block;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tooltip-hint {
+      font-size: 11px;
+      opacity: .8;
+      margin-top: 6px;
+    }
+
     @media (max-width: 899px) {
       .wrap {
-        margin: 20px auto;
-        padding: 0 12px 28px;
+        margin: 16px auto;
+        padding: 0 10px 22px;
       }
 
       h1 {
-        font-size: 24px;
+        font-size: 22px;
       }
 
       .lead {
-        margin-bottom: 18px;
+        margin-bottom: 16px;
         font-size: 13px;
       }
 
-      .card {
-        padding: 15px 14px 14px;
-        border-radius: 16px;
+      .grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
       }
 
-      .title {
-        font-size: 18px;
+      .card {
+        padding: 14px 12px 13px;
+        border-radius: 14px;
+      }
+
+      .title,
+      .share-title {
+        font-size: 17px;
+        line-height: 1.25;
         margin-bottom: 8px;
       }
 
-      .share-title {
-        font-size: 17px;
+      .row {
+        gap: 8px;
       }
 
       .kpi-row {
-        gap: 18px 20px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-top: 12px;
       }
 
       .kpi {
-        font-size: 24px;
+        font-size: 22px;
       }
 
       .status-pill {
-        font-size: 18px;
-        padding: 4px 12px;
+        font-size: 15px;
+        padding: 6px 10px;
       }
 
       .share-row {
         flex-direction: column;
+        align-items: stretch;
       }
 
+      .share-input,
       .share-copy-btn {
         width: 100%;
-        justify-content: center;
-        padding: 10px 16px;
-      }
-
-      .share-input {
-        border-radius: 14px;
+        border-radius: 12px;
       }
 
       .share-copy-btn {
-        border-radius: 14px;
+        padding: 10px 14px;
+      }
+
+      .spark {
+        height: 54px;
+      }
+
+      .muted,
+      .small,
+      .last-updated,
+      .share-help,
+      .footer {
+        overflow-wrap: anywhere;
       }
 
       .info-dot::after {
         left: 0;
         transform: none;
-        top: calc(100% + 8px);
-        width: min(300px, calc(100vw - 40px));
+        width: min(260px, calc(100vw - 32px));
       }
     }
 
-    @media (max-width: 560px) {
+    @media (max-width: 480px) {
       .wrap {
-        padding: 0 10px 24px;
+        padding: 0 8px 20px;
       }
 
       h1 {
-        font-size: 22px;
+        font-size: 20px;
       }
 
       .card {
-        padding: 14px 12px 13px;
+        padding: 12px 10px;
       }
 
-      .muted {
-        font-size: 13px;
-      }
-
-      .kpi-row {
-        gap: 14px 16px;
+      .title,
+      .share-title {
+        font-size: 16px;
       }
 
       .kpi {
-        font-size: 22px;
+        font-size: 20px;
       }
 
-      .status-pill {
-        font-size: 16px;
+      .muted,
+      .share-help,
+      .lead,
+      .footer {
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .badge,
@@ -439,11 +502,11 @@
       .pool-badge,
       .share-input,
       .share-copy-btn {
-        font-size: 12px;
+        font-size: 11px;
       }
 
-      .spark {
-        height: 56px;
+      .status-pill {
+        font-size: 14px;
       }
     }
   </style>
@@ -456,7 +519,6 @@
     </p>
 
     <div class="grid">
-      <!-- Trust card -->
       <div class="card">
         <p class="title">Trust Card</p>
         <div class="row">
@@ -491,7 +553,6 @@
         <div id="last-updated" class="last-updated">Last updated: —</div>
       </div>
 
-      <!-- Commission history -->
       <div class="card">
         <p class="title">Commission history (last 10)</p>
         <canvas id="spark" class="spark" width="600" height="60"></canvas>
@@ -499,7 +560,6 @@
       </div>
     </div>
 
-    <!-- Share this dashboard -->
     <div class="card share-card">
       <p class="share-title">Share this dashboard</p>
       <p class="share-help">
@@ -512,7 +572,6 @@
       </div>
     </div>
 
-    <!-- Profitability + Pools -->
     <div class="card share-card">
       <p class="share-title">Profitability (APY) &amp; Pool presence</p>
       <p class="share-help">
@@ -546,7 +605,6 @@
       <div class="last-updated" id="apy-sources-note">Sources: —</div>
     </div>
 
-    <!-- NEW: Validator stability -->
     <div class="card share-card">
       <div class="row" style="justify-content: space-between;">
         <p class="share-title" style="margin:0;">
@@ -595,7 +653,6 @@
       <div class="muted small" id="stability-formula" style="margin-top:8px;"></div>
     </div>
 
-    <!-- Footer / methodology -->
     <div class="footer">
       <p>
         <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br />
@@ -616,7 +673,138 @@
     </div>
   </div>
 
-  <!-- bump query string to bust cache whenever app.js changes -->
+  <div id="mobile-tooltip" class="mobile-tooltip" aria-hidden="true"></div>
+
   <script src="./app.js?v=25" defer></script>
+  <script defer>
+    function isTouchLike() {
+      return window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    }
+
+    function closeMobileTooltip() {
+      const box = document.getElementById("mobile-tooltip");
+      if (!box) return;
+      box.classList.remove("show");
+      box.setAttribute("aria-hidden", "true");
+      box.innerHTML = "";
+      document.querySelectorAll(".tooltip-open").forEach(el => el.classList.remove("tooltip-open"));
+    }
+
+    function openMobileTooltip(text, anchorEl) {
+      const box = document.getElementById("mobile-tooltip");
+      if (!box || !text) return;
+
+      document.querySelectorAll(".tooltip-open").forEach(el => el.classList.remove("tooltip-open"));
+      if (anchorEl) anchorEl.classList.add("tooltip-open");
+
+      box.innerHTML = `
+        <div>${text}</div>
+        <div class="tooltip-hint">Tap outside to close.</div>
+        <button type="button" class="mobile-tooltip-close">Close</button>
+      `;
+      box.classList.add("show");
+      box.setAttribute("aria-hidden", "false");
+
+      const btn = box.querySelector(".mobile-tooltip-close");
+      if (btn) btn.addEventListener("click", closeMobileTooltip, { once: true });
+    }
+
+    function enhanceTitleTooltips(root = document) {
+      const candidates = root.querySelectorAll(".pill[title], .pool-badge[title], .badge[title], .status-pill[title]");
+      candidates.forEach(el => {
+        if (el.dataset.tooltipEnhanced === "1") return;
+        const tip = el.getAttribute("title");
+        if (!tip) return;
+
+        el.dataset.tooltipEnhanced = "1";
+        el.dataset.tip = tip;
+        el.setAttribute("tabindex", "0");
+        el.style.cursor = "pointer";
+
+        el.addEventListener("click", (e) => {
+          if (!isTouchLike()) return;
+          e.preventDefault();
+          e.stopPropagation();
+          openMobileTooltip(tip, el);
+        });
+
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openMobileTooltip(tip, el);
+          }
+        });
+      });
+    }
+
+    function wireInfoDots() {
+      const dots = document.querySelectorAll(".info-dot");
+      dots.forEach(dot => {
+        if (dot.dataset.tooltipEnhanced === "1") return;
+        dot.dataset.tooltipEnhanced = "1";
+
+        dot.addEventListener("click", (e) => {
+          if (!isTouchLike()) return;
+          e.preventDefault();
+          e.stopPropagation();
+          openMobileTooltip(dot.dataset.tip, dot);
+        });
+
+        dot.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openMobileTooltip(dot.dataset.tip, dot);
+          }
+        });
+      });
+    }
+
+    function resizeSparkCanvas() {
+      const canvas = document.getElementById("spark");
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(280, Math.floor(rect.width || canvas.offsetWidth || 600));
+      const cssHeight = Math.max(54, Math.floor(rect.height || canvas.offsetHeight || 60));
+
+      if (canvas.width !== cssWidth || canvas.height !== cssHeight) {
+        canvas.width = cssWidth;
+        canvas.height = cssHeight;
+      }
+    }
+
+    document.addEventListener("click", (e) => {
+      const tooltip = document.getElementById("mobile-tooltip");
+      if (!tooltip || !tooltip.classList.contains("show")) return;
+      if (tooltip.contains(e.target)) return;
+      if (e.target.closest(".info-dot, .pill, .pool-badge, .badge, .status-pill")) return;
+      closeMobileTooltip();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeMobileTooltip();
+    });
+
+    window.addEventListener("resize", () => {
+      resizeSparkCanvas();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      resizeSparkCanvas();
+      wireInfoDots();
+      enhanceTitleTooltips();
+
+      const observer = new MutationObserver(() => {
+        resizeSparkCanvas();
+        wireInfoDots();
+        enhanceTitleTooltips();
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    });
+  </script>
 </body>
 </html>
