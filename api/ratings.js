@@ -4,18 +4,16 @@
 // GET /api/ratings?vote=<VOTE_PUBKEY>
 // Returns: normalized APY sources + stake pool presence (from Trillium) + a derived median APY.
 //
-// Drop-in update:
-// - keeps frontend compatibility with app.js
-// - makes Stakewiz handling stricter and more honest
-// - avoids false “OK” when Stakewiz returns incomplete data
-// - adds a light fallback chain for APY fields
-// - adds note/debug fields for easier troubleshooting
+// Faster drop-in version:
+// - shorter timeouts
+// - Stakewiz fails fast instead of blocking the whole dashboard
+// - keeps compatibility with your current app.js
 
-function withTimeout(ms, promise) {
+function withTimeout(ms, promise, label = "Request") {
   return Promise.race([
     promise,
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)
+      setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
     ),
   ]);
 }
@@ -32,17 +30,18 @@ function median(nums) {
   return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
 }
 
-async function fetchJson(url) {
+async function fetchJson(url, timeoutMs = 3000, label = "Request") {
   const res = await withTimeout(
-    8000,
+    timeoutMs,
     fetch(url, {
       headers: { accept: "application/json" },
       cache: "no-store",
-    })
+    }),
+    label
   );
 
   if (!res.ok) {
-    throw new Error(`${url} -> HTTP ${res.status}`);
+    throw new Error(`${label} -> HTTP ${res.status}`);
   }
 
   return res.json();
@@ -54,7 +53,7 @@ async function fetchJson(url) {
 
 async function fetchTrillium(vote) {
   const url = "https://api.trillium.so/recency_weighted_average_validator_rewards";
-  const raw = await fetchJson(url);
+  const raw = await fetchJson(url, 3500, "Trillium");
 
   if (!Array.isArray(raw)) {
     throw new Error("Trillium response is not an array");
@@ -122,7 +121,7 @@ function pickStakewizTotalApy(j) {
 
 async function fetchStakewiz(vote) {
   const url = `https://api.stakewiz.com/validator/${vote}`;
-  const j = await fetchJson(url);
+  const j = await fetchJson(url, 2000, "Stakewiz");
 
   if (!j || typeof j !== "object" || Array.isArray(j)) {
     throw new Error("Stakewiz returned an invalid payload");
@@ -130,9 +129,6 @@ async function fetchStakewiz(vote) {
 
   const totalApy = pickStakewizTotalApy(j);
 
-  // Important:
-  // We treat missing APY as a source failure for this dashboard,
-  // because the frontend uses total_apy to decide whether Stakewiz is usable.
   if (!Number.isFinite(totalApy)) {
     throw new Error("Stakewiz APY not available");
   }
@@ -189,21 +185,18 @@ module.exports = async (req, res) => {
       fetchTrillium(vote),
     ]);
 
-    // Stakewiz
     if (stakewiz.status === "fulfilled") {
       out.sources.stakewiz = stakewiz.value;
-
       if (Number.isFinite(stakewiz.value?.total_apy)) {
         out.derived.apy_values.push(stakewiz.value.total_apy);
       }
     } else {
       out.sources.stakewiz = {
         error: String(stakewiz.reason?.message || stakewiz.reason),
-        note: "Stakewiz API may be unavailable or returned incomplete data",
+        note: "Stakewiz API unavailable or too slow",
       };
     }
 
-    // Trillium
     if (trillium.status === "fulfilled") {
       out.sources.trillium = trillium.value.latest;
       out.pools.total_from_stake_pools =
