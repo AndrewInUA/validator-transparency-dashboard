@@ -312,33 +312,10 @@
       user-select: none;
     }
 
+    /* Disable the old CSS pseudo-tooltips completely */
     .info-dot::after {
-      content: attr(data-tip);
-      position: absolute;
-      left: 50%;
-      bottom: calc(100% + 8px);
-      transform: translateX(-50%);
-      width: min(320px, calc(100vw - 32px));
-      background: #020617;
-      color: #e5e7eb;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #1e293b;
-      font-size: 11px;
-      line-height: 1.35;
-      box-shadow: 0 10px 30px rgba(0,0,0,.55);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .12s ease-out;
-      z-index: 20;
-      white-space: normal;
-    }
-
-    .info-dot:hover::after,
-    .info-dot:focus-visible::after,
-    .info-dot.tooltip-open::after,
-    .info-dot:active::after {
-      opacity: 1;
+      content: none !important;
+      display: none !important;
     }
 
     .mobile-tooltip {
@@ -458,13 +435,6 @@
       .share-help,
       .footer {
         overflow-wrap: anywhere;
-      }
-
-      .info-dot::after {
-        left: 0;
-        bottom: calc(100% + 8px);
-        transform: none;
-        width: min(260px, calc(100vw - 32px));
       }
     }
 
@@ -701,7 +671,7 @@
 
       box.innerHTML = `
         <div>${text}</div>
-        <div class="tooltip-hint">Tap outside to close.</div>
+        <div class="tooltip-hint">Click outside to close.</div>
         <button type="button" class="mobile-tooltip-close">Close</button>
       `;
       box.classList.add("show");
@@ -724,10 +694,17 @@
         el.style.cursor = "pointer";
 
         el.addEventListener("click", (e) => {
-          if (!isTouchLike()) return;
           e.preventDefault();
           e.stopPropagation();
           openMobileTooltip(tip, el);
+        });
+
+        el.addEventListener("mouseenter", () => {
+          if (!isTouchLike()) openMobileTooltip(tip, el);
+        });
+
+        el.addEventListener("mouseleave", () => {
+          if (!isTouchLike()) closeMobileTooltip();
         });
 
         el.addEventListener("keydown", (e) => {
@@ -746,10 +723,17 @@
         dot.dataset.tooltipEnhanced = "1";
 
         dot.addEventListener("click", (e) => {
-          if (!isTouchLike()) return;
           e.preventDefault();
           e.stopPropagation();
           openMobileTooltip(dot.dataset.tip, dot);
+        });
+
+        dot.addEventListener("mouseenter", () => {
+          if (!isTouchLike()) openMobileTooltip(dot.dataset.tip, dot);
+        });
+
+        dot.addEventListener("mouseleave", () => {
+          if (!isTouchLike()) closeMobileTooltip();
         });
 
         dot.addEventListener("keydown", (e) => {
@@ -789,6 +773,7 @@
 
     window.addEventListener("resize", () => {
       resizeSparkCanvas();
+      closeMobileTooltip();
     });
 
     document.addEventListener("DOMContentLoaded", () => {
