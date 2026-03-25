@@ -295,6 +295,7 @@ async function fetchLive(voteKey) {
       const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
       const status = isDelinquent ? "delinquent" : "healthy";
 
+      // Epoch performance proxy (relative consistency)
       let uptimePct = 0;
       try {
         const credits = me.epochCredits || [];
@@ -360,6 +361,7 @@ function pushSnapshotIfNeeded(voteKey, snap) {
   const snaps = loadSnapshots(voteKey);
   const last = snaps.length ? snaps[snaps.length - 1] : null;
 
+  // save at most once per 30 minutes
   if (last && Number.isFinite(last.t) && (snap.t - last.t) < 30 * 60 * 1000) return snaps;
 
   snaps.push(snap);
@@ -379,8 +381,10 @@ function computeStability({ live, ratings, poolsCount }) {
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
 
+  // Δ = absolute APY difference between sources
   const apyDiff = (Number.isFinite(sw) && Number.isFinite(tr)) ? Math.abs(sw - tr) : null;
 
+  // historical counts
   let delinquentCount = 0;
   let commissionChanges = 0;
   for (let i = 0; i < snaps.length; i++) {
@@ -391,20 +395,29 @@ function computeStability({ live, ratings, poolsCount }) {
   }
   const delinquentRate = n ? (delinquentCount / n) : 0;
 
+  // Explainable score model
   let score = 100;
 
+  // current delinquency is a strong penalty
   if (nowStatus === "delinquent") score -= 40;
+
+  // observed delinquency history
   score -= delinquentRate * 40;
+
+  // commission changes over time
   score -= clamp(commissionChanges * 5, 0, 20);
 
+  // voting consistency (proxy)
   if (Number.isFinite(nowUptime) && nowUptime < 95) {
     score -= clamp((95 - nowUptime) * 1.5, 0, 20);
   }
 
+  // APY disagreement between sources
   if (apyDiff !== null && apyDiff > 1) {
     score -= clamp((apyDiff - 1) * 5, 0, 15);
   }
 
+  // no stake pool presence
   if (!Number.isFinite(poolsCount) || poolsCount <= 0) score -= 10;
 
   score = clamp(Math.round(score), 0, 100);
@@ -415,6 +428,7 @@ function computeStability({ live, ratings, poolsCount }) {
   else if (score >= 50) label = "Watch";
   else label = "Risk";
 
+  // tracking window display
   let trackingText = "Today";
   let trackingNote = "Tracking: first visit (data will build over time).";
 
@@ -427,8 +441,10 @@ function computeStability({ live, ratings, poolsCount }) {
     trackingNote = `Tracking: ${n} snapshots stored locally in your browser.`;
   }
 
+  // pills with tooltips
   const pills = [];
 
+  // Status / delinquency pill
   if (n >= 2) {
     pills.push({
       ok: delinquentCount === 0,
@@ -443,6 +459,7 @@ function computeStability({ live, ratings, poolsCount }) {
     });
   }
 
+  // Commission stability pill
   if (n >= 2) {
     pills.push({
       ok: commissionChanges === 0,
@@ -457,6 +474,7 @@ function computeStability({ live, ratings, poolsCount }) {
     });
   }
 
+  // APY agreement pill (Δ)
   if (apyDiff === null) {
     pills.push({
       ok: false,
@@ -483,6 +501,7 @@ function computeStability({ live, ratings, poolsCount }) {
     });
   }
 
+  // Voting consistency pill (UI grammar: colon style)
   let vcText = "Voting consistency: unavailable";
   let vcOk = false;
   const vcTip =
@@ -502,12 +521,14 @@ function computeStability({ live, ratings, poolsCount }) {
   }
   pills.push({ ok: vcOk, text: vcText, tip: vcTip });
 
+  // Pools pill
   pills.push({
     ok: Number.isFinite(poolsCount) && poolsCount > 0,
     text: Number.isFinite(poolsCount) && poolsCount > 0 ? `Stake pool presence (${poolsCount})` : "No stake pool presence",
     tip: "Stake pool presence is derived from Trillium stake_pools data. It signals whether stake pools are delegating to this validator."
   });
 
+  // One-line “formula” explanation (displayed on page)
   const formulaLine =
     "Stability score starts at 100 and applies penalties for: delinquency (current/history), frequent commission changes (local history), low recent voting consistency (<95%), large APY disagreement (Δ > 1%), and missing stake pool presence.";
 
@@ -581,6 +602,7 @@ async function main() {
     nameEl.textContent = `Validator: ${finalLabel}`;
   }
 
+  // Jito badge
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
     jitoBadge.textContent = `Jito: ${live.jito ? "ON" : "OFF"}`;
@@ -588,15 +610,18 @@ async function main() {
     jitoBadge.classList.add(live.jito ? "ok" : "warn");
   }
 
+  // Commission
   const history = live.commissionHistory || [];
   const latestCommission = history.length ? Number(history[history.length - 1]) : 0;
 
   const commissionEl = document.getElementById("commission");
   if (commissionEl) commissionEl.textContent = `${Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0}%`;
 
+  // Epoch performance proxy
   const uptimeEl = document.getElementById("uptime");
   if (uptimeEl) uptimeEl.textContent = `${Number(live.uptimeLast5EpochsPct || 0).toFixed(2)}%`;
 
+  // Status
   const statusEl = document.getElementById("status");
   if (statusEl) {
     statusEl.textContent = live.status || "—";
@@ -604,6 +629,7 @@ async function main() {
     statusEl.classList.add(live.status === "healthy" ? "ok" : "warn");
   }
 
+  // Last updated
   const tsEl = document.getElementById("last-updated");
   if (tsEl) {
     const ts = new Date();
@@ -617,6 +643,7 @@ async function main() {
     tsEl.textContent = `Last updated: ${fmt}`;
   }
 
+  // Sparkline
   const sparkCanvas = document.getElementById("spark");
   if (sparkCanvas) {
     const series = history.length ? history : Array(10).fill(0);
@@ -630,8 +657,10 @@ async function main() {
     }
   }
 
+  // Share URL
   updateShareBox();
 
+  // Ratings + Pools + Stability
   let ratings = null;
   try {
     ratings = await fetchRatings(CURRENT.voteKey);
@@ -644,6 +673,7 @@ async function main() {
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
 
+  // Save local snapshot
   const snap = {
     t: Date.now(),
     status: live.status || null,
@@ -655,6 +685,7 @@ async function main() {
   };
   pushSnapshotIfNeeded(CURRENT.voteKey, snap);
 
+  // Compute + render stability
   const st = computeStability({ live, ratings, poolsCount });
   renderStability(st);
 }
