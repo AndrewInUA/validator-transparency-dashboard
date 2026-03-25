@@ -3,6 +3,13 @@
 //
 // GET /api/ratings?vote=<VOTE_PUBKEY>
 // Returns: normalized APY sources + stake pool presence (from Trillium) + a derived median APY.
+//
+// Drop-in update:
+// - keeps frontend compatibility with app.js
+// - makes Stakewiz handling stricter and more honest
+// - avoids false “OK” when Stakewiz returns incomplete data
+// - adds a light fallback chain for APY fields
+// - adds note/debug fields for easier troubleshooting
 
 function withTimeout(ms, promise) {
   return Promise.race([
@@ -30,30 +37,25 @@ async function fetchJson(url) {
     8000,
     fetch(url, {
       headers: { accept: "application/json" },
-      // prevent edge caching surprises
       cache: "no-store",
     })
   );
-  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+
+  if (!res.ok) {
+    throw new Error(`${url} -> HTTP ${res.status}`);
+  }
+
   return res.json();
 }
 
 // ──────────────────────────────────────────────
-// Trillium (FIXED)
-// We use the endpoint you showed in the browser:
-//
-// https://api.trillium.so/recency_weighted_average_validator_rewards
-//
-// It returns an ARRAY of objects for many validators.
-// We find the row where vote_account_pubkey === vote.
+// Trillium
 // ──────────────────────────────────────────────
 
 async function fetchTrillium(vote) {
   const url = "https://api.trillium.so/recency_weighted_average_validator_rewards";
-
   const raw = await fetchJson(url);
 
-  // Expected: array of validator rows
   if (!Array.isArray(raw)) {
     throw new Error("Trillium response is not an array");
   }
@@ -73,21 +75,14 @@ async function fetchTrillium(vote) {
         .sort((a, b) => b.sol - a.sol)
     : null;
 
-  // ✅ IMPORTANT:
-  // Use "average_delegator_total_apy" (this is the correct total APY for delegators)
-  // Also keep "total_overall_apy" for backward compatibility with your UI if needed.
   const delegatorTotal = toNumber(row.average_delegator_total_apy);
   const overallTotal = toNumber(row.average_total_overall_apy);
 
   return {
     latest: {
-      // New preferred field (frontend can use this)
       average_delegator_total_apy: delegatorTotal,
-
-      // Backward-compatible field used by your current app.js (fallback)
       total_overall_apy: overallTotal,
 
-      // extra breakdowns (optional but useful)
       average_delegator_inflation_apy: toNumber(row.average_delegator_inflation_apy),
       average_delegator_mev_apy: toNumber(row.average_delegator_mev_apy),
 
@@ -108,9 +103,39 @@ async function fetchTrillium(vote) {
 // Stakewiz
 // ──────────────────────────────────────────────
 
+function pickStakewizTotalApy(j) {
+  if (!j || typeof j !== "object") return null;
+
+  const candidates = [
+    j.total_apy,
+    j.apy_estimate,
+    j.staking_apy,
+  ];
+
+  for (const c of candidates) {
+    const n = toNumber(c);
+    if (n !== null) return n;
+  }
+
+  return null;
+}
+
 async function fetchStakewiz(vote) {
   const url = `https://api.stakewiz.com/validator/${vote}`;
   const j = await fetchJson(url);
+
+  if (!j || typeof j !== "object" || Array.isArray(j)) {
+    throw new Error("Stakewiz returned an invalid payload");
+  }
+
+  const totalApy = pickStakewizTotalApy(j);
+
+  // Important:
+  // We treat missing APY as a source failure for this dashboard,
+  // because the frontend uses total_apy to decide whether Stakewiz is usable.
+  if (!Number.isFinite(totalApy)) {
+    throw new Error("Stakewiz APY not available");
+  }
 
   return {
     rank: toNumber(j.rank),
@@ -118,19 +143,23 @@ async function fetchStakewiz(vote) {
     apy_estimate: toNumber(j.apy_estimate),
     staking_apy: toNumber(j.staking_apy),
     jito_apy: toNumber(j.jito_apy),
-    total_apy: toNumber(j.total_apy),
+    total_apy: totalApy,
   };
 }
+
+// ──────────────────────────────────────────────
+// Handler
+// ──────────────────────────────────────────────
 
 module.exports = async (req, res) => {
   try {
     const vote = String(req.query.vote || "").trim();
+
     if (!vote) {
       res.status(400).json({ error: "Missing ?vote=" });
       return;
     }
 
-    // Avoid caching in Vercel/CDN so APY doesn't "stick"
     res.setHeader("Cache-Control", "no-store");
 
     const out = {
@@ -142,7 +171,7 @@ module.exports = async (req, res) => {
       pools: {
         total_from_stake_pools: null,
         total_not_from_stake_pools: null,
-        stake_pools: null, // list [{name, sol}]
+        stake_pools: null,
       },
       derived: {
         apy_values: [],
@@ -155,7 +184,6 @@ module.exports = async (req, res) => {
       },
     };
 
-    // Fetch in parallel
     const [stakewiz, trillium] = await Promise.allSettled([
       fetchStakewiz(vote),
       fetchTrillium(vote),
@@ -164,29 +192,35 @@ module.exports = async (req, res) => {
     // Stakewiz
     if (stakewiz.status === "fulfilled") {
       out.sources.stakewiz = stakewiz.value;
+
       if (Number.isFinite(stakewiz.value?.total_apy)) {
         out.derived.apy_values.push(stakewiz.value.total_apy);
       }
     } else {
-      out.sources.stakewiz = { error: String(stakewiz.reason?.message || stakewiz.reason) };
+      out.sources.stakewiz = {
+        error: String(stakewiz.reason?.message || stakewiz.reason),
+        note: "Stakewiz API may be unavailable or returned incomplete data",
+      };
     }
 
     // Trillium
     if (trillium.status === "fulfilled") {
       out.sources.trillium = trillium.value.latest;
-      out.pools.total_from_stake_pools = trillium.value.latest?.total_from_stake_pools ?? null;
-      out.pools.total_not_from_stake_pools = trillium.value.latest?.total_not_from_stake_pools ?? null;
+      out.pools.total_from_stake_pools =
+        trillium.value.latest?.total_from_stake_pools ?? null;
+      out.pools.total_not_from_stake_pools =
+        trillium.value.latest?.total_not_from_stake_pools ?? null;
       out.pools.stake_pools = trillium.value.stakePools;
 
-      // ✅ Put Trillium delegator total APY into the median basket (preferred)
       if (Number.isFinite(trillium.value.latest?.average_delegator_total_apy)) {
         out.derived.apy_values.push(trillium.value.latest.average_delegator_total_apy);
       } else if (Number.isFinite(trillium.value.latest?.total_overall_apy)) {
-        // fallback (still better than nothing)
         out.derived.apy_values.push(trillium.value.latest.total_overall_apy);
       }
     } else {
-      out.sources.trillium = { error: String(trillium.reason?.message || trillium.reason) };
+      out.sources.trillium = {
+        error: String(trillium.reason?.message || trillium.reason),
+      };
     }
 
     const vals = out.derived.apy_values.filter((x) => Number.isFinite(x));
