@@ -227,22 +227,29 @@ function renderRatings(r) {
     const sw = r?.sources?.stakewiz;
     const trOk = trilliumObj && !trilliumObj?.error && trilliumApy !== null;
 
-    let swStatus = "OK";
+    let text = "Sources: ";
 
     if (!sw || sw.error) {
       const err = (sw?.error || "").toLowerCase();
-
       if (err.includes("timeout")) {
-        swStatus = "unavailable (timeout) → using Trillium data";
+        text += "Stakewiz unavailable (timeout). Using Trillium data.";
       } else if (err) {
-        swStatus = "unavailable → using Trillium data";
+        text += "Stakewiz unavailable. Using Trillium data.";
       } else {
-        swStatus = "—";
+        text += "Stakewiz unavailable.";
       }
+    } else {
+      text += "Stakewiz OK";
+      text += trOk ? " • Trillium OK" : " • Trillium unavailable";
     }
 
-    const trStatus = trOk ? "OK" : "unavailable";
-    elSourcesNote.textContent = `Sources: Stakewiz ${swStatus} • Trillium ${trStatus}`;
+    if ((!sw || sw.error) && trOk) {
+      text += " Trillium OK.";
+    } else if ((!sw || sw.error) && !trOk) {
+      text += " Trillium unavailable.";
+    }
+
+    elSourcesNote.textContent = text;
   }
 }
 
