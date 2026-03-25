@@ -228,13 +228,14 @@ function renderRatings(r) {
     const trOk = trilliumObj && !trilliumObj?.error && trilliumApy !== null;
 
     let swStatus = "OK";
+
     if (!sw || sw.error) {
       const err = (sw?.error || "").toLowerCase();
 
       if (err.includes("timeout")) {
-        swStatus = "unavailable (timeout)";
+        swStatus = "unavailable (timeout) → using Trillium data";
       } else if (err) {
-        swStatus = "unavailable";
+        swStatus = "unavailable → using Trillium data";
       } else {
         swStatus = "—";
       }
