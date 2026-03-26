@@ -312,6 +312,7 @@
       user-select: none;
     }
 
+    /* Disable the old CSS pseudo-tooltips completely */
     .info-dot::after {
       content: none !important;
       display: none !important;
@@ -485,7 +486,7 @@
   <div class="wrap">
     <h1>Validator Transparency Dashboard</h1>
     <p class="lead">
-      Built by AndrewInUA — live view with commission, voting consistency, Jito status, and a simple track-record layer for delegators.
+      Built by AndrewInUA — live view with commission, voting consistency, and Jito status.
     </p>
 
     <div class="grid">
@@ -508,7 +509,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Voting consistency is calculated from vote credits across recent epochs. It shows how stable the validator’s voting performance has been recently. Higher values suggest more reliable behaviour."
+                data-tip="Voting consistency is calculated from vote credits across recent epochs. It shows how stable the validator’s voting performance is over time. Higher values indicate more reliable behavior."
               >i</span>
             </div>
             <div id="uptime" class="kpi">—%</div>
@@ -624,57 +625,9 @@
       <div class="muted small" id="stability-formula" style="margin-top:8px;"></div>
     </div>
 
-    <div class="card share-card">
-      <div class="row" style="justify-content: space-between;">
-        <p class="share-title" style="margin:0;">
-          Track record
-          <span
-            class="info-dot"
-            tabindex="0"
-            data-tip="A plain-language summary of recent validator behaviour based on snapshots stored in this browser. It helps delegators see a pattern, not just a single live moment."
-          >i</span>
-        </p>
-      </div>
-
-      <p class="share-help" style="margin-top:8px;">
-        Shows how the validator has been behaving across recent observations in this browser. This is not full network history yet, but it already helps reveal whether recent behaviour looks steady or mixed.
-      </p>
-
-      <div class="kpi-row" style="margin-top:10px;">
-        <div class="kpi-block">
-          <div class="muted">
-            Behaviour
-            <span class="info-dot" tabindex="0" data-tip="A simple label based on the recent average and the lowest observed voting-consistency reading stored in this browser.">i</span>
-          </div>
-          <div id="track-record-label" class="kpi">—</div>
-        </div>
-
-        <div class="kpi-block">
-          <div class="muted">
-            Recent average
-            <span class="info-dot" tabindex="0" data-tip="Average recent voting-consistency score across locally stored snapshots for this validator.">i</span>
-          </div>
-          <div id="track-record-avg" class="kpi">—%</div>
-        </div>
-
-        <div class="kpi-block">
-          <div class="muted">
-            Observed range
-            <span class="info-dot" tabindex="0" data-tip="The lowest and highest recent voting-consistency readings observed in this browser for this validator.">i</span>
-          </div>
-          <div id="track-record-range" class="kpi">—</div>
-        </div>
-      </div>
-
-      <div class="pill-row" id="track-record-pills"></div>
-
-      <div class="last-updated" id="track-record-note">Track record: —</div>
-      <div class="muted small" id="track-record-formula" style="margin-top:8px;"></div>
-    </div>
-
     <div class="footer">
       <p>
-        <strong>Next steps:</strong> add external historical sources, then server-side snapshots, then longer-term commission behaviour and reliability history.<br />
+        <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br />
         Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
         <a href="https://andrewinua.github.io/validator-transparency-dashboard/">Open on GitHub Pages</a>
       </p>
@@ -694,7 +647,7 @@
 
   <div id="mobile-tooltip" class="mobile-tooltip" aria-hidden="true"></div>
 
-  <script src="./app.js?v=26" defer></script>
+  <script src="./app.js?v=25" defer></script>
   <script defer>
     function isTouchLike() {
       return window.matchMedia("(hover: none), (pointer: coarse)").matches;
