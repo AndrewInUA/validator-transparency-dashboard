@@ -1,11 +1,13 @@
 /**
  * Validator Transparency Dashboard – app.js
  *
- * Public-data behavior block + separated source model.
- * Notes:
- * - Validator behavior uses public/external data only.
- * - Validator stability remains the separate local browser tracking layer.
- * - Δ means “difference” between Stakewiz and Trillium APY.
+ * Public blocks:
+ * - Trust Card
+ * - Validator behavior
+ * - Profitability
+ *
+ * Separate local block:
+ * - Local tracking (this browser only)
  */
 
 const USE_LIVE = true;
@@ -22,7 +24,7 @@ const JITO_PROXY =
   "https://validator-transparency-dashboard.vercel.app/api/jito";
 
 // ──────────────────────────────────────────────
-// URL overrides (?vote=&name=) + #vote= (GitHub Pages)
+// URL overrides (?vote=&name=) + #vote=
 // ──────────────────────────────────────────────
 
 function getParam(name) {
@@ -126,7 +128,7 @@ function fmtSol(v) {
 }
 
 // ──────────────────────────────────────────────
-// Ratings API (Vercel function)
+// Ratings API
 // ──────────────────────────────────────────────
 
 async function fetchRatings(voteKey) {
@@ -182,7 +184,7 @@ function renderRatings(r) {
     if (!top.length) {
       const empty = document.createElement("div");
       empty.className = "muted small";
-      empty.textContent = "No stake pool data available for this validator (or source unavailable).";
+      empty.textContent = "No stake pool data available right now.";
       elPoolsList.appendChild(empty);
     } else {
       for (const p of top) {
@@ -208,17 +210,12 @@ function renderRatings(r) {
 
     if (!sw || sw.error) {
       const err = (sw?.error || "").toLowerCase();
-      if (err.includes("timeout")) {
-        text += "Stakewiz unavailable (timeout). ";
-      } else {
-        text += "Stakewiz unavailable. ";
-      }
+      text += err.includes("timeout") ? "Stakewiz timeout. " : "Stakewiz unavailable. ";
     } else {
       text += "Stakewiz OK. ";
     }
 
     text += trOk ? "Trillium OK." : "Trillium unavailable.";
-
     elSourcesNote.textContent = text;
   }
 }
@@ -313,7 +310,7 @@ async function fetchLive(voteKey) {
 }
 
 // ──────────────────────────────────────────────
-// LOCAL SNAPSHOTS FOR STABILITY ONLY
+// LOCAL SNAPSHOTS FOR LOCAL TRACKING ONLY
 // ──────────────────────────────────────────────
 
 function safeJsonParse(s) {
@@ -355,7 +352,7 @@ function clamp(n, a, b) {
 }
 
 // ──────────────────────────────────────────────
-// PUBLIC-DATA BEHAVIOR
+// PUBLIC BEHAVIOR
 // ──────────────────────────────────────────────
 
 function computeBehavior({ live, ratings }) {
@@ -370,42 +367,41 @@ function computeBehavior({ live, ratings }) {
   const behavior = {
     commission: {
       value: Number.isFinite(commission) ? `${commission.toFixed(0)}%` : "—",
-      sub: "Current commission from live Solana RPC."
+      sub: "Current commission."
     },
     voting: {
       value: Number.isFinite(vc) ? `${vc.toFixed(2)}%` : "—",
-      sub: "Recent public voting signal unavailable."
+      sub: "Recent voting reliability unavailable."
     },
     ops: {
-      value: status,
-      sub: "Current operational status from live Solana RPC."
+      value: "—",
+      sub: "Current status unavailable."
     },
     rewards: {
       value: jito ? "Jito enabled" : "Jito not detected",
-      sub: "Delegator-facing reward profile from public APY sources and Jito status."
-    },
-    note: "Behavior block uses public data only: live RPC, public APY sources, and Jito status."
+      sub: "Rewards context unavailable."
+    }
   };
 
   if (Number.isFinite(vc)) {
     if (vc >= 95) {
-      behavior.voting.sub = "Recent public voting reliability looks strong.";
+      behavior.voting.sub = "Recent voting reliability looks strong.";
     } else if (vc >= 90) {
-      behavior.voting.sub = "Recent public voting reliability looks good.";
+      behavior.voting.sub = "Recent voting reliability looks good.";
     } else {
-      behavior.voting.sub = "Recent public voting reliability needs attention.";
+      behavior.voting.sub = "Recent voting reliability needs attention.";
     }
   }
 
   if (status === "healthy") {
     behavior.ops.value = "Healthy";
-    behavior.ops.sub = "Current live status indicates healthy validator operation.";
+    behavior.ops.sub = "Validator appears healthy right now.";
   } else if (status === "delinquent") {
     behavior.ops.value = "Delinquent";
-    behavior.ops.sub = "Current live status indicates the validator is delinquent right now.";
+    behavior.ops.sub = "Validator appears delinquent right now.";
   } else if (status === "not found") {
     behavior.ops.value = "Not found";
-    behavior.ops.sub = "Validator was not found in the current public vote account response.";
+    behavior.ops.sub = "Validator was not found in the current RPC response.";
   } else {
     behavior.ops.value = status;
   }
@@ -418,11 +414,11 @@ function computeBehavior({ live, ratings }) {
   }
 
   if (Number.isFinite(sw) && Number.isFinite(tr)) {
-    rewardParts.push(`Stakewiz and Trillium both available.`);
+    rewardParts.push("Public APY data available from both sources.");
   } else if (Number.isFinite(sw) || Number.isFinite(tr)) {
-    rewardParts.push(`One public APY source currently available.`);
+    rewardParts.push("Public APY data available from one source.");
   } else {
-    rewardParts.push(`Public APY sources currently unavailable.`);
+    rewardParts.push("Public APY data unavailable right now.");
   }
 
   behavior.rewards.sub = rewardParts.join(" ");
@@ -439,7 +435,6 @@ function renderBehavior(behavior) {
   const oSub = document.getElementById("behavior-ops-sub");
   const rVal = document.getElementById("behavior-rewards-value");
   const rSub = document.getElementById("behavior-rewards-sub");
-  const note = document.getElementById("behavior-note");
 
   if (cVal) cVal.textContent = behavior.commission.value;
   if (cSub) cSub.textContent = behavior.commission.sub;
@@ -452,27 +447,10 @@ function renderBehavior(behavior) {
 
   if (rVal) rVal.textContent = behavior.rewards.value;
   if (rSub) rSub.textContent = behavior.rewards.sub;
-
-  if (note) note.textContent = behavior.note;
-}
-
-function renderCommissionOverview(latestCommission) {
-  const valueEl = document.getElementById("commission-overview-value");
-  const noteEl = document.getElementById("commission-overview-note");
-
-  if (valueEl) {
-    valueEl.textContent = Number.isFinite(latestCommission)
-      ? `${latestCommission.toFixed(0)}%`
-      : "—%";
-  }
-
-  if (noteEl) {
-    noteEl.textContent = "Commission source note: current live value from Solana getVoteAccounts.";
-  }
 }
 
 // ──────────────────────────────────────────────
-// STABILITY (LOCAL BROWSER TRACKING)
+// LOCAL TRACKING
 // ──────────────────────────────────────────────
 
 function computeStability({ live, ratings, poolsCount }) {
@@ -484,21 +462,21 @@ function computeStability({ live, ratings, poolsCount }) {
 
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
-
   const apyDiff = (Number.isFinite(sw) && Number.isFinite(tr)) ? Math.abs(sw - tr) : null;
 
   let delinquentCount = 0;
   let commissionChanges = 0;
+
   for (let i = 0; i < snaps.length; i++) {
     if (snaps[i]?.status && snaps[i].status !== "healthy") delinquentCount++;
     if (i > 0 && Number.isFinite(snaps[i].commission) && Number.isFinite(snaps[i - 1].commission)) {
       if (snaps[i].commission !== snaps[i - 1].commission) commissionChanges++;
     }
   }
+
   const delinquentRate = n ? (delinquentCount / n) : 0;
 
   let score = 100;
-
   if (nowStatus === "delinquent") score -= 40;
   score -= delinquentRate * 40;
   score -= clamp(commissionChanges * 5, 0, 20);
@@ -512,7 +490,6 @@ function computeStability({ live, ratings, poolsCount }) {
   }
 
   if (!Number.isFinite(poolsCount) || poolsCount <= 0) score -= 10;
-
   score = clamp(Math.round(score), 0, 100);
 
   let label = "—";
@@ -522,7 +499,7 @@ function computeStability({ live, ratings, poolsCount }) {
   else label = "Risk";
 
   let trackingText = "Today";
-  let trackingNote = "Tracking: first visit (data will build over time).";
+  let trackingNote = "Tracking starts building from this browser.";
 
   if (n >= 2) {
     const t0 = snaps[0].t;
@@ -530,7 +507,7 @@ function computeStability({ live, ratings, poolsCount }) {
     const days = Math.max(0, (t1 - t0) / (24 * 3600 * 1000));
     const daysNice = days >= 1 ? `${days.toFixed(0)}d` : `${Math.max(1, (days * 24).toFixed(0))}h`;
     trackingText = `${daysNice}`;
-    trackingNote = `Tracking: ${n} snapshots stored locally in your browser.`;
+    trackingNote = `${n} snapshots stored in this browser.`;
   }
 
   const pills = [];
@@ -538,62 +515,59 @@ function computeStability({ live, ratings, poolsCount }) {
   if (n >= 2) {
     pills.push({
       ok: delinquentCount === 0,
-      text: delinquentCount === 0 ? "No delinquency observed" : `Delinquency seen (${delinquentCount}/${n})`,
-      tip: "Based on the validator’s status observed across locally stored snapshots in this browser."
+      text: delinquentCount === 0 ? "No delinquency observed locally" : `Delinquency seen locally (${delinquentCount}/${n})`,
+      tip: "Based on snapshots stored in this browser."
     });
   } else {
     pills.push({
       ok: nowStatus === "healthy",
       text: nowStatus === "healthy" ? "Healthy now" : `Status: ${nowStatus}`,
-      tip: "Current Solana RPC snapshot status from getVoteAccounts."
+      tip: "Current live status."
     });
   }
 
   if (n >= 2) {
     pills.push({
       ok: commissionChanges === 0,
-      text: commissionChanges === 0 ? "Commission stable locally" : `Commission changed (${commissionChanges})`,
-      tip: "Local browser observation of commission changes over stored snapshots."
+      text: commissionChanges === 0 ? "Commission stable locally" : `Commission changed locally (${commissionChanges})`,
+      tip: "Based on local browser snapshots."
     });
   } else {
     pills.push({
       ok: true,
       text: "Commission tracking builds locally",
-      tip: "Commission change detection needs multiple browser snapshots over time."
+      tip: "Needs more browser snapshots."
     });
   }
 
   if (apyDiff === null) {
     pills.push({
       ok: false,
-      text: "APY agreement: unavailable",
-      tip: "Δ is the absolute difference between Stakewiz total APY and Trillium APY."
+      text: "APY agreement unavailable",
+      tip: "Needs available APY data from Stakewiz and Trillium."
     });
   } else if (apyDiff <= 0.75) {
     pills.push({
       ok: true,
       text: `APY sources aligned (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Smaller Δ means public APY sources agree more closely."
+      tip: "Smaller Δ means closer agreement."
     });
   } else if (apyDiff <= 1.5) {
     pills.push({
       ok: true,
       text: `APY sources close (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Moderate Δ can happen due to different estimation windows or methodologies."
+      tip: "Moderate difference between APY sources."
     });
   } else {
     pills.push({
       ok: false,
       text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Large Δ suggests public APY sources disagree notably."
+      tip: "Large difference between APY sources."
     });
   }
 
-  let vcText = "Voting consistency: unavailable";
+  let vcText = "Voting consistency unavailable";
   let vcOk = false;
-  const vcTip =
-    "Uses a relative 0–100% consistency score derived from epochCredits deltas across recent epochs.";
-
   if (Number.isFinite(nowUptime)) {
     if (nowUptime >= 95) {
       vcText = `Voting consistency: strong (${nowUptime.toFixed(2)}%)`;
@@ -603,19 +577,18 @@ function computeStability({ live, ratings, poolsCount }) {
       vcOk = true;
     } else {
       vcText = `Voting consistency: needs attention (${nowUptime.toFixed(2)}%)`;
-      vcOk = false;
     }
   }
-  pills.push({ ok: vcOk, text: vcText, tip: vcTip });
+  pills.push({ ok: vcOk, text: vcText, tip: "Recent voting consistency signal." });
 
   pills.push({
     ok: Number.isFinite(poolsCount) && poolsCount > 0,
     text: Number.isFinite(poolsCount) && poolsCount > 0 ? `Stake pool presence (${poolsCount})` : "No stake pool presence",
-    tip: "Stake pool presence is derived from Trillium stake_pools data."
+    tip: "Derived from public Trillium pool data."
   });
 
   const formulaLine =
-    "Local stability score starts at 100 and applies penalties for: delinquency (current/history), frequent commission changes in local history, low recent voting consistency (<95%), large APY disagreement (Δ > 1%), and missing stake pool presence.";
+    "Local score starts at 100 and applies penalties for delinquency, commission changes seen locally, lower recent voting consistency, APY disagreement, and missing pool presence.";
 
   return { score, label, trackingText, trackingNote, pills, formulaLine };
 }
@@ -741,8 +714,6 @@ async function main() {
   } catch (e) {
     console.warn("ratings fetch failed:", e);
   }
-
-  renderCommissionOverview(latestCommission);
 
   const behavior = computeBehavior({ live, ratings });
   renderBehavior(behavior);
