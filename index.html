@@ -57,8 +57,6 @@
       }
     }
 
-    .span-2 { grid-column: 1 / -1; }
-
     .card {
       background: linear-gradient(180deg, #121827 0%, #10172a 100%);
       border: 1px solid #1f2a44;
@@ -418,10 +416,6 @@
         gap: 12px;
       }
 
-      .span-2 {
-        grid-column: auto;
-      }
-
       .card {
         padding: 14px 12px 13px;
         border-radius: 16px;
@@ -569,14 +563,14 @@
 
       <div class="card">
         <p class="title">
-          Recent performance (last ~30 epochs)
+          Recent performance (up to last 30 epochs)
           <span
             class="info-dot"
             tabindex="0"
-            data-tip="This section uses public data only. It summarizes recent voting behaviour from Solana RPC and reward context from public APY sources."
+            data-tip="This section uses public data only. It summarizes recent validator performance from Solana RPC and reward context from public APY sources."
           >i</span>
         </p>
-        <p class="subtext">A public-data view of recent validator performance, without duplicating the Trust Card.</p>
+        <p class="subtext">Recent behaviour signals that add context beyond the Trust Card, without duplicating the same indicator.</p>
 
         <div class="source-label">Source</div>
         <div class="source-row">
@@ -589,15 +583,15 @@
         <div class="behavior-grid">
           <div class="behavior-item">
             <div class="behavior-label">
-              Average voting consistency
+              Data window
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Average voting consistency across recent observed epochs. Each epoch is compared with the strongest recent epoch, then converted into a 0–100% relative score."
+                data-tip="How many recent usable epoch-to-epoch observations were available from Solana RPC. The dashboard uses up to the last 30."
               >i</span>
             </div>
-            <div id="perf-avg-value" class="behavior-value">—</div>
-            <div id="perf-avg-sub" class="behavior-sub">—</div>
+            <div id="perf-window-value" class="behavior-value">—</div>
+            <div id="perf-window-sub" class="behavior-sub">—</div>
           </div>
 
           <div class="behavior-item">
@@ -606,7 +600,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Compares more recent epoch performance with earlier recent epochs to show whether the validator looks stable, improving, or weaker."
+                data-tip="Compares more recent epoch performance with earlier recent epochs to show whether recent performance looks stable, improving, or weaker."
               >i</span>
             </div>
             <div id="perf-trend-value" class="behavior-value">—</div>
@@ -619,7 +613,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Shows how uneven recent voting performance has been across recent epochs."
+                data-tip="Shows how much recent epoch performance moves up and down. Low variability means steadier behaviour. High variability means more uneven behaviour."
               >i</span>
             </div>
             <div id="perf-var-value" class="behavior-value">—</div>
@@ -632,7 +626,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Delegator-facing reward context from Jito status and public APY sources."
+                data-tip="Shows whether additional rewards such as Jito appear enabled and gives reward context from public APY sources."
               >i</span>
             </div>
             <div id="perf-reward-value" class="behavior-value">—</div>
@@ -642,7 +636,7 @@
       </div>
     </div>
 
-    <div class="card share-card">
+    <div class="card">
       <p class="title">Share this dashboard</p>
       <p class="subtext">
         Any validator can view their stats here by opening a link with <code>?vote=</code> (vote account). <code>&amp;name=</code> is optional.
@@ -653,7 +647,7 @@
       </div>
     </div>
 
-    <div class="card share-card">
+    <div class="card">
       <p class="title">Profitability (APY) &amp; Pool presence</p>
       <p class="subtext">Public APY estimates and public stake-pool presence.</p>
 
@@ -690,7 +684,7 @@
       <div class="last-updated" id="apy-sources-note">Public API status: —</div>
     </div>
 
-    <div class="card share-card">
+    <div class="card">
       <p class="title">
         Local tracking (this browser only)
         <span
