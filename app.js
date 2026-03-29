@@ -271,7 +271,7 @@ function applyStaticCopyClarifications() {
     const title = localCard.querySelector(".title");
     safeSetHTML(
       title,
-      `Local tracking + current public inputs (this browser only)
+      `Local tracking (this browser only) + current public inputs
         <span
           class="info-dot"
           tabindex="0"
