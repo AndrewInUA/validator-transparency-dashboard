@@ -3,7 +3,7 @@
  *
  * Public blocks:
  * - Trust Card
- * - Recent performance (last ~30 epochs)
+ * - Recent performance (up to last 30 epochs)
  * - Profitability
  *
  * Mixed block:
@@ -165,47 +165,48 @@ function safeSetTip(el, text) {
   }
 }
 
-function getRecentEpochsExplanation(windowCount) {
-  if (!Number.isFinite(windowCount) || windowCount <= 0) {
-    return "No usable recent epoch-to-epoch observations are available yet.";
-  }
-
-  return "Here, “recent epochs” means the latest usable epoch-to-epoch vote-credit observations derived from the validator’s epochCredits returned by getVoteAccounts. The dashboard uses up to the last 30 usable observations, but the current window may be smaller if fewer usable entries are available.";
-}
-
 function getSampleReliability(windowCount) {
   if (!Number.isFinite(windowCount) || windowCount <= 0) {
     return {
       level: "none",
-      note: "No recent usable epoch observations are available yet."
+      note: "No recent data yet."
     };
   }
 
   if (windowCount <= 4) {
     return {
       level: "very_low",
-      note: `Very small sample (${windowCount} epochs) – treat this as an early directional signal, not a firm conclusion.`
+      note: `Small sample: only ${windowCount} epochs.`
     };
   }
 
   if (windowCount <= 8) {
     return {
       level: "low",
-      note: `Small sample (${windowCount} epochs) – useful for context, but not strong enough for a confident judgement.`
+      note: `Limited sample: ${windowCount} epochs.`
     };
   }
 
   if (windowCount <= 15) {
     return {
       level: "medium",
-      note: `Moderate sample (${windowCount} epochs) – reasonably useful, but still not the full 30-epoch window.`
+      note: `${windowCount} epochs observed.`
     };
   }
 
   return {
     level: "higher",
-    note: `Broader sample (${windowCount} epochs) – more reliable than a short window, though still a simplified summary.`
+    note: `${windowCount} epochs observed.`
   };
+}
+
+function simplifyTrendDelta(diff) {
+  const n = Math.abs(diff);
+
+  if (!Number.isFinite(n)) return null;
+  if (n < 10) return "slightly";
+  if (n < 25) return "moderately";
+  return "clearly";
 }
 
 // ──────────────────────────────────────────────
@@ -214,8 +215,6 @@ function getSampleReliability(windowCount) {
 
 function applyStaticCopyClarifications() {
   const trustCard = document.getElementById("commission")?.closest(".card");
-  const allTitles = document.querySelectorAll(".card .title");
-
   const recentPerfCard = document.getElementById("perf-window-value")?.closest(".card");
   const localCard = document.getElementById("stability-score")?.closest(".card");
 
@@ -225,7 +224,7 @@ function applyStaticCopyClarifications() {
       const vcInfo = mutedRows[1].querySelector(".info-dot");
       safeSetTip(
         vcInfo,
-        "Voting consistency is a recent relative signal based on epoch-to-epoch vote-credit observations derived from the validator’s epochCredits returned by getVoteAccounts. In this dashboard, “recent epochs” means the latest usable observations from that history, up to the last 30. Each observation is compared with the strongest one inside that same recent window and converted into a 0–100% score. Higher values mean more consistent recent voting inside that observed window."
+        "Voting consistency compares the validator’s recent epochs with its strongest recent epoch. Higher % means steadier recent voting. The dashboard uses up to 30 recent usable observations, but sometimes fewer are available."
       );
     }
   }
@@ -234,13 +233,37 @@ function applyStaticCopyClarifications() {
     const titleInfo = recentPerfCard.querySelector(".title .info-dot");
     safeSetTip(
       titleInfo,
-      "This section uses public data only. “Recent epochs” here means the latest usable epoch-to-epoch vote-credit observations derived from the validator’s epochCredits returned by Solana getVoteAccounts. The dashboard uses up to the last 30 usable observations. If only a few are available, the result should be treated as a directional signal, not a firm judgement."
+      "This section uses public data only. It looks at up to the last 30 usable recent epochs. If only a few epochs are available, treat the result as an early signal, not a firm conclusion."
     );
 
     const sub = recentPerfCard.querySelector(".subtext");
     safeSetText(
       sub,
-      "Recent behaviour signals that add context beyond the Trust Card, without duplicating the same indicator. “Recent epochs” here means the latest usable epoch-to-epoch vote-credit observations, up to the last 30."
+      "Simple recent signals that add context beyond the Trust Card. Uses up to the last 30 usable recent epochs."
+    );
+
+    const windowInfo = document.querySelector("#perf-window-value")?.closest(".behavior-item")?.querySelector(".info-dot");
+    safeSetTip(
+      windowInfo,
+      "Shows how many recent usable epochs were available for this view. Maximum: 30."
+    );
+
+    const trendInfo = document.querySelector("#perf-trend-value")?.closest(".behavior-item")?.querySelector(".info-dot");
+    safeSetTip(
+      trendInfo,
+      "Shows whether the latest part of the recent window looks stronger or weaker than the earlier part."
+    );
+
+    const varInfo = document.querySelector("#perf-var-value")?.closest(".behavior-item")?.querySelector(".info-dot");
+    safeSetTip(
+      varInfo,
+      "Shows how even or uneven recent performance has been."
+    );
+
+    const rewardInfo = document.querySelector("#perf-reward-value")?.closest(".behavior-item")?.querySelector(".info-dot");
+    safeSetTip(
+      rewardInfo,
+      "Shows reward context from public APY data and Jito status."
     );
   }
 
@@ -252,14 +275,14 @@ function applyStaticCopyClarifications() {
         <span
           class="info-dot"
           tabindex="0"
-          data-tip="This block combines browser-local history with current public inputs. Local snapshots collected on this device are the main source, while current live/public data is used to refresh the latest context. So this is not a purely local-only block and not a universal public validator rating either."
+          data-tip="This block mixes browser-local history with current public inputs. It is personal to this browser and is not a universal public rating."
         >i</span>`
     );
 
     const sub = localCard.querySelector(".subtext");
     safeSetText(
       sub,
-      "This block combines browser-local tracking history with current public inputs. It is personal to this browser, not shared across devices, and it should not be read as a universal public rating."
+      "This block mixes browser-local history with current public inputs. It is personal to this browser and not shared across devices."
     );
 
     const sourceLabel = localCard.querySelector(".source-label");
@@ -275,19 +298,19 @@ function applyStaticCopyClarifications() {
     if (kpiBlocks[0]) {
       safeSetTip(
         kpiBlocks[0].querySelector(".info-dot"),
-        "This score is built mainly from browser-local snapshots stored on this device, then refreshed with current public inputs such as live status, APY context, and pool context. It is a personal tracking aid, not a universal public validator rating."
+        "Browser-based score built mostly from local history, then refreshed with current public inputs."
       );
     }
     if (kpiBlocks[1]) {
       safeSetTip(
         kpiBlocks[1].querySelector(".info-dot"),
-        "Simple label derived from the mixed local-plus-current-public score below. It should be read as a quick personal interpretation, not a definitive validator verdict."
+        "Quick label based on the score below. Helpful, but not final."
       );
     }
     if (kpiBlocks[2]) {
       safeSetTip(
         kpiBlocks[2].querySelector(".info-dot"),
-        "How much browser-local history this device has stored for this validator. More stored history usually makes this mixed assessment more meaningful."
+        "How much local history this browser has stored for this validator."
       );
     }
   }
@@ -296,8 +319,8 @@ function applyStaticCopyClarifications() {
   safeSetHTML(
     footer,
     `
-      <p><strong>Source model.</strong> Public blocks use external data. The lower block combines browser-local history with current public inputs, so it is neither purely public nor purely local-only.</p>
-      <p><strong>Methodology.</strong> Voting consistency is a relative score derived from the validator’s recent <code>epochCredits</code> returned by <code>getVoteAccounts</code>. Here, “recent epochs” means the latest usable epoch-to-epoch vote-credit observations from that history, up to the last 30. For each observation, the dashboard looks at how many vote credits were added compared with the previous epoch, then compares that result with the strongest observation inside the same recent window. Those relative values are converted into a 0–100% score. Higher values mean more consistent recent voting inside that observed window.</p>
+      <p><strong>Source model.</strong> Public blocks use external data. The lower block mixes browser-local history with current public inputs.</p>
+      <p><strong>Methodology.</strong> Voting consistency compares recent epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher values mean steadier recent voting.</p>
     `
   );
 }
@@ -522,7 +545,6 @@ function computeRecentPerformance({ live, ratings }) {
       : null;
 
   const reliability = getSampleReliability(windowCount);
-  const recentEpochsExplanation = getRecentEpochsExplanation(windowCount);
 
   const apyMedian = Number(ratings?.derived?.apy_median);
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
@@ -532,87 +554,83 @@ function computeRecentPerformance({ live, ratings }) {
   const out = {
     window: {
       value: "—",
-      sub: "Recent epoch window is not available yet."
+      sub: "No recent data yet."
     },
     trend: {
       value: "—",
-      sub: "Not enough recent epoch observations for a trend yet."
+      sub: "Not enough recent data."
     },
     variability: {
       value: "—",
-      sub: "Not enough recent epoch observations for a variability read yet."
+      sub: "Not enough recent data."
     },
     reward: {
       value: jito ? "Jito enabled" : "Jito not detected",
-      sub: "Reward context based on public APY sources."
+      sub: "Reward context from public APY data."
     }
   };
 
   if (windowCount > 0) {
     out.window.value = `${windowCount} epochs`;
-
-    let windowText =
-      `Using ${windowCount} recent usable epoch-to-epoch observations from Solana RPC (maximum shown here: 30).`;
-
-    if (Number.isFinite(avg)) {
-      windowText = appendSentence(
-        windowText,
-        `Average relative voting consistency in this window: ${avg.toFixed(2)}%.`
-      );
-    }
-
-    windowText = appendSentence(windowText, recentEpochsExplanation);
-    windowText = appendSentence(windowText, reliability.note);
-    out.window.sub = windowText;
+    out.window.sub = appendSentence(
+      `This view uses ${windowCount} recent usable epochs (max 30).`,
+      reliability.note
+    );
   }
 
   if (windowCount >= 4 && Number.isFinite(diff)) {
+    const strength = simplifyTrendDelta(diff);
+
     if (diff >= 3) {
       out.trend.value =
         reliability.level === "very_low" || reliability.level === "low"
           ? "Looks stronger"
           : "Improving";
-      out.trend.sub = `More recent observations are stronger by ${diff.toFixed(2)} points on average. ${recentEpochsExplanation} ${reliability.note}`;
+      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} stronger lately.`.trim();
     } else if (diff <= -3) {
       out.trend.value =
         reliability.level === "very_low" || reliability.level === "low"
           ? "Looks weaker"
           : "Weaker";
-      out.trend.sub = `More recent observations are weaker by ${Math.abs(diff).toFixed(2)} points on average. ${recentEpochsExplanation} ${reliability.note}`;
+      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} weaker lately.`.trim();
     } else {
       out.trend.value = "Stable";
-      out.trend.sub = `Recent observed performance looks broadly stable. ${recentEpochsExplanation} ${reliability.note}`;
+      out.trend.sub = "No clear recent change.";
+    }
+
+    if (reliability.level === "very_low" || reliability.level === "low") {
+      out.trend.sub = appendSentence(out.trend.sub, reliability.note);
     }
   } else if (windowCount > 0) {
     out.trend.value = "Limited data";
-    out.trend.sub = `Only ${windowCount} recent usable observations are available, so the trend read is still limited. ${recentEpochsExplanation} ${reliability.note}`;
+    out.trend.sub = reliability.note;
   }
 
   if (windowCount >= 2 && Number.isFinite(volatility)) {
     if (volatility <= 5) {
       out.variability.value = reliability.level === "very_low" ? "Possibly low" : "Low";
-      out.variability.sub = `Recent observed performance looks steady (variability ${volatility.toFixed(2)}). ${recentEpochsExplanation} ${reliability.note}`;
+      out.variability.sub = "Recent performance looks steady.";
     } else if (volatility <= 12) {
-      out.variability.value = reliability.level === "very_low" ? "Possibly moderate" : "Moderate";
-      out.variability.sub = `Recent observed performance shows some variation (variability ${volatility.toFixed(2)}). ${recentEpochsExplanation} ${reliability.note}`;
+      out.variability.value = reliability.level === "very_low" ? "Possibly medium" : "Medium";
+      out.variability.sub = "Some recent variation.";
     } else {
       out.variability.value =
         reliability.level === "very_low" || reliability.level === "low"
           ? "Possibly high"
           : "High";
-      out.variability.sub = `Recent observed performance is uneven (variability ${volatility.toFixed(2)}). ${recentEpochsExplanation} ${reliability.note}`;
+      out.variability.sub = "Recent performance looks uneven.";
+    }
+
+    if (reliability.level === "very_low" || reliability.level === "low") {
+      out.variability.sub = appendSentence(out.variability.sub, reliability.note);
     }
   } else if (windowCount === 1) {
     out.variability.value = "Limited data";
-    out.variability.sub = `Only one recent usable observation is available, so variability cannot be assessed yet. ${recentEpochsExplanation} ${reliability.note}`;
+    out.variability.sub = reliability.note;
   }
 
   const rewardParts = [];
-  rewardParts.push(
-    jito
-      ? "Additional rewards via Jito appear enabled."
-      : "No Jito signal detected right now."
-  );
+  rewardParts.push(jito ? "Jito rewards appear enabled." : "No Jito signal right now.");
 
   if (Number.isFinite(apyMedian)) {
     rewardParts.push(`Median APY: ${apyMedian.toFixed(2)}%.`);
@@ -620,20 +638,14 @@ function computeRecentPerformance({ live, ratings }) {
 
   if (Number.isFinite(sw) && Number.isFinite(tr)) {
     const delta = Math.abs(sw - tr);
-    rewardParts.push(
-      delta <= 1
-        ? "APY sources are closely aligned."
-        : `APY sources differ by ${delta.toFixed(2)} points.`
-    );
+    rewardParts.push(delta <= 1 ? "APY sources match closely." : "APY sources differ.");
   } else if (Number.isFinite(sw) || Number.isFinite(tr)) {
-    rewardParts.push("One public APY source is available right now.");
+    rewardParts.push("Only one APY source is available.");
   } else {
-    rewardParts.push("Public APY data unavailable right now.");
+    rewardParts.push("APY data unavailable.");
   }
 
-  rewardParts.push("Reward context is broader than the epoch window, but it is still a simplified summary.");
   out.reward.sub = rewardParts.join(" ");
-
   return out;
 }
 
@@ -762,7 +774,7 @@ function computeStability({ live, ratings, poolsCount }) {
 
   let trackingText = "Today";
   let trackingNote =
-    "Tracking starts building from this browser. A short browser-local history makes this mixed assessment less reliable.";
+    "Tracking starts building in this browser. Short history means lower confidence.";
 
   if (n >= 2) {
     const t0 = snaps[0].t;
@@ -773,7 +785,7 @@ function computeStability({ live, ratings, poolsCount }) {
         ? `${days.toFixed(0)}d`
         : `${Math.max(1, (days * 24).toFixed(0))}h`;
     trackingText = `${daysNice}`;
-    trackingNote = `${n} snapshots stored in this browser. This is still a browser-local interpretation refreshed with current public inputs, not a universal public validator rating.`;
+    trackingNote = `${n} snapshots stored in this browser. This is a browser-based view, not a universal public rating.`;
   }
 
   const pills = [];
@@ -808,7 +820,7 @@ function computeStability({ live, ratings, poolsCount }) {
     pills.push({
       ok: true,
       text: "Commission tracking builds locally",
-      tip: "Needs more browser-local snapshots."
+      tip: "Needs more local snapshots."
     });
   }
 
@@ -822,19 +834,19 @@ function computeStability({ live, ratings, poolsCount }) {
     pills.push({
       ok: true,
       text: `APY sources aligned (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Current public APY inputs are closely aligned."
+      tip: "Current APY inputs are closely aligned."
     });
   } else if (apyDiff <= 1.5) {
     pills.push({
       ok: true,
       text: `APY sources close (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Current public APY inputs show a moderate difference."
+      tip: "Current APY inputs show a moderate difference."
     });
   } else {
     pills.push({
       ok: false,
       text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Current public APY inputs show a large difference."
+      tip: "Current APY inputs show a large difference."
     });
   }
 
@@ -851,10 +863,11 @@ function computeStability({ live, ratings, poolsCount }) {
       vcText = `Recent voting consistency: needs attention (${nowUptime.toFixed(2)}%)`;
     }
   }
+
   pills.push({
     ok: vcOk,
     text: vcText,
-    tip: "Current recent voting consistency signal used as one input inside this mixed score."
+    tip: "Current voting-consistency input inside this browser-based score."
   });
 
   pills.push({
@@ -863,25 +876,21 @@ function computeStability({ live, ratings, poolsCount }) {
       Number.isFinite(poolsCount) && poolsCount > 0
         ? `Stake pool presence (${poolsCount})`
         : "No stake pool presence",
-    tip: "Current pool context from public data, used as one input inside this mixed score."
+    tip: "Current pool input inside this browser-based score."
   });
 
-  let localReliabilityNote =
-    "Reliability of this mixed assessment is still low because the browser-local history is short.";
+  let reliabilityNote = "Confidence is still low because local history is short.";
   if (n >= 48) {
-    localReliabilityNote =
-      "Reliability of this mixed assessment is stronger because this browser has accumulated a longer local history.";
+    reliabilityNote = "Confidence is stronger because this browser has a long local history.";
   } else if (n >= 24) {
-    localReliabilityNote =
-      "Reliability of this mixed assessment is moderate because this browser has accumulated a meaningful local history.";
+    reliabilityNote = "Confidence is moderate because this browser has a meaningful local history.";
   } else if (n >= 8) {
-    localReliabilityNote =
-      "Reliability of this mixed assessment is improving, but it still depends on a limited browser-local history.";
+    reliabilityNote = "Confidence is improving, but local history is still limited.";
   }
 
   const formulaLine =
-    "This browser-local score starts at 100 and applies penalties for delinquency, commission changes seen locally, lower recent voting consistency, APY disagreement, and missing pool presence. Current live/public inputs refresh the latest context, but the score still depends heavily on this browser’s own stored history. " +
-    localReliabilityNote;
+    "This score starts at 100 and applies penalties for delinquency, commission changes, lower recent voting consistency, APY disagreement, and missing pool presence. " +
+    reliabilityNote;
 
   return { score, label, trackingText, trackingNote, pills, formulaLine };
 }
