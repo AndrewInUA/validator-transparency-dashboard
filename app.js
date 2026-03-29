@@ -523,14 +523,12 @@ async function fetchLive(voteKey) {
 // ──────────────────────────────────────────────
 // PUBLIC RECENT PERFORMANCE
 // ──────────────────────────────────────────────
-
 function computeRecentPerformance({ live, ratings }) {
   const series = Array.isArray(live?.epochConsistencySeries)
     ? live.epochConsistencySeries.filter((x) => Number.isFinite(x))
     : [];
 
   const windowCount = series.length;
-  const avg = average(series);
   const volatility = stddev(series);
 
   const mid = Math.floor(windowCount / 2);
@@ -539,6 +537,7 @@ function computeRecentPerformance({ live, ratings }) {
 
   const firstAvg = average(firstHalf);
   const secondAvg = average(secondHalf);
+
   const diff =
     Number.isFinite(firstAvg) && Number.isFinite(secondAvg)
       ? secondAvg - firstAvg
@@ -551,6 +550,11 @@ function computeRecentPerformance({ live, ratings }) {
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
   const jito = !!live?.jito;
 
+  const explainSample =
+    windowCount > 0
+      ? `Based on ${windowCount} recent epochs. ${reliability.note}`
+      : "No recent data.";
+
   const out = {
     window: {
       value: "—",
@@ -558,94 +562,79 @@ function computeRecentPerformance({ live, ratings }) {
     },
     trend: {
       value: "—",
-      sub: "Not enough recent data."
+      sub: "Not enough data."
     },
     variability: {
       value: "—",
-      sub: "Not enough recent data."
+      sub: "Not enough data."
     },
     reward: {
       value: jito ? "Jito enabled" : "Jito not detected",
-      sub: "Reward context from public APY data."
+      sub: "Reward context from public data."
     }
   };
 
   if (windowCount > 0) {
     out.window.value = `${windowCount} epochs`;
-    out.window.sub = appendSentence(
-      `This view uses ${windowCount} recent usable epochs (max 30).`,
-      reliability.note
-    );
+    out.window.sub = explainSample;
   }
 
   if (windowCount >= 4 && Number.isFinite(diff)) {
-    const strength = simplifyTrendDelta(diff);
-
     if (diff >= 3) {
-      out.trend.value =
-        reliability.level === "very_low" || reliability.level === "low"
-          ? "Looks stronger"
-          : "Improving";
-      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} stronger lately.`.trim();
+      out.trend.value = "Looks stronger";
+      out.trend.sub = `${explainSample} Recent performance is stronger than earlier epochs.`;
     } else if (diff <= -3) {
-      out.trend.value =
-        reliability.level === "very_low" || reliability.level === "low"
-          ? "Looks weaker"
-          : "Weaker";
-      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} weaker lately.`.trim();
+      out.trend.value = "Looks weaker";
+      out.trend.sub = `${explainSample} Recent performance is weaker than earlier epochs.`;
     } else {
       out.trend.value = "Stable";
-      out.trend.sub = "No clear recent change.";
-    }
-
-    if (reliability.level === "very_low" || reliability.level === "low") {
-      out.trend.sub = appendSentence(out.trend.sub, reliability.note);
+      out.trend.sub = `${explainSample} No clear change detected.`;
     }
   } else if (windowCount > 0) {
     out.trend.value = "Limited data";
-    out.trend.sub = reliability.note;
+    out.trend.sub = explainSample;
   }
 
   if (windowCount >= 2 && Number.isFinite(volatility)) {
     if (volatility <= 5) {
-      out.variability.value = reliability.level === "very_low" ? "Possibly low" : "Low";
-      out.variability.sub = "Recent performance looks steady.";
+      out.variability.value = "Low";
+      out.variability.sub = `${explainSample} Performance is consistent.`;
     } else if (volatility <= 12) {
-      out.variability.value = reliability.level === "very_low" ? "Possibly medium" : "Medium";
-      out.variability.sub = "Some recent variation.";
+      out.variability.value = "Medium";
+      out.variability.sub = `${explainSample} Some variation detected.`;
     } else {
-      out.variability.value =
-        reliability.level === "very_low" || reliability.level === "low"
-          ? "Possibly high"
-          : "High";
-      out.variability.sub = "Recent performance looks uneven.";
-    }
-
-    if (reliability.level === "very_low" || reliability.level === "low") {
-      out.variability.sub = appendSentence(out.variability.sub, reliability.note);
+      out.variability.value = "High";
+      out.variability.sub = `${explainSample} Performance is uneven across epochs.`;
     }
   } else if (windowCount === 1) {
     out.variability.value = "Limited data";
-    out.variability.sub = reliability.note;
+    out.variability.sub = explainSample;
   }
 
   const rewardParts = [];
-  rewardParts.push(jito ? "Jito rewards appear enabled." : "No Jito signal right now.");
+
+  rewardParts.push(
+    jito ? "Jito rewards detected." : "No Jito signal."
+  );
 
   if (Number.isFinite(apyMedian)) {
     rewardParts.push(`Median APY: ${apyMedian.toFixed(2)}%.`);
   }
 
   if (Number.isFinite(sw) && Number.isFinite(tr)) {
-    const delta = Math.abs(sw - tr);
-    rewardParts.push(delta <= 1 ? "APY sources match closely." : "APY sources differ.");
+    rewardParts.push(
+      Math.abs(sw - tr) <= 1
+        ? "APY sources match."
+        : "APY sources differ."
+    );
   } else if (Number.isFinite(sw) || Number.isFinite(tr)) {
-    rewardParts.push("Only one APY source is available.");
+    rewardParts.push("Only one APY source available.");
   } else {
     rewardParts.push("APY data unavailable.");
   }
 
   out.reward.sub = rewardParts.join(" ");
+
   return out;
 }
 
