@@ -145,6 +145,118 @@ function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
 }
 
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function appendSentence(base, extra) {
+  if (!base) return extra;
+  if (!extra) return base;
+  return `${base} ${extra}`;
+}
+
+function getSampleReliability(windowCount) {
+  if (!Number.isFinite(windowCount) || windowCount <= 0) {
+    return {
+      level: "none",
+      note: "No recent usable epoch observations are available yet."
+    };
+  }
+
+  if (windowCount <= 4) {
+    return {
+      level: "very_low",
+      note: `Very small sample (${windowCount} epochs) – treat this as an early directional signal, not a firm conclusion.`
+    };
+  }
+
+  if (windowCount <= 8) {
+    return {
+      level: "low",
+      note: `Small sample (${windowCount} epochs) – useful for context, but not strong enough for a confident judgement.`
+    };
+  }
+
+  if (windowCount <= 15) {
+    return {
+      level: "medium",
+      note: `Moderate sample (${windowCount} epochs) – reasonably useful, but still not the full 30-epoch window.`
+    };
+  }
+
+  return {
+    level: "higher",
+    note: `Broader sample (${windowCount} epochs) – more reliable than a short window, though still a simplified summary.`
+  };
+}
+
+// ──────────────────────────────────────────────
+// UI copy adjustments that can be done from JS
+// ──────────────────────────────────────────────
+
+function applyStaticCopyClarifications() {
+  const perfTitleInfo = document.querySelector(
+    '.title .info-dot[data-tip*="public data only"]'
+  );
+  if (perfTitleInfo) {
+    perfTitleInfo.dataset.tip =
+      "This section uses public data only. It summarizes recent validator behaviour from Solana RPC and reward context from public APY sources. Reliability depends on how many recent usable epochs are available. A very short window should be treated as a directional signal, not a firm judgement.";
+  }
+
+  const localTitleInfo = document.querySelector(
+    '.title .info-dot[data-tip*="browser-local snapshots collected on this device"]'
+  );
+  if (localTitleInfo) {
+    localTitleInfo.dataset.tip =
+      "This is a browser-local personal tracking block. It stores snapshots on this device and builds a private score for this browser only. It is not a universal public validator rating.";
+  }
+
+  const stabilityInfo = document.querySelector(
+    '#stability-score'
+  )?.closest('.kpi-block')?.querySelector('.info-dot');
+  if (stabilityInfo) {
+    stabilityInfo.dataset.tip =
+      "Browser-local score built mainly from snapshots stored on this device, with current live/public inputs used only to refresh the latest view. It is a personal tracking aid, not a universal public rating.";
+  }
+
+  const assessmentInfo = document.querySelector(
+    '#stability-label'
+  )?.closest('.kpi-block')?.querySelector('.info-dot');
+  if (assessmentInfo) {
+    assessmentInfo.dataset.tip =
+      "Simple browser-local label derived from the local tracking score. It should be read as a quick personal interpretation, not a definitive validator verdict.";
+  }
+
+  const trackingInfo = document.querySelector(
+    '#stability-tracking'
+  )?.closest('.kpi-block')?.querySelector('.info-dot');
+  if (trackingInfo) {
+    trackingInfo.dataset.tip =
+      "How much history this browser has stored for this validator. More local history usually makes the browser-local assessment more meaningful.";
+  }
+
+  const localCard = document.getElementById("stability-score")?.closest(".card");
+  if (localCard) {
+    const sub = localCard.querySelector(".subtext");
+    if (sub) {
+      sub.textContent =
+        "Personal tracking built from visits in this browser. Not shared across devices. The score and assessment below are browser-local interpretations, not universal public ratings.";
+    }
+
+    const sourceLabel = localCard.querySelector(".source-label");
+    if (sourceLabel) {
+      sourceLabel.textContent = "Source model";
+    }
+
+    const chips = localCard.querySelectorAll(".source-row .source-chip");
+    if (chips[0]) chips[0].textContent = "Browser localStorage (main source)";
+    if (chips[1]) chips[1].textContent = "Current live status refresh";
+    if (chips[2]) chips[2].textContent = "Current APY context refresh";
+    if (chips[3]) chips[3].textContent = "Current pool context refresh";
+  }
+}
+
 // ──────────────────────────────────────────────
 // Ratings API
 // ──────────────────────────────────────────────
@@ -364,6 +476,8 @@ function computeRecentPerformance({ live, ratings }) {
       ? secondAvg - firstAvg
       : null;
 
+  const reliability = getSampleReliability(windowCount);
+
   const apyMedian = Number(ratings?.derived?.apy_median);
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
@@ -391,47 +505,56 @@ function computeRecentPerformance({ live, ratings }) {
   if (windowCount > 0) {
     out.window.value = `${windowCount} epochs`;
 
+    let windowText =
+      `Using ${windowCount} recent usable epoch-to-epoch observations from Solana RPC (maximum shown here: 30).`;
+
     if (Number.isFinite(avg)) {
-      out.window.sub =
-        `Using ${windowCount} recent usable epoch-to-epoch observations from Solana RPC ` +
-        `(maximum shown here: 30). Average relative voting consistency in this window: ${avg.toFixed(2)}%.`;
-    } else {
-      out.window.sub =
-        `Using ${windowCount} recent usable epoch-to-epoch observations from Solana RPC ` +
-        `(maximum shown here: 30).`;
+      windowText = appendSentence(
+        windowText,
+        `Average relative voting consistency in this window: ${avg.toFixed(2)}%.`
+      );
     }
+
+    windowText = appendSentence(windowText, reliability.note);
+    out.window.sub = windowText;
   }
 
   if (windowCount >= 4 && Number.isFinite(diff)) {
     if (diff >= 3) {
-      out.trend.value = "Improving";
-      out.trend.sub = `More recent epochs are stronger by ${diff.toFixed(2)} points on average.`;
+      out.trend.value = reliability.level === "very_low" || reliability.level === "low"
+        ? "Looks stronger"
+        : "Improving";
+      out.trend.sub = `More recent epochs are stronger by ${diff.toFixed(2)} points on average. ${reliability.note}`;
     } else if (diff <= -3) {
-      out.trend.value = "Weaker";
-      out.trend.sub = `More recent epochs are weaker by ${Math.abs(diff).toFixed(2)} points on average.`;
+      out.trend.value = reliability.level === "very_low" || reliability.level === "low"
+        ? "Looks weaker"
+        : "Weaker";
+      out.trend.sub = `More recent epochs are weaker by ${Math.abs(diff).toFixed(2)} points on average. ${reliability.note}`;
     } else {
       out.trend.value = "Stable";
-      out.trend.sub = "Recent epoch performance looks broadly stable.";
+      out.trend.sub = `Recent epoch performance looks broadly stable. ${reliability.note}`;
     }
   } else if (windowCount > 0) {
     out.trend.value = "Limited data";
-    out.trend.sub = `Only ${windowCount} recent usable epochs are available, so the trend read is still limited.`;
+    out.trend.sub = `Only ${windowCount} recent usable epochs are available, so the trend read is still limited. ${reliability.note}`;
   }
 
   if (windowCount >= 2 && Number.isFinite(volatility)) {
     if (volatility <= 5) {
-      out.variability.value = "Low";
-      out.variability.sub = `Recent voting performance looks steady (variability ${volatility.toFixed(2)}).`;
+      out.variability.value = reliability.level === "very_low" ? "Possibly low" : "Low";
+      out.variability.sub = `Recent voting performance looks steady (variability ${volatility.toFixed(2)}). ${reliability.note}`;
     } else if (volatility <= 12) {
-      out.variability.value = "Moderate";
-      out.variability.sub = `Recent voting performance shows some variation (variability ${volatility.toFixed(2)}).`;
+      out.variability.value = reliability.level === "very_low" ? "Possibly moderate" : "Moderate";
+      out.variability.sub = `Recent voting performance shows some variation (variability ${volatility.toFixed(2)}). ${reliability.note}`;
     } else {
-      out.variability.value = "High";
-      out.variability.sub = `Recent voting performance is uneven (variability ${volatility.toFixed(2)}).`;
+      out.variability.value = reliability.level === "very_low" || reliability.level === "low"
+        ? "Possibly high"
+        : "High";
+      out.variability.sub = `Recent voting performance is uneven (variability ${volatility.toFixed(2)}). ${reliability.note}`;
     }
   } else if (windowCount === 1) {
     out.variability.value = "Limited data";
-    out.variability.sub = "Only one recent usable epoch is available, so variability cannot be assessed yet.";
+    out.variability.sub = `Only one recent usable epoch is available, so variability cannot be assessed yet. ${reliability.note}`;
   }
 
   const rewardParts = [];
@@ -458,7 +581,9 @@ function computeRecentPerformance({ live, ratings }) {
     rewardParts.push("Public APY data unavailable right now.");
   }
 
+  rewardParts.push("Reward context is broader than the epoch window, but it is still a simplified summary.");
   out.reward.sub = rewardParts.join(" ");
+
   return out;
 }
 
@@ -586,7 +711,8 @@ function computeStability({ live, ratings, poolsCount }) {
   else label = "Risk";
 
   let trackingText = "Today";
-  let trackingNote = "Tracking starts building from this browser.";
+  let trackingNote =
+    "Tracking starts building from this browser. A short local history makes the local assessment less reliable.";
 
   if (n >= 2) {
     const t0 = snaps[0].t;
@@ -597,7 +723,7 @@ function computeStability({ live, ratings, poolsCount }) {
         ? `${days.toFixed(0)}d`
         : `${Math.max(1, (days * 24).toFixed(0))}h`;
     trackingText = `${daysNice}`;
-    trackingNote = `${n} snapshots stored in this browser.`;
+    trackingNote = `${n} snapshots stored in this browser. This is still a browser-local interpretation, not a universal public validator rating.`;
   }
 
   const pills = [];
@@ -666,16 +792,20 @@ function computeStability({ live, ratings, poolsCount }) {
   let vcOk = false;
   if (Number.isFinite(nowUptime)) {
     if (nowUptime >= 95) {
-      vcText = `Voting consistency: strong (${nowUptime.toFixed(2)}%)`;
+      vcText = `Recent voting consistency: strong (${nowUptime.toFixed(2)}%)`;
       vcOk = true;
     } else if (nowUptime >= 90) {
-      vcText = `Voting consistency: good (${nowUptime.toFixed(2)}%)`;
+      vcText = `Recent voting consistency: good (${nowUptime.toFixed(2)}%)`;
       vcOk = true;
     } else {
-      vcText = `Voting consistency: needs attention (${nowUptime.toFixed(2)}%)`;
+      vcText = `Recent voting consistency: needs attention (${nowUptime.toFixed(2)}%)`;
     }
   }
-  pills.push({ ok: vcOk, text: vcText, tip: "Recent voting consistency signal." });
+  pills.push({
+    ok: vcOk,
+    text: vcText,
+    tip: "Current recent voting consistency signal used inside the local score."
+  });
 
   pills.push({
     ok: Number.isFinite(poolsCount) && poolsCount > 0,
@@ -683,11 +813,21 @@ function computeStability({ live, ratings, poolsCount }) {
       Number.isFinite(poolsCount) && poolsCount > 0
         ? `Stake pool presence (${poolsCount})`
         : "No stake pool presence",
-    tip: "Derived from public Trillium pool data."
+    tip: "Current pool context from public data, used only as one input into the browser-local score."
   });
 
+  let localReliabilityNote = "Reliability of this browser-local assessment is still low because the local history is short.";
+  if (n >= 48) {
+    localReliabilityNote = "Reliability of this browser-local assessment is stronger because this browser has accumulated a longer local history.";
+  } else if (n >= 24) {
+    localReliabilityNote = "Reliability of this browser-local assessment is moderate because this browser has accumulated a meaningful local history.";
+  } else if (n >= 8) {
+    localReliabilityNote = "Reliability of this browser-local assessment is improving, but it still depends on a limited local history.";
+  }
+
   const formulaLine =
-    "Local score starts at 100 and applies penalties for delinquency, commission changes seen locally, lower recent voting consistency, APY disagreement, and missing pool presence.";
+    "This browser-local score starts at 100 and applies penalties for delinquency, commission changes seen locally, lower recent voting consistency, APY disagreement, and missing pool presence. " +
+    localReliabilityNote;
 
   return { score, label, trackingText, trackingNote, pills, formulaLine };
 }
@@ -724,6 +864,8 @@ function renderStability(st) {
 // ──────────────────────────────────────────────
 
 async function main() {
+  applyStaticCopyClarifications();
+
   const nameEl = document.getElementById("validator-name");
   if (nameEl) {
     const label = CURRENT.nameFromUrl
