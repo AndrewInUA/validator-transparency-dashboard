@@ -135,10 +135,14 @@ function average(nums) {
 
 function stddev(nums) {
   const a = nums.filter((x) => Number.isFinite(x));
-  if (a.length < 2) return null;
+  if (a.length < 2) return 0;
   const avg = average(a);
   const variance = a.reduce((s, x) => s + ((x - avg) ** 2), 0) / a.length;
   return Math.sqrt(variance);
+}
+
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
 }
 
 // ──────────────────────────────────────────────
@@ -299,17 +303,19 @@ async function fetchLive(voteKey) {
         }
 
         const recentDeltas = deltas.slice(-30);
-        const maxDelta = Math.max(...recentDeltas, 1);
-
-        epochConsistencySeries = recentDeltas.map((d) =>
-          Math.round(((d / maxDelta) * 100) * 100) / 100
-        );
+        if (recentDeltas.length) {
+          const maxDelta = Math.max(...recentDeltas, 1);
+          epochConsistencySeries = recentDeltas.map((d) =>
+            Math.round(((d / maxDelta) * 100) * 100) / 100
+          );
+        }
 
         const last5 = epochConsistencySeries.slice(-5);
         uptimePct = last5.length
           ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) / 100
           : 0;
-      } catch {
+      } catch (err) {
+        console.warn("Failed to build epoch consistency series:", err);
         uptimePct = 0;
         epochConsistencySeries = [];
       }
@@ -323,7 +329,7 @@ async function fetchLive(voteKey) {
         status,
         votePubkey: me.votePubkey,
         nodePubkey: me.nodePubkey || null,
-        epochCreditsLen: (me.epochCredits || []).length,
+        epochCreditsLen: Array.isArray(me.epochCredits) ? me.epochCredits.length : 0,
         epochConsistencySeries
       };
     } catch (err) {
@@ -335,48 +341,6 @@ async function fetchLive(voteKey) {
 }
 
 // ──────────────────────────────────────────────
-// LOCAL SNAPSHOTS FOR LOCAL TRACKING ONLY
-// ──────────────────────────────────────────────
-
-function safeJsonParse(s) {
-  try { return JSON.parse(s); } catch { return null; }
-}
-
-function lsKeyForVote(voteKey) {
-  return `vtd_snapshots_${voteKey}`;
-}
-
-function loadSnapshots(voteKey) {
-  try {
-    const raw = localStorage.getItem(lsKeyForVote(voteKey));
-    const arr = safeJsonParse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveSnapshots(voteKey, snaps) {
-  try { localStorage.setItem(lsKeyForVote(voteKey), JSON.stringify(snaps)); } catch {}
-}
-
-function pushSnapshotIfNeeded(voteKey, snap) {
-  const snaps = loadSnapshots(voteKey);
-  const last = snaps.length ? snaps[snaps.length - 1] : null;
-
-  if (last && Number.isFinite(last.t) && (snap.t - last.t) < 30 * 60 * 1000) return snaps;
-
-  snaps.push(snap);
-  const trimmed = snaps.slice(-120);
-  saveSnapshots(voteKey, trimmed);
-  return trimmed;
-}
-
-function clamp(n, a, b) {
-  return Math.max(a, Math.min(b, n));
-}
-
-// ──────────────────────────────────────────────
 // PUBLIC RECENT PERFORMANCE
 // ──────────────────────────────────────────────
 
@@ -385,8 +349,10 @@ function computeRecentPerformance({ live, ratings }) {
   const avg = average(series);
   const volatility = stddev(series);
 
-  const firstHalf = series.slice(0, Math.floor(series.length / 2));
-  const secondHalf = series.slice(Math.floor(series.length / 2));
+  const mid = Math.floor(series.length / 2);
+  const firstHalf = series.slice(0, mid);
+  const secondHalf = series.slice(mid);
+
   const firstAvg = average(firstHalf);
   const secondAvg = average(secondHalf);
   const diff = (Number.isFinite(firstAvg) && Number.isFinite(secondAvg)) ? (secondAvg - firstAvg) : null;
@@ -397,15 +363,15 @@ function computeRecentPerformance({ live, ratings }) {
   const jito = !!live?.jito;
 
   const out = {
-    avg: { value: "—", sub: "Recent epoch data unavailable." },
-    trend: { value: "—", sub: "Trend unavailable." },
-    variability: { value: "—", sub: "Variability unavailable." },
-    reward: { value: jito ? "Jito enabled" : "Jito not detected", sub: "Reward context unavailable." }
+    avg: { value: "—", sub: "Recent epoch data is not available yet." },
+    trend: { value: "—", sub: "Trend is not available yet." },
+    variability: { value: "—", sub: "Variability is not available yet." },
+    reward: { value: jito ? "Jito enabled" : "Jito not detected", sub: "Reward context based on public APY sources." }
   };
 
   if (Number.isFinite(avg)) {
     out.avg.value = `${avg.toFixed(2)}%`;
-    out.avg.sub = `Average voting consistency across ${series.length || "recent"} observed epochs.`;
+    out.avg.sub = `Average voting consistency across ${series.length} recent observed epochs.`;
   }
 
   if (Number.isFinite(diff)) {
@@ -466,12 +432,53 @@ function renderRecentPerformance(perf) {
 
   if (avgValue) avgValue.textContent = perf.avg.value;
   if (avgSub) avgSub.textContent = perf.avg.sub;
+
   if (trendValue) trendValue.textContent = perf.trend.value;
   if (trendSub) trendSub.textContent = perf.trend.sub;
+
   if (varValue) varValue.textContent = perf.variability.value;
   if (varSub) varSub.textContent = perf.variability.sub;
+
   if (rewardValue) rewardValue.textContent = perf.reward.value;
   if (rewardSub) rewardSub.textContent = perf.reward.sub;
+}
+
+// ──────────────────────────────────────────────
+// LOCAL SNAPSHOTS FOR LOCAL TRACKING ONLY
+// ──────────────────────────────────────────────
+
+function safeJsonParse(s) {
+  try { return JSON.parse(s); } catch { return null; }
+}
+
+function lsKeyForVote(voteKey) {
+  return `vtd_snapshots_${voteKey}`;
+}
+
+function loadSnapshots(voteKey) {
+  try {
+    const raw = localStorage.getItem(lsKeyForVote(voteKey));
+    const arr = safeJsonParse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSnapshots(voteKey, snaps) {
+  try { localStorage.setItem(lsKeyForVote(voteKey), JSON.stringify(snaps)); } catch {}
+}
+
+function pushSnapshotIfNeeded(voteKey, snap) {
+  const snaps = loadSnapshots(voteKey);
+  const last = snaps.length ? snaps[snaps.length - 1] : null;
+
+  if (last && Number.isFinite(last.t) && (snap.t - last.t) < 30 * 60 * 1000) return snaps;
+
+  snaps.push(snap);
+  const trimmed = snaps.slice(-120);
+  saveSnapshots(voteKey, trimmed);
+  return trimmed;
 }
 
 // ──────────────────────────────────────────────
