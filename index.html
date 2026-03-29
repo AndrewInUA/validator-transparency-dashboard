@@ -24,14 +24,14 @@
     }
 
     .wrap {
-      max-width: 1080px;
-      margin: 40px auto;
+      max-width: 1160px;
+      margin: 36px auto;
       padding: 0 16px 40px;
     }
 
     h1 {
-      margin: 0 0 6px;
-      font-size: 30px;
+      margin: 0 0 8px;
+      font-size: 34px;
       line-height: 1.08;
       font-weight: 800;
       letter-spacing: -0.02em;
@@ -39,22 +39,23 @@
     }
 
     .lead {
-      margin: 0 0 24px;
-      font-size: 14px;
-      line-height: 1.5;
+      margin: 0 0 28px;
+      font-size: 15px;
+      line-height: 1.6;
       color: #9fb0ce;
       overflow-wrap: anywhere;
+      max-width: 920px;
     }
 
     .grid {
       display: grid;
-      gap: 16px;
+      gap: 18px;
       grid-template-columns: 1fr;
     }
 
-    @media (min-width: 900px) {
+    @media (min-width: 960px) {
       .grid {
-        grid-template-columns: 1.1fr 1.2fr;
+        grid-template-columns: 1fr 1.1fr;
       }
     }
 
@@ -65,15 +66,15 @@
     .card {
       background: linear-gradient(180deg, #121827 0%, #10172a 100%);
       border: 1px solid #1f2a44;
-      border-radius: 18px;
-      padding: 18px 18px 16px;
+      border-radius: 20px;
+      padding: 20px 20px 18px;
       overflow: hidden;
       min-width: 0;
     }
 
     .title,
     .share-title {
-      margin: 0 0 10px;
+      margin: 0 0 8px;
       font-size: 20px;
       line-height: 1.25;
       font-weight: 700;
@@ -83,7 +84,7 @@
     .muted {
       color: #9fb0ce;
       font-size: 14px;
-      line-height: 1.45;
+      line-height: 1.5;
       overflow-wrap: anywhere;
     }
 
@@ -100,9 +101,9 @@
     }
 
     .kpi-row {
-      margin-top: 14px;
+      margin-top: 16px;
       display: flex;
-      gap: 28px;
+      gap: 30px;
       flex-wrap: wrap;
       min-width: 0;
     }
@@ -113,7 +114,7 @@
     }
 
     .kpi {
-      font-size: 28px;
+      font-size: 30px;
       line-height: 1.08;
       font-weight: 800;
       word-break: break-word;
@@ -126,7 +127,7 @@
       max-width: 100%;
       font-size: 12px;
       line-height: 1.35;
-      padding: 4px 10px;
+      padding: 5px 10px;
       border-radius: 999px;
       background: #1a2240;
       border: 1px solid #2a3561;
@@ -149,7 +150,7 @@
       align-items: center;
       justify-content: center;
       max-width: 100%;
-      padding: 4px 14px;
+      padding: 5px 14px;
       border-radius: 999px;
       font-weight: 800;
       font-size: 22px;
@@ -161,31 +162,25 @@
       overflow-wrap: anywhere;
     }
 
-    .spark {
-      width: 100%;
-      max-width: 100%;
-      height: 60px;
-      display: block;
-    }
-
     .last-updated {
-      margin-top: 12px;
+      margin-top: 14px;
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.5;
       color: #97a4c6;
       overflow-wrap: anywhere;
     }
 
     .share-card {
-      margin-top: 16px;
+      margin-top: 18px;
     }
 
     .share-help {
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
       color: #9fb0ce;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       overflow-wrap: anywhere;
+      max-width: 900px;
     }
 
     .share-row {
@@ -232,7 +227,8 @@
     }
 
     .pool-badges,
-    .pill-row {
+    .pill-row,
+    .source-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -241,7 +237,8 @@
     }
 
     .pool-badge,
-    .pill {
+    .pill,
+    .source-chip {
       display: inline-flex;
       align-items: center;
       max-width: 100%;
@@ -270,25 +267,38 @@
       color: #ffd7cf;
     }
 
+    .source-label {
+      margin-top: 8px;
+      color: #8ea1c4;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .behavior-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 12px;
-      margin-top: 12px;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    @media (min-width: 960px) {
+      .behavior-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     .behavior-item {
       background: #0b1022;
       border: 1px solid #22304d;
-      border-radius: 14px;
-      padding: 14px 14px 12px;
+      border-radius: 16px;
+      padding: 16px 16px 14px;
       min-width: 0;
     }
 
     .behavior-label {
       color: #9fb0ce;
       font-size: 13px;
-      line-height: 1.35;
+      line-height: 1.4;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -296,31 +306,57 @@
     }
 
     .behavior-value {
-      margin-top: 8px;
-      font-size: 24px;
+      margin-top: 10px;
+      font-size: 28px;
       line-height: 1.1;
       font-weight: 800;
       word-break: break-word;
     }
 
     .behavior-sub {
-      margin-top: 6px;
+      margin-top: 8px;
       color: #aebbd7;
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 13px;
+      line-height: 1.6;
       overflow-wrap: anywhere;
+      max-width: 48ch;
     }
 
-    @media (min-width: 900px) {
-      .behavior-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    @media (min-width: 960px) {
+      .overview-grid {
+        grid-template-columns: 220px 1fr;
+        align-items: start;
       }
+    }
+
+    .overview-big {
+      background: #0b1022;
+      border: 1px solid #22304d;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .overview-note {
+      background: #0b1022;
+      border: 1px solid #22304d;
+      border-radius: 16px;
+      padding: 16px;
+      color: #aebbd7;
+      font-size: 13px;
+      line-height: 1.7;
     }
 
     .footer {
       margin-top: 22px;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.65;
       color: #93a6c8;
       overflow-wrap: anywhere;
     }
@@ -408,18 +444,18 @@
       margin-top: 6px;
     }
 
-    @media (max-width: 899px) {
+    @media (max-width: 959px) {
       .wrap {
-        margin: 16px auto;
+        margin: 18px auto;
         padding: 0 10px 22px;
       }
 
       h1 {
-        font-size: 22px;
+        font-size: 24px;
       }
 
       .lead {
-        margin-bottom: 16px;
+        margin-bottom: 18px;
         font-size: 13px;
       }
 
@@ -434,12 +470,12 @@
 
       .card {
         padding: 14px 12px 13px;
-        border-radius: 14px;
+        border-radius: 16px;
       }
 
       .title,
       .share-title {
-        font-size: 17px;
+        font-size: 18px;
         line-height: 1.25;
         margin-bottom: 8px;
       }
@@ -456,20 +492,21 @@
       }
 
       .kpi {
-        font-size: 22px;
+        font-size: 24px;
       }
 
       .status-pill {
-        font-size: 15px;
+        font-size: 16px;
         padding: 6px 10px;
       }
 
-      .behavior-grid {
+      .behavior-grid,
+      .overview-grid {
         grid-template-columns: 1fr;
       }
 
       .behavior-value {
-        font-size: 20px;
+        font-size: 24px;
       }
 
       .share-row {
@@ -486,18 +523,6 @@
       .share-copy-btn {
         padding: 10px 14px;
       }
-
-      .spark {
-        height: 54px;
-      }
-
-      .muted,
-      .small,
-      .last-updated,
-      .share-help,
-      .footer {
-        overflow-wrap: anywhere;
-      }
     }
 
     @media (max-width: 480px) {
@@ -506,7 +531,7 @@
       }
 
       h1 {
-        font-size: 20px;
+        font-size: 21px;
       }
 
       .card {
@@ -523,7 +548,7 @@
       }
 
       .behavior-value {
-        font-size: 18px;
+        font-size: 20px;
       }
 
       .muted,
@@ -537,6 +562,7 @@
       .badge,
       .pill,
       .pool-badge,
+      .source-chip,
       .share-input,
       .share-copy-btn {
         font-size: 11px;
@@ -552,13 +578,22 @@
   <div class="wrap">
     <h1>Validator Transparency Dashboard</h1>
     <p class="lead">
-      Built by AndrewInUA – live view with commission, validator behavior, voting consistency, and Jito status.
+      Built by AndrewInUA – live validator view with clearly separated data sources: public on-chain signals, public API data, and a separate local tracking layer for personal stability monitoring.
     </p>
 
     <div class="grid">
       <div class="card">
         <p class="title">Trust Card</p>
-        <div class="row">
+        <p class="share-help">
+          A quick live snapshot of the validator’s current state.
+        </p>
+        <div class="source-label">Source</div>
+        <div class="source-row">
+          <span class="source-chip">Live Solana RPC</span>
+          <span class="source-chip">Jito proxy</span>
+        </div>
+
+        <div class="row" style="margin-top:14px;">
           <span id="validator-name" class="badge">Validator: —</span>
           <span id="jito-badge" class="badge">Jito: —</span>
         </div>
@@ -575,7 +610,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Voting consistency is calculated from vote credits across recent epochs. It shows how stable the validator’s voting performance is over time. Higher values indicate more reliable behavior."
+                data-tip="Calculated from vote credits across recent epochs via Solana RPC. It is a recent public on-chain reliability signal, not browser analytics."
               >i</span>
             </div>
             <div id="uptime" class="kpi">—%</div>
@@ -596,22 +631,30 @@
           <span
             class="info-dot"
             tabindex="0"
-            data-tip="A plain-language behavior layer for delegators. It summarizes how the validator behaves over time: whether commission stays predictable, whether voting remains reliable, whether operational status looks consistent, and whether additional staking rewards via Jito are enabled."
+            data-tip="This block uses public data only. It summarizes current validator behaviour from live Solana RPC, public APY sources, and Jito status. It does not use browser-local snapshot history."
           >i</span>
         </p>
 
         <p class="share-help">
-          This block explains the validator’s behaviour in simple terms. Some parts come from recent live data, while behaviour over time improves as this browser stores more snapshots locally.
+          A public-data behaviour layer for page guests. This section avoids browser-local history and focuses only on information pulled from external sources.
         </p>
+
+        <div class="source-label">Source</div>
+        <div class="source-row">
+          <span class="source-chip">Live Solana RPC</span>
+          <span class="source-chip">Stakewiz API</span>
+          <span class="source-chip">Trillium API</span>
+          <span class="source-chip">Jito proxy</span>
+        </div>
 
         <div class="behavior-grid">
           <div class="behavior-item">
             <div class="behavior-label">
-              Commission stability
+              Current commission
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Shows whether commission has stayed predictable in this browser’s local history. This is not full network history – it reflects the snapshots collected here over time."
+                data-tip="Current commission from Solana getVoteAccounts. This is a live public value, not historical commission tracking."
               >i</span>
             </div>
             <div id="behavior-commission-value" class="behavior-value">—</div>
@@ -624,7 +667,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Uses recent epochCredits data as a relative consistency signal. It helps show whether the validator’s recent voting behaviour looks strong, good, or needs attention."
+                data-tip="A recent public reliability signal derived from epochCredits via Solana RPC. It reflects recent validator voting behaviour across recent epochs."
               >i</span>
             </div>
             <div id="behavior-voting-value" class="behavior-value">—</div>
@@ -633,11 +676,11 @@
 
           <div class="behavior-item">
             <div class="behavior-label">
-              Operational consistency
+              Current operational status
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Summarizes whether this validator has appeared healthy or delinquent in locally stored snapshots over time, plus the current live status."
+                data-tip="The validator’s current healthy/delinquent status from public Solana RPC. This is a live snapshot, not a full operational history."
               >i</span>
             </div>
             <div id="behavior-ops-value" class="behavior-value">—</div>
@@ -646,11 +689,11 @@
 
           <div class="behavior-item">
             <div class="behavior-label">
-              Staking rewards
+              Staking rewards profile
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Shows whether additional reward mechanisms (MEV), such as Jito, appear to be enabled. In this dashboard, this is framed as a delegator-facing reward feature rather than validator profit."
+                data-tip="Shows whether Jito appears enabled and displays delegator-facing APY context from public sources. This describes potential staking reward profile, not validator profit."
               >i</span>
             </div>
             <div id="behavior-rewards-value" class="behavior-value">—</div>
@@ -658,13 +701,33 @@
           </div>
         </div>
 
-        <div id="behavior-note" class="last-updated">Behavior tracking: —</div>
+        <div id="behavior-note" class="last-updated">Behavior source note: —</div>
       </div>
 
       <div class="card span-2">
-        <p class="title">Commission history (last 10)</p>
-        <canvas id="spark" class="spark" width="600" height="60"></canvas>
-        <p class="muted small" id="spark-label">Min –% • Max –% • Latest –%</p>
+        <p class="title">Commission overview</p>
+        <p class="share-help">
+          A transparent current commission snapshot. This card is intentionally limited to live public data. Historical commission-change tracking should be added only when a dedicated public history endpoint is wired in.
+        </p>
+
+        <div class="source-label">Source</div>
+        <div class="source-row">
+          <span class="source-chip">Live Solana RPC</span>
+        </div>
+
+        <div class="overview-grid">
+          <div class="overview-big">
+            <div class="muted">Current commission</div>
+            <div id="commission-overview-value" class="kpi">—%</div>
+          </div>
+
+          <div class="overview-note">
+            <strong>Why this is not called “history” anymore.</strong><br />
+            The public RPC used here gives the live current commission value. It does not provide a ready historical commission timeline in this page version, so this block now stays honest and shows the live commission only.
+          </div>
+        </div>
+
+        <div id="commission-overview-note" class="last-updated">Commission source note: live RPC snapshot.</div>
       </div>
     </div>
 
@@ -683,8 +746,14 @@
     <div class="card share-card">
       <p class="share-title">Profitability (APY) &amp; Pool presence</p>
       <p class="share-help">
-        APY is aggregated from public sources (Stakewiz + Trillium). Pool presence shows stake pools delegating to this validator (via Trillium).
+        APY is aggregated from public sources. Pool presence reflects stake pools delegating to this validator.
       </p>
+
+      <div class="source-label">Source</div>
+      <div class="source-row">
+        <span class="source-chip">Stakewiz API</span>
+        <span class="source-chip">Trillium API</span>
+      </div>
 
       <div class="kpi-row">
         <div class="kpi-block">
@@ -720,21 +789,28 @@
           <span
             class="info-dot"
             tabindex="0"
-            data-tip="A lightweight stability snapshot: combines current status + recent voting consistency + source agreement (Stakewiz vs Trillium) + locally observed behaviour over time. Tracking is stored locally in your browser (no server database)."
+            data-tip="This block is intentionally different from the public-data sections above. It uses locally stored browser snapshots to build a personal tracking view over time."
           >i</span>
         </p>
       </div>
 
       <p class="share-help" style="margin-top:8px;">
-        Shows the validator’s current state when opened.
-        Builds your own personal tracking history for this validator in this browser over time (not shared across devices).
+        This is your personal browser-based tracking layer. It is separate from public validator data and helps you build your own local observation history over time.
       </p>
+
+      <div class="source-label">Source</div>
+      <div class="source-row">
+        <span class="source-chip">Browser localStorage</span>
+        <span class="source-chip">Live Solana RPC</span>
+        <span class="source-chip">Stakewiz API</span>
+        <span class="source-chip">Trillium API</span>
+      </div>
 
       <div class="kpi-row" style="margin-top:10px;">
         <div class="kpi-block">
           <div class="muted">
             Stability
-            <span class="info-dot" tabindex="0" data-tip="Starts at 100 and applies penalties based on the rules shown below.">i</span>
+            <span class="info-dot" tabindex="0" data-tip="Starts at 100 and applies penalties based on the rules shown below. This score includes local browser history.">i</span>
           </div>
           <div id="stability-score" class="kpi">—/100</div>
         </div>
@@ -764,9 +840,10 @@
 
     <div class="footer">
       <p>
-        <strong>Next steps:</strong> add per-epoch page, delinquency badge, UA/EN, and link this from your widget.<br />
-        Repo idea: <code>andrewinua/validator-transparency-dashboard</code> •
-        <a href="https://andrewinua.github.io/validator-transparency-dashboard/">Open on GitHub Pages</a>
+        <strong>Method separation.</strong> This dashboard now distinguishes between:
+        public live validator data,
+        public APY/pool data,
+        and a separate local tracking layer for personal browser-based stability monitoring.
       </p>
       <p>
         <strong>Methodology.</strong>
@@ -775,16 +852,18 @@
         <code>getVoteAccounts</code>. The dashboard takes the last six entries,
         looks at how voting credits changed from epoch to epoch, and compares each
         epoch with the best recent one. Those relative values are averaged into a
-        0–100% score over the last five epochs. It’s a quick way to see how
-        consistently a validator has been voting in recent epochs, while detailed
-        uptime still comes from node-level monitoring and logs.
+        0–100% score over the last five epochs.
+      </p>
+      <p>
+        <strong>Next step worth adding later.</strong>
+        Real public commission-change history and longer operational history should be powered by a dedicated backend/public-history endpoint rather than by browser-local tracking.
       </p>
     </div>
   </div>
 
   <div id="mobile-tooltip" class="mobile-tooltip" aria-hidden="true"></div>
 
-  <script src="./app.js?v=26" defer></script>
+  <script src="./app.js?v=27" defer></script>
   <script defer>
     function isTouchLike() {
       return window.matchMedia("(hover: none), (pointer: coarse)").matches;
@@ -882,20 +961,6 @@
       });
     }
 
-    function resizeSparkCanvas() {
-      const canvas = document.getElementById("spark");
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const cssWidth = Math.max(280, Math.floor(rect.width || canvas.offsetWidth || 600));
-      const cssHeight = Math.max(54, Math.floor(rect.height || canvas.offsetHeight || 60));
-
-      if (canvas.width !== cssWidth || canvas.height !== cssHeight) {
-        canvas.width = cssWidth;
-        canvas.height = cssHeight;
-      }
-    }
-
     document.addEventListener("click", (e) => {
       const tooltip = document.getElementById("mobile-tooltip");
       if (!tooltip || !tooltip.classList.contains("show")) return;
@@ -909,17 +974,14 @@
     });
 
     window.addEventListener("resize", () => {
-      resizeSparkCanvas();
       closeMobileTooltip();
     });
 
     document.addEventListener("DOMContentLoaded", () => {
-      resizeSparkCanvas();
       wireInfoDots();
       enhanceTitleTooltips();
 
       const observer = new MutationObserver(() => {
-        resizeSparkCanvas();
         wireInfoDots();
         enhanceTitleTooltips();
       });
