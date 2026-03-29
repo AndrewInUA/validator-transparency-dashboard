@@ -58,6 +58,10 @@
       }
     }
 
+    .span-2 {
+      grid-column: 1 / -1;
+    }
+
     .card {
       background: linear-gradient(180deg, #121827 0%, #10172a 100%);
       border: 1px solid #1f2a44;
@@ -266,6 +270,53 @@
       color: #ffd7cf;
     }
 
+    .behavior-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .behavior-item {
+      background: #0b1022;
+      border: 1px solid #22304d;
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      min-width: 0;
+    }
+
+    .behavior-label {
+      color: #9fb0ce;
+      font-size: 13px;
+      line-height: 1.35;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .behavior-value {
+      margin-top: 8px;
+      font-size: 24px;
+      line-height: 1.1;
+      font-weight: 800;
+      word-break: break-word;
+    }
+
+    .behavior-sub {
+      margin-top: 6px;
+      color: #aebbd7;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    @media (min-width: 900px) {
+      .behavior-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
     .footer {
       margin-top: 22px;
       font-size: 13px;
@@ -312,7 +363,6 @@
       user-select: none;
     }
 
-    /* Disable the old CSS pseudo-tooltips completely */
     .info-dot::after {
       content: none !important;
       display: none !important;
@@ -378,6 +428,10 @@
         gap: 12px;
       }
 
+      .span-2 {
+        grid-column: auto;
+      }
+
       .card {
         padding: 14px 12px 13px;
         border-radius: 14px;
@@ -408,6 +462,14 @@
       .status-pill {
         font-size: 15px;
         padding: 6px 10px;
+      }
+
+      .behavior-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .behavior-value {
+        font-size: 20px;
       }
 
       .share-row {
@@ -460,6 +522,10 @@
         font-size: 20px;
       }
 
+      .behavior-value {
+        font-size: 18px;
+      }
+
       .muted,
       .share-help,
       .lead,
@@ -486,7 +552,7 @@
   <div class="wrap">
     <h1>Validator Transparency Dashboard</h1>
     <p class="lead">
-      Built by AndrewInUA — live view with commission, voting consistency, and Jito status.
+      Built by AndrewInUA – live view with commission, validator behavior, voting consistency, and Jito status.
     </p>
 
     <div class="grid">
@@ -525,6 +591,77 @@
       </div>
 
       <div class="card">
+        <p class="title">
+          Validator behavior
+          <span
+            class="info-dot"
+            tabindex="0"
+            data-tip="A plain-language behavior layer for delegators. It summarizes how the validator behaves over time: whether commission stays predictable, whether voting remains reliable, whether operational status looks consistent, and whether additional staking rewards via Jito are enabled."
+          >i</span>
+        </p>
+
+        <p class="share-help">
+          This block explains the validator’s behaviour in simple terms. Some parts come from recent live data, while behaviour over time improves as this browser stores more snapshots locally.
+        </p>
+
+        <div class="behavior-grid">
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Commission stability
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Shows whether commission has stayed predictable in this browser’s local history. This is not full network history – it reflects the snapshots collected here over time."
+              >i</span>
+            </div>
+            <div id="behavior-commission-value" class="behavior-value">—</div>
+            <div id="behavior-commission-sub" class="behavior-sub">—</div>
+          </div>
+
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Voting reliability
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Uses recent epochCredits data as a relative consistency signal. It helps show whether the validator’s recent voting behaviour looks strong, good, or needs attention."
+              >i</span>
+            </div>
+            <div id="behavior-voting-value" class="behavior-value">—</div>
+            <div id="behavior-voting-sub" class="behavior-sub">—</div>
+          </div>
+
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Operational consistency
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Summarizes whether this validator has appeared healthy or delinquent in locally stored snapshots over time, plus the current live status."
+              >i</span>
+            </div>
+            <div id="behavior-ops-value" class="behavior-value">—</div>
+            <div id="behavior-ops-sub" class="behavior-sub">—</div>
+          </div>
+
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Staking rewards
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Shows whether additional reward mechanisms (MEV), such as Jito, appear to be enabled. In this dashboard, this is framed as a delegator-facing reward feature rather than validator profit."
+              >i</span>
+            </div>
+            <div id="behavior-rewards-value" class="behavior-value">—</div>
+            <div id="behavior-rewards-sub" class="behavior-sub">—</div>
+          </div>
+        </div>
+
+        <div id="behavior-note" class="last-updated">Behavior tracking: —</div>
+      </div>
+
+      <div class="card span-2">
         <p class="title">Commission history (last 10)</p>
         <canvas id="spark" class="spark" width="600" height="60"></canvas>
         <p class="muted small" id="spark-label">Min –% • Max –% • Latest –%</p>
@@ -647,7 +784,7 @@
 
   <div id="mobile-tooltip" class="mobile-tooltip" aria-hidden="true"></div>
 
-  <script src="./app.js?v=25" defer></script>
+  <script src="./app.js?v=26" defer></script>
   <script defer>
     function isTouchLike() {
       return window.matchMedia("(hover: none), (pointer: coarse)").matches;
