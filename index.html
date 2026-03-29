@@ -552,7 +552,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Recent voting signal derived from vote credits returned by Solana RPC."
+                data-tip="Voting consistency is a recent relative signal based on vote credits across recent epochs. We compare each recent epoch with the strongest recent one and convert that into a 0–100% score. Higher values mean the validator has been voting more consistently in recent epochs."
               >i</span>
             </div>
             <div id="uptime" class="kpi">—%</div>
@@ -593,7 +593,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Average relative voting consistency across recent epochs from Solana RPC epochCredits."
+                data-tip="Average voting consistency across recent observed epochs. Each epoch is compared with the strongest recent epoch, then converted into a 0–100% relative score."
               >i</span>
             </div>
             <div id="perf-avg-value" class="behavior-value">—</div>
@@ -742,13 +742,13 @@
 
     <div class="footer">
       <p><strong>Source model.</strong> Public blocks use external data. Local tracking is a separate browser-only layer.</p>
-      <p><strong>Methodology.</strong> Voting consistency is a relative score derived from recent <code>epochCredits</code> returned by <code>getVoteAccounts</code>.</p>
+      <p><strong>Methodology.</strong> Voting consistency is a relative score derived from recent <code>epochCredits</code> returned by <code>getVoteAccounts</code>. For each recent epoch, the dashboard looks at how many vote credits were added compared with the previous epoch, then compares that result with the strongest recent epoch. Those relative values are converted into a 0–100% score. Higher values mean more consistent recent voting performance.</p>
     </div>
   </div>
 
   <div id="mobile-tooltip" class="mobile-tooltip" aria-hidden="true"></div>
 
-  <script src="./app.js?v=29" defer></script>
+  <script src="./app.js?v=30" defer></script>
   <script defer>
     function isTouchLike() {
       return window.matchMedia("(hover: none), (pointer: coarse)").matches;
