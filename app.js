@@ -3,7 +3,7 @@
  *
  * Public blocks:
  * - Trust Card
- * - Validator behavior
+ * - Recent performance (last ~30 epochs)
  * - Profitability
  *
  * Separate local block:
@@ -127,6 +127,20 @@ function fmtSol(v) {
   return n >= 1000 ? n.toFixed(0) : n.toFixed(2);
 }
 
+function average(nums) {
+  const a = nums.filter((x) => Number.isFinite(x));
+  if (!a.length) return null;
+  return a.reduce((s, x) => s + x, 0) / a.length;
+}
+
+function stddev(nums) {
+  const a = nums.filter((x) => Number.isFinite(x));
+  if (a.length < 2) return null;
+  const avg = average(a);
+  const variance = a.reduce((s, x) => s + ((x - avg) ** 2), 0) / a.length;
+  return Math.sqrt(variance);
+}
+
 // ──────────────────────────────────────────────
 // Ratings API
 // ──────────────────────────────────────────────
@@ -245,7 +259,8 @@ async function fetchLive(voteKey) {
     status: "error",
     votePubkey: null,
     nodePubkey: null,
-    epochCreditsLen: 0
+    epochCreditsLen: 0,
+    epochConsistencySeries: []
   };
 
   for (const rpc of RPCS) {
@@ -271,23 +286,32 @@ async function fetchLive(voteKey) {
       const status = isDelinquent ? "delinquent" : "healthy";
 
       let uptimePct = 0;
+      let epochConsistencySeries = [];
+
       try {
-        const credits = me.epochCredits || [];
-        const last6 = credits.slice(-6);
+        const credits = Array.isArray(me.epochCredits) ? me.epochCredits : [];
         const deltas = [];
-        for (let i = 1; i < last6.length; i++) {
-          const prevCredits = last6[i - 1]?.[1] ?? 0;
-          const curCredits = last6[i]?.[1] ?? 0;
+
+        for (let i = 1; i < credits.length; i++) {
+          const prevCredits = credits[i - 1]?.[1] ?? 0;
+          const curCredits = credits[i]?.[1] ?? 0;
           deltas.push(Math.max(0, curCredits - prevCredits));
         }
-        const window = deltas.slice(-5);
-        const maxDelta = Math.max(...window, 1);
-        const avgRelative = window.length
-          ? window.reduce((sum, d) => sum + d / maxDelta, 0) / window.length
+
+        const recentDeltas = deltas.slice(-30);
+        const maxDelta = Math.max(...recentDeltas, 1);
+
+        epochConsistencySeries = recentDeltas.map((d) =>
+          Math.round(((d / maxDelta) * 100) * 100) / 100
+        );
+
+        const last5 = epochConsistencySeries.slice(-5);
+        uptimePct = last5.length
+          ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) / 100
           : 0;
-        uptimePct = Math.round(avgRelative * 10000) / 100;
       } catch {
         uptimePct = 0;
+        epochConsistencySeries = [];
       }
 
       const jito = await fetchJitoStatus(voteKey);
@@ -299,7 +323,8 @@ async function fetchLive(voteKey) {
         status,
         votePubkey: me.votePubkey,
         nodePubkey: me.nodePubkey || null,
-        epochCreditsLen: (me.epochCredits || []).length
+        epochCreditsLen: (me.epochCredits || []).length,
+        epochConsistencySeries
       };
     } catch (err) {
       console.warn("RPC failed:", rpc, err.message || err);
@@ -352,58 +377,61 @@ function clamp(n, a, b) {
 }
 
 // ──────────────────────────────────────────────
-// PUBLIC BEHAVIOR
+// PUBLIC RECENT PERFORMANCE
 // ──────────────────────────────────────────────
 
-function computeBehavior({ live, ratings }) {
-  const commission = Number(live?.commissionHistory?.[live.commissionHistory.length - 1]);
-  const vc = Number(live?.uptimeLast5EpochsPct);
-  const status = live?.status || "—";
+function computeRecentPerformance({ live, ratings }) {
+  const series = Array.isArray(live?.epochConsistencySeries) ? live.epochConsistencySeries : [];
+  const avg = average(series);
+  const volatility = stddev(series);
+
+  const firstHalf = series.slice(0, Math.floor(series.length / 2));
+  const secondHalf = series.slice(Math.floor(series.length / 2));
+  const firstAvg = average(firstHalf);
+  const secondAvg = average(secondHalf);
+  const diff = (Number.isFinite(firstAvg) && Number.isFinite(secondAvg)) ? (secondAvg - firstAvg) : null;
+
   const apyMedian = Number(ratings?.derived?.apy_median);
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
   const jito = !!live?.jito;
 
-  const behavior = {
-    commission: {
-      value: Number.isFinite(commission) ? `${commission.toFixed(0)}%` : "—",
-      sub: "Current commission."
-    },
-    voting: {
-      value: Number.isFinite(vc) ? `${vc.toFixed(2)}%` : "—",
-      sub: "Recent voting reliability unavailable."
-    },
-    ops: {
-      value: "—",
-      sub: "Current status unavailable."
-    },
-    rewards: {
-      value: jito ? "Jito enabled" : "Jito not detected",
-      sub: "Rewards context unavailable."
-    }
+  const out = {
+    avg: { value: "—", sub: "Recent epoch data unavailable." },
+    trend: { value: "—", sub: "Trend unavailable." },
+    variability: { value: "—", sub: "Variability unavailable." },
+    reward: { value: jito ? "Jito enabled" : "Jito not detected", sub: "Reward context unavailable." }
   };
 
-  if (Number.isFinite(vc)) {
-    if (vc >= 95) {
-      behavior.voting.sub = "Recent voting reliability looks strong.";
-    } else if (vc >= 90) {
-      behavior.voting.sub = "Recent voting reliability looks good.";
+  if (Number.isFinite(avg)) {
+    out.avg.value = `${avg.toFixed(2)}%`;
+    out.avg.sub = `Average voting consistency across ${series.length || "recent"} observed epochs.`;
+  }
+
+  if (Number.isFinite(diff)) {
+    if (diff >= 3) {
+      out.trend.value = "Improving";
+      out.trend.sub = `More recent epochs are stronger by ${diff.toFixed(2)} points on average.`;
+    } else if (diff <= -3) {
+      out.trend.value = "Weaker";
+      out.trend.sub = `More recent epochs are weaker by ${Math.abs(diff).toFixed(2)} points on average.`;
     } else {
-      behavior.voting.sub = "Recent voting reliability needs attention.";
+      out.trend.value = "Stable";
+      out.trend.sub = "Recent epoch performance looks broadly stable.";
     }
   }
 
-  if (status === "healthy") {
-    behavior.ops.value = "Healthy";
-    behavior.ops.sub = "Validator appears healthy right now.";
-  } else if (status === "delinquent") {
-    behavior.ops.value = "Delinquent";
-    behavior.ops.sub = "Validator appears delinquent right now.";
-  } else if (status === "not found") {
-    behavior.ops.value = "Not found";
-    behavior.ops.sub = "Validator was not found in the current RPC response.";
-  } else {
-    behavior.ops.value = status;
+  if (Number.isFinite(volatility)) {
+    if (volatility <= 5) {
+      out.variability.value = "Low";
+      out.variability.sub = `Recent voting performance looks steady (variability ${volatility.toFixed(2)}).`;
+    } else if (volatility <= 12) {
+      out.variability.value = "Moderate";
+      out.variability.sub = `Recent voting performance shows some variation (variability ${volatility.toFixed(2)}).`;
+    } else {
+      out.variability.value = "High";
+      out.variability.sub = `Recent voting performance is uneven (variability ${volatility.toFixed(2)}).`;
+    }
   }
 
   const rewardParts = [];
@@ -414,39 +442,36 @@ function computeBehavior({ live, ratings }) {
   }
 
   if (Number.isFinite(sw) && Number.isFinite(tr)) {
-    rewardParts.push("Public APY data available from both sources.");
+    const delta = Math.abs(sw - tr);
+    rewardParts.push(delta <= 1 ? "APY sources are closely aligned." : `APY sources differ by ${delta.toFixed(2)} points.`);
   } else if (Number.isFinite(sw) || Number.isFinite(tr)) {
-    rewardParts.push("Public APY data available from one source.");
+    rewardParts.push("One public APY source is available right now.");
   } else {
     rewardParts.push("Public APY data unavailable right now.");
   }
 
-  behavior.rewards.sub = rewardParts.join(" ");
-
-  return behavior;
+  out.reward.sub = rewardParts.join(" ");
+  return out;
 }
 
-function renderBehavior(behavior) {
-  const cVal = document.getElementById("behavior-commission-value");
-  const cSub = document.getElementById("behavior-commission-sub");
-  const vVal = document.getElementById("behavior-voting-value");
-  const vSub = document.getElementById("behavior-voting-sub");
-  const oVal = document.getElementById("behavior-ops-value");
-  const oSub = document.getElementById("behavior-ops-sub");
-  const rVal = document.getElementById("behavior-rewards-value");
-  const rSub = document.getElementById("behavior-rewards-sub");
+function renderRecentPerformance(perf) {
+  const avgValue = document.getElementById("perf-avg-value");
+  const avgSub = document.getElementById("perf-avg-sub");
+  const trendValue = document.getElementById("perf-trend-value");
+  const trendSub = document.getElementById("perf-trend-sub");
+  const varValue = document.getElementById("perf-var-value");
+  const varSub = document.getElementById("perf-var-sub");
+  const rewardValue = document.getElementById("perf-reward-value");
+  const rewardSub = document.getElementById("perf-reward-sub");
 
-  if (cVal) cVal.textContent = behavior.commission.value;
-  if (cSub) cSub.textContent = behavior.commission.sub;
-
-  if (vVal) vVal.textContent = behavior.voting.value;
-  if (vSub) vSub.textContent = behavior.voting.sub;
-
-  if (oVal) oVal.textContent = behavior.ops.value;
-  if (oSub) oSub.textContent = behavior.ops.sub;
-
-  if (rVal) rVal.textContent = behavior.rewards.value;
-  if (rSub) rSub.textContent = behavior.rewards.sub;
+  if (avgValue) avgValue.textContent = perf.avg.value;
+  if (avgSub) avgSub.textContent = perf.avg.sub;
+  if (trendValue) trendValue.textContent = perf.trend.value;
+  if (trendSub) trendSub.textContent = perf.trend.sub;
+  if (varValue) varValue.textContent = perf.variability.value;
+  if (varSub) varSub.textContent = perf.variability.sub;
+  if (rewardValue) rewardValue.textContent = perf.reward.value;
+  if (rewardSub) rewardSub.textContent = perf.reward.sub;
 }
 
 // ──────────────────────────────────────────────
@@ -638,7 +663,8 @@ async function main() {
       uptimeLast5EpochsPct: 99.2,
       jito: true,
       status: "healthy",
-      nodePubkey: null
+      nodePubkey: null,
+      epochConsistencySeries: [99, 98, 100, 97, 99, 98, 100, 99]
     };
   } catch (err) {
     console.error("Fatal error in fetchLive:", err);
@@ -649,7 +675,8 @@ async function main() {
       status: "error",
       votePubkey: null,
       nodePubkey: null,
-      epochCreditsLen: 0
+      epochCreditsLen: 0,
+      epochConsistencySeries: []
     };
   }
 
@@ -715,8 +742,8 @@ async function main() {
     console.warn("ratings fetch failed:", e);
   }
 
-  const behavior = computeBehavior({ live, ratings });
-  renderBehavior(behavior);
+  const perf = computeRecentPerformance({ live, ratings });
+  renderRecentPerformance(perf);
 
   const poolsCount = Array.isArray(ratings?.pools?.stake_pools) ? ratings.pools.stake_pools.length : null;
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
