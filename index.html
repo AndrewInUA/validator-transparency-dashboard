@@ -401,4 +401,481 @@
     @media (max-width: 979px) {
       .wrap {
         margin: 18px auto;
-        padding:
+        padding: 0 10px 22px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .lead {
+        margin-bottom: 18px;
+        font-size: 13px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+      }
+
+      .span-2 {
+        grid-column: auto;
+      }
+
+      .card {
+        padding: 14px 12px 13px;
+        border-radius: 16px;
+      }
+
+      .title {
+        font-size: 18px;
+      }
+
+      .kpi-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .kpi {
+        font-size: 24px;
+      }
+
+      .status-pill {
+        font-size: 16px;
+        padding: 6px 10px;
+      }
+
+      .behavior-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .behavior-value {
+        font-size: 22px;
+      }
+
+      .share-row {
+        flex-direction: column;
+      }
+
+      .share-input,
+      .share-copy-btn {
+        width: 100%;
+        border-radius: 12px;
+      }
+
+      .share-copy-btn {
+        padding: 10px 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .wrap {
+        padding: 0 8px 20px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      .card {
+        padding: 12px 10px;
+      }
+
+      .title {
+        font-size: 16px;
+      }
+
+      .kpi {
+        font-size: 20px;
+      }
+
+      .behavior-value {
+        font-size: 20px;
+      }
+
+      .lead,
+      .subtext,
+      .footer,
+      .muted {
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .badge,
+      .source-chip,
+      .pill,
+      .pool-badge,
+      .share-input,
+      .share-copy-btn {
+        font-size: 11px;
+      }
+
+      .status-pill {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Validator Transparency Dashboard</h1>
+    <p class="lead">
+      A clear validator view with separated data sources: public live data, public APY data, and a separate local tracking section for this browser only.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <p class="title">Trust Card</p>
+        <p class="subtext">Quick live snapshot of the validator right now.</p>
+
+        <div class="source-label">Source</div>
+        <div class="source-row">
+          <span class="source-chip">Live Solana RPC</span>
+          <span class="source-chip">Jito proxy</span>
+        </div>
+
+        <div class="row" style="margin-top:14px;">
+          <span id="validator-name" class="badge">Validator: —</span>
+          <span id="jito-badge" class="badge">Jito: —</span>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-block">
+            <div class="muted">Commission</div>
+            <div id="commission" class="kpi">—%</div>
+          </div>
+
+          <div class="kpi-block">
+            <div class="muted">
+              Voting consistency
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Recent voting signal derived from vote credits returned by Solana RPC."
+              >i</span>
+            </div>
+            <div id="uptime" class="kpi">—%</div>
+          </div>
+
+          <div class="kpi-block">
+            <div class="muted">Status</div>
+            <div id="status" class="status-pill">—</div>
+          </div>
+        </div>
+
+        <div id="last-updated" class="last-updated">Last updated: —</div>
+      </div>
+
+      <div class="card">
+        <p class="title">
+          Recent performance (last ~30 epochs)
+          <span
+            class="info-dot"
+            tabindex="0"
+            data-tip="This section uses public data only. It summarizes recent voting behaviour from Solana RPC and reward context from public APY sources."
+          >i</span>
+        </p>
+        <p class="subtext">A public-data view of recent validator performance, without duplicating the Trust Card.</p>
+
+        <div class="source-label">Source</div>
+        <div class="source-row">
+          <span class="source-chip">Live Solana RPC</span>
+          <span class="source-chip">Stakewiz API</span>
+          <span class="source-chip">Trillium API</span>
+          <span class="source-chip">Jito proxy</span>
+        </div>
+
+        <div class="behavior-grid">
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Average voting consistency
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Average relative voting consistency across recent epochs from Solana RPC epochCredits."
+              >i</span>
+            </div>
+            <div id="perf-avg-value" class="behavior-value">—</div>
+            <div id="perf-avg-sub" class="behavior-sub">—</div>
+          </div>
+
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Voting trend
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Compares more recent epoch performance with earlier recent epochs to show whether the validator looks stable, improving, or weaker."
+              >i</span>
+            </div>
+            <div id="perf-trend-value" class="behavior-value">—</div>
+            <div id="perf-trend-sub" class="behavior-sub">—</div>
+          </div>
+
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Voting variability
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Shows how uneven recent voting performance has been across recent epochs."
+              >i</span>
+            </div>
+            <div id="perf-var-value" class="behavior-value">—</div>
+            <div id="perf-var-sub" class="behavior-sub">—</div>
+          </div>
+
+          <div class="behavior-item">
+            <div class="behavior-label">
+              Reward profile
+              <span
+                class="info-dot"
+                tabindex="0"
+                data-tip="Delegator-facing reward context from Jito status and public APY sources."
+              >i</span>
+            </div>
+            <div id="perf-reward-value" class="behavior-value">—</div>
+            <div id="perf-reward-sub" class="behavior-sub">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card share-card">
+      <p class="title">Share this dashboard</p>
+      <p class="subtext">
+        Any validator can view their stats here by opening a link with <code>?vote=</code> (vote account). <code>&amp;name=</code> is optional.
+      </p>
+      <div class="share-row">
+        <input id="share-url" class="share-input" type="text" readonly value="Loading..." />
+        <button id="copy-btn" class="share-copy-btn">Copy</button>
+      </div>
+    </div>
+
+    <div class="card share-card">
+      <p class="title">Profitability (APY) &amp; Pool presence</p>
+      <p class="subtext">Public APY estimates and public stake-pool presence.</p>
+
+      <div class="source-label">Source</div>
+      <div class="source-row">
+        <span class="source-chip">Stakewiz API</span>
+        <span class="source-chip">Trillium API</span>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-block">
+          <div class="muted">APY (median)</div>
+          <div id="apy-median" class="kpi">—%</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">Stakewiz total APY</div>
+          <div id="apy-stakewiz" class="kpi">—%</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">Trillium delegator total APY</div>
+          <div id="apy-trillium" class="kpi">—%</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">Pools delegating</div>
+          <div id="pools-count" class="kpi">—</div>
+        </div>
+      </div>
+
+      <div class="last-updated" id="pools-totals">Stake from pools: — SOL • Not from pools: — SOL</div>
+      <div class="pool-badges" id="pools-list"></div>
+      <div class="last-updated" id="apy-sources-note">Public API status: —</div>
+    </div>
+
+    <div class="card share-card">
+      <p class="title">
+        Local tracking (this browser only)
+        <span
+          class="info-dot"
+          tabindex="0"
+          data-tip="This section is separate from the public blocks above. It uses browser-local snapshots collected on this device."
+        >i</span>
+      </p>
+      <p class="subtext">Personal tracking built from visits in this browser. Not shared across devices.</p>
+
+      <div class="source-label">Source</div>
+      <div class="source-row">
+        <span class="source-chip">Browser localStorage</span>
+        <span class="source-chip">Live Solana RPC</span>
+        <span class="source-chip">Stakewiz API</span>
+        <span class="source-chip">Trillium API</span>
+      </div>
+
+      <div class="kpi-row" style="margin-top:10px;">
+        <div class="kpi-block">
+          <div class="muted">
+            Stability
+            <span class="info-dot" tabindex="0" data-tip="Local score built from browser snapshots plus live/public inputs.">i</span>
+          </div>
+          <div id="stability-score" class="kpi">—/100</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">
+            Assessment
+            <span class="info-dot" tabindex="0" data-tip="Simple label derived from the local tracking score.">i</span>
+          </div>
+          <div id="stability-label" class="kpi">—</div>
+        </div>
+
+        <div class="kpi-block">
+          <div class="muted">
+            Tracking
+            <span class="info-dot" tabindex="0" data-tip="How much history this browser has stored for this validator.">i</span>
+          </div>
+          <div id="stability-tracking" class="kpi">—</div>
+        </div>
+      </div>
+
+      <div class="pill-row" id="stability-pills"></div>
+      <div class="last-updated" id="stability-note">Tracking: —</div>
+      <div class="muted small" id="stability-formula" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="footer">
+      <p><strong>Source model.</strong> Public blocks use external data. Local tracking is a separate browser-only layer.</p>
+      <p><strong>Methodology.</strong> Voting consistency is a relative score derived from recent <code>epochCredits</code> returned by <code>getVoteAccounts</code>.</p>
+    </div>
+  </div>
+
+  <div id="mobile-tooltip" class="mobile-tooltip" aria-hidden="true"></div>
+
+  <script src="./app.js?v=29" defer></script>
+  <script defer>
+    function isTouchLike() {
+      return window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    }
+
+    function closeMobileTooltip() {
+      const box = document.getElementById("mobile-tooltip");
+      if (!box) return;
+      box.classList.remove("show");
+      box.setAttribute("aria-hidden", "true");
+      box.innerHTML = "";
+      document.querySelectorAll(".tooltip-open").forEach(el => el.classList.remove("tooltip-open"));
+    }
+
+    function openMobileTooltip(text, anchorEl) {
+      const box = document.getElementById("mobile-tooltip");
+      if (!box || !text) return;
+
+      document.querySelectorAll(".tooltip-open").forEach(el => el.classList.remove("tooltip-open"));
+      if (anchorEl) anchorEl.classList.add("tooltip-open");
+
+      box.innerHTML = `
+        <div>${text}</div>
+        <div class="tooltip-hint">Click outside to close.</div>
+        <button type="button" class="mobile-tooltip-close">Close</button>
+      `;
+      box.classList.add("show");
+      box.setAttribute("aria-hidden", "false");
+
+      const btn = box.querySelector(".mobile-tooltip-close");
+      if (btn) btn.addEventListener("click", closeMobileTooltip, { once: true });
+    }
+
+    function enhanceTitleTooltips(root = document) {
+      const candidates = root.querySelectorAll(".pill[title], .pool-badge[title], .badge[title], .status-pill[title]");
+      candidates.forEach(el => {
+        if (el.dataset.tooltipEnhanced === "1") return;
+        const tip = el.getAttribute("title");
+        if (!tip) return;
+
+        el.dataset.tooltipEnhanced = "1";
+        el.dataset.tip = tip;
+        el.setAttribute("tabindex", "0");
+        el.style.cursor = "pointer";
+
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openMobileTooltip(tip, el);
+        });
+
+        el.addEventListener("mouseenter", () => {
+          if (!isTouchLike()) openMobileTooltip(tip, el);
+        });
+
+        el.addEventListener("mouseleave", () => {
+          if (!isTouchLike()) closeMobileTooltip();
+        });
+
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openMobileTooltip(tip, el);
+          }
+        });
+      });
+    }
+
+    function wireInfoDots() {
+      const dots = document.querySelectorAll(".info-dot");
+      dots.forEach(dot => {
+        if (dot.dataset.tooltipEnhanced === "1") return;
+        dot.dataset.tooltipEnhanced = "1";
+
+        dot.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openMobileTooltip(dot.dataset.tip, dot);
+        });
+
+        dot.addEventListener("mouseenter", () => {
+          if (!isTouchLike()) openMobileTooltip(dot.dataset.tip, dot);
+        });
+
+        dot.addEventListener("mouseleave", () => {
+          if (!isTouchLike()) closeMobileTooltip();
+        });
+
+        dot.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openMobileTooltip(dot.dataset.tip, dot);
+          }
+        });
+      });
+    }
+
+    document.addEventListener("click", (e) => {
+      const tooltip = document.getElementById("mobile-tooltip");
+      if (!tooltip || !tooltip.classList.contains("show")) return;
+      if (tooltip.contains(e.target)) return;
+      if (e.target.closest(".info-dot, .pill, .pool-badge, .badge, .status-pill")) return;
+      closeMobileTooltip();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeMobileTooltip();
+    });
+
+    window.addEventListener("resize", () => {
+      closeMobileTooltip();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      wireInfoDots();
+      enhanceTitleTooltips();
+
+      const observer = new MutationObserver(() => {
+        wireInfoDots();
+        enhanceTitleTooltips();
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    });
+  </script>
+</body>
+</html>
