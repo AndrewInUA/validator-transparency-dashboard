@@ -176,7 +176,7 @@ function getSampleReliability(windowCount) {
   if (windowCount <= 4) {
     return {
       level: "very_low",
-      note: `Small sample: only ${windowCount} epochs.`
+      note: `Based on limited recent data (${windowCount} epochs).`
     };
   }
 
@@ -224,7 +224,7 @@ function applyStaticCopyClarifications() {
       const vcInfo = mutedRows[1].querySelector(".info-dot");
       safeSetTip(
         vcInfo,
-        "Voting consistency compares the validator’s recent epochs with its strongest recent epoch. Higher % means steadier recent voting. The dashboard uses up to 30 recent usable observations, but sometimes fewer are available."
+        "Shows how stable the validator’s voting performance has been in recent epochs. Higher values mean more consistent rewards and fewer missed votes."
       );
     }
   }
@@ -233,7 +233,7 @@ function applyStaticCopyClarifications() {
     const titleInfo = recentPerfCard.querySelector(".title .info-dot");
     safeSetTip(
       titleInfo,
-      "This section uses public data only. It looks at up to the last 30 usable recent epochs. If only a few epochs are available, treat the result as an early signal, not a firm conclusion."
+      "This section uses public data only. It looks at up to the last 30 usable recent epochs. If only a few epochs are available, treat the result as an early signal, not a final conclusion."
     );
 
     const sub = recentPerfCard.querySelector(".subtext");
@@ -251,7 +251,7 @@ function applyStaticCopyClarifications() {
     const trendInfo = document.querySelector("#perf-trend-value")?.closest(".behavior-item")?.querySelector(".info-dot");
     safeSetTip(
       trendInfo,
-      "Shows whether the latest part of the recent window looks stronger or weaker than the earlier part."
+      "Shows whether the latest part of the recent window looks stronger, weaker, or broadly stable compared with the earlier part."
     );
 
     const varInfo = document.querySelector("#perf-var-value")?.closest(".behavior-item")?.querySelector(".info-dot");
@@ -271,7 +271,7 @@ function applyStaticCopyClarifications() {
     const title = localCard.querySelector(".title");
     safeSetHTML(
       title,
-      `Local tracking (this browser only) + current public inputs
+      `Personal validator insights (this browser only) + current public inputs
         <span
           class="info-dot"
           tabindex="0"
@@ -320,7 +320,8 @@ function applyStaticCopyClarifications() {
     footer,
     `
       <p><strong>Source model.</strong> Public blocks use external data. The lower block mixes browser-local history with current public inputs.</p>
-      <p><strong>Methodology.</strong> Voting consistency compares recent epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher values mean steadier recent voting.</p>
+      <p><strong>What this means.</strong> This dashboard highlights how stable and reliable a validator looks based on recent behavior and public data.</p>
+      <p><strong>Methodology (technical).</strong> Voting reliability compares recent epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher values mean steadier recent voting.</p>
     `
   );
 }
@@ -584,15 +585,15 @@ function computeRecentPerformance({ live, ratings }) {
     if (diff >= 3) {
       out.trend.value =
         reliability.level === "very_low" || reliability.level === "low"
-          ? "Looks stronger"
+          ? "Slight improvement"
           : "Improving";
-      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} stronger lately.`.trim();
+      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} improvement in recent performance.`.trim();
     } else if (diff <= -3) {
       out.trend.value =
         reliability.level === "very_low" || reliability.level === "low"
-          ? "Looks weaker"
-          : "Weaker";
-      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} weaker lately.`.trim();
+          ? "Slight decline"
+          : "Declining";
+      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} decline in recent performance.`.trim();
     } else {
       out.trend.value = "Stable";
       out.trend.sub = "No clear recent change.";
@@ -608,15 +609,15 @@ function computeRecentPerformance({ live, ratings }) {
 
   if (windowCount >= 2 && Number.isFinite(volatility)) {
     if (volatility <= 5) {
-      out.variability.value = reliability.level === "very_low" ? "Possibly low" : "Low";
+      out.variability.value = reliability.level === "very_low" ? "Low variability" : "Low";
       out.variability.sub = "Recent performance looks steady.";
     } else if (volatility <= 12) {
-      out.variability.value = reliability.level === "very_low" ? "Possibly medium" : "Medium";
-      out.variability.sub = "Some recent variation.";
+      out.variability.value = reliability.level === "very_low" ? "Moderate variability" : "Moderate";
+      out.variability.sub = "Some fluctuation in recent performance, but not unstable.";
     } else {
       out.variability.value =
         reliability.level === "very_low" || reliability.level === "low"
-          ? "Possibly high"
+          ? "High variability"
           : "High";
       out.variability.sub = "Recent performance looks uneven.";
     }
@@ -630,7 +631,7 @@ function computeRecentPerformance({ live, ratings }) {
   }
 
   const rewardParts = [];
-  rewardParts.push(jito ? "Jito rewards appear enabled." : "No Jito signal right now.");
+  rewardParts.push(jito ? "Jito enabled – additional rewards active." : "No Jito rewards detected.");
 
   if (Number.isFinite(apyMedian)) {
     rewardParts.push(`Median APY: ${apyMedian.toFixed(2)}%.`);
@@ -802,7 +803,7 @@ function computeStability({ live, ratings, poolsCount }) {
   } else {
     pills.push({
       ok: nowStatus === "healthy",
-      text: nowStatus === "healthy" ? "Healthy now" : `Status: ${nowStatus}`,
+      text: nowStatus === "healthy" ? "Healthy right now" : `Status: ${nowStatus}`,
       tip: "Current live status input."
     });
   }
@@ -812,7 +813,7 @@ function computeStability({ live, ratings, poolsCount }) {
       ok: commissionChanges === 0,
       text:
         commissionChanges === 0
-          ? "Commission stable locally"
+          ? "No recent commission changes"
           : `Commission changed locally (${commissionChanges})`,
       tip: "Based on browser-local snapshots."
     });
@@ -833,13 +834,13 @@ function computeStability({ live, ratings, poolsCount }) {
   } else if (apyDiff <= 0.75) {
     pills.push({
       ok: true,
-      text: `APY sources aligned (Δ ${apyDiff.toFixed(2)}%)`,
+      text: `APY estimates are consistent (Δ ${apyDiff.toFixed(2)}%)`,
       tip: "Current APY inputs are closely aligned."
     });
   } else if (apyDiff <= 1.5) {
     pills.push({
       ok: true,
-      text: `APY sources close (Δ ${apyDiff.toFixed(2)}%)`,
+      text: `APY estimates are fairly close (Δ ${apyDiff.toFixed(2)}%)`,
       tip: "Current APY inputs show a moderate difference."
     });
   } else {
@@ -850,24 +851,24 @@ function computeStability({ live, ratings, poolsCount }) {
     });
   }
 
-  let vcText = "Recent voting consistency unavailable";
+  let vcText = "Recent voting reliability unavailable";
   let vcOk = false;
   if (Number.isFinite(nowUptime)) {
     if (nowUptime >= 95) {
-      vcText = `Recent voting consistency: strong (${nowUptime.toFixed(2)}%)`;
+      vcText = `Recent voting reliability: strong (${nowUptime.toFixed(2)}%)`;
       vcOk = true;
     } else if (nowUptime >= 90) {
-      vcText = `Recent voting consistency: good (${nowUptime.toFixed(2)}%)`;
+      vcText = `Recent voting reliability: good (${nowUptime.toFixed(2)}%)`;
       vcOk = true;
     } else {
-      vcText = `Recent voting consistency: needs attention (${nowUptime.toFixed(2)}%)`;
+      vcText = `Recent voting reliability: needs attention (${nowUptime.toFixed(2)}%)`;
     }
   }
 
   pills.push({
     ok: vcOk,
     text: vcText,
-    tip: "Current voting-consistency input inside this browser-based score."
+    tip: "Current voting-reliability input inside this browser-based score."
   });
 
   pills.push({
@@ -876,7 +877,7 @@ function computeStability({ live, ratings, poolsCount }) {
       Number.isFinite(poolsCount) && poolsCount > 0
         ? `Stake pool presence (${poolsCount})`
         : "No stake pool presence",
-    tip: "Current pool input inside this browser-based score."
+      tip: "Current pool input inside this browser-based score."
   });
 
   let reliabilityNote = "Confidence is still low because local history is short.";
@@ -903,7 +904,7 @@ function renderStability(st) {
   const elNote = document.getElementById("stability-note");
   const elFormula = document.getElementById("stability-formula");
 
-  if (elScore) elScore.textContent = `${st.score}/100`;
+  if (elScore) elScore.textContent = `${st.score} / 100`;
   if (elLabel) elLabel.textContent = st.label;
   if (elTracking) elTracking.textContent = st.trackingText;
 
