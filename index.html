@@ -515,7 +515,7 @@
   <div class="wrap">
     <h1>Validator Transparency Dashboard</h1>
     <p class="lead">
-      A clear validator view with separated data sources: public live data, public APY data, and a separate local tracking section for this browser only.
+      A clear validator view with separated data sources: public live data, public APY data, and a separate personal insights section for this browser only.
     </p>
 
     <div class="grid">
@@ -542,11 +542,11 @@
 
           <div class="kpi-block">
             <div class="muted">
-              Voting consistency
+              Voting reliability
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Voting consistency is a recent relative signal based on vote credits across recent epochs. We compare each recent epoch with the strongest recent one and convert that into a 0–100% score. Higher values mean the validator has been voting more consistently in recent epochs."
+                data-tip="Shows how stable the validator’s voting performance has been in recent epochs. Higher values mean more consistent rewards and fewer missed votes."
               >i</span>
             </div>
             <div id="uptime" class="kpi">—%</div>
@@ -567,10 +567,10 @@
           <span
             class="info-dot"
             tabindex="0"
-            data-tip="This section uses public data only. It summarizes recent validator performance from Solana RPC and reward context from public APY sources."
+            data-tip="This section uses public data only. It looks at up to the last 30 usable recent epochs. If only a few epochs are available, treat the result as an early signal, not a final conclusion."
           >i</span>
         </p>
-        <p class="subtext">Recent behaviour signals that add context beyond the Trust Card, without duplicating the same indicator.</p>
+        <p class="subtext">Simple recent signals that add context beyond the Trust Card. Uses up to the last 30 usable recent epochs.</p>
 
         <div class="source-label">Source</div>
         <div class="source-row">
@@ -587,7 +587,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="How many recent usable epoch-to-epoch observations were available from Solana RPC. The dashboard uses up to the last 30."
+                data-tip="Shows how many recent usable epochs were available for this view. Maximum: 30."
               >i</span>
             </div>
             <div id="perf-window-value" class="behavior-value">—</div>
@@ -600,7 +600,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Compares more recent epoch performance with earlier recent epochs to show whether recent performance looks stable, improving, or weaker."
+                data-tip="Shows whether the latest part of the recent window looks stronger, weaker, or broadly stable compared with the earlier part."
               >i</span>
             </div>
             <div id="perf-trend-value" class="behavior-value">—</div>
@@ -613,7 +613,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Shows how much recent epoch performance moves up and down. Low variability means steadier behaviour. High variability means more uneven behaviour."
+                data-tip="Shows how even or uneven recent performance has been."
               >i</span>
             </div>
             <div id="perf-var-value" class="behavior-value">—</div>
@@ -626,7 +626,7 @@
               <span
                 class="info-dot"
                 tabindex="0"
-                data-tip="Shows whether additional rewards such as Jito appear enabled and gives reward context from public APY sources."
+                data-tip="Shows reward context from public APY data and Jito status."
               >i</span>
             </div>
             <div id="perf-reward-value" class="behavior-value">—</div>
@@ -686,36 +686,36 @@
 
     <div class="card">
       <p class="title">
-        Local tracking (this browser only) + current public inputs
+        Personal validator insights (this browser only) + current public inputs
         <span
           class="info-dot"
           tabindex="0"
-          data-tip="This section is separate from the public blocks above. It uses browser-local snapshots collected on this device."
+          data-tip="This block mixes browser-local history with current public inputs. It is personal to this browser and is not a universal public rating."
         >i</span>
       </p>
-      <p class="subtext">Personal tracking built from visits in this browser. Not shared across devices.</p>
+      <p class="subtext">This block mixes browser-local history with current public inputs. It is personal to this browser and not shared across devices.</p>
 
-      <div class="source-label">Source</div>
+      <div class="source-label">Source model</div>
       <div class="source-row">
-        <span class="source-chip">Browser localStorage</span>
-        <span class="source-chip">Live Solana RPC</span>
-        <span class="source-chip">Stakewiz API</span>
-        <span class="source-chip">Trillium API</span>
+        <span class="source-chip">Browser localStorage (main history)</span>
+        <span class="source-chip">Current live status input</span>
+        <span class="source-chip">Current APY input</span>
+        <span class="source-chip">Current pool input</span>
       </div>
 
       <div class="kpi-row" style="margin-top:10px;">
         <div class="kpi-block">
           <div class="muted">
             Stability
-            <span class="info-dot" tabindex="0" data-tip="Local score built from browser snapshots plus live/public inputs.">i</span>
+            <span class="info-dot" tabindex="0" data-tip="Browser-based score built mostly from local history, then refreshed with current public inputs.">i</span>
           </div>
-          <div id="stability-score" class="kpi">—/100</div>
+          <div id="stability-score" class="kpi">— / 100</div>
         </div>
 
         <div class="kpi-block">
           <div class="muted">
             Assessment
-            <span class="info-dot" tabindex="0" data-tip="Simple label derived from the local tracking score.">i</span>
+            <span class="info-dot" tabindex="0" data-tip="Quick label based on the score below. Helpful, but not final.">i</span>
           </div>
           <div id="stability-label" class="kpi">—</div>
         </div>
@@ -723,7 +723,7 @@
         <div class="kpi-block">
           <div class="muted">
             Tracking
-            <span class="info-dot" tabindex="0" data-tip="How much history this browser has stored for this validator.">i</span>
+            <span class="info-dot" tabindex="0" data-tip="How much local history this browser has stored for this validator.">i</span>
           </div>
           <div id="stability-tracking" class="kpi">—</div>
         </div>
@@ -735,14 +735,15 @@
     </div>
 
     <div class="footer">
-      <p><strong>Source model.</strong> Public blocks use external data. Local tracking is a separate browser-only layer.</p>
-      <p><strong>Methodology.</strong> Voting consistency is a relative score derived from recent <code>epochCredits</code> returned by <code>getVoteAccounts</code>. For each recent epoch, the dashboard looks at how many vote credits were added compared with the previous epoch, then compares that result with the strongest recent epoch. Those relative values are converted into a 0–100% score. Higher values mean more consistent recent voting performance.</p>
+      <p><strong>Source model.</strong> Public blocks use external data. The lower block mixes browser-local history with current public inputs.</p>
+      <p><strong>What this means.</strong> This dashboard highlights how stable and reliable a validator looks based on recent behavior and public data.</p>
+      <p><strong>Methodology (technical).</strong> Voting reliability compares recent epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher values mean steadier recent voting.</p>
     </div>
   </div>
 
   <div id="mobile-tooltip" class="mobile-tooltip" aria-hidden="true"></div>
 
-  <script src="./app.js?v=30" defer></script>
+  <script src="./app.js?v=31" defer></script>
   <script defer>
     function isTouchLike() {
       return window.matchMedia("(hover: none), (pointer: coarse)").matches;
