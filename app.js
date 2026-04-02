@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v36
+ * Validator Transparency Dashboard – app.js v37
  * Backend-only snapshot model:
  * page open -> /api/track-validator -> tracked_validators
  * CRON -> /api/collect -> Supabase -> frontend reads only
@@ -695,13 +695,21 @@ async function main() {
   document.title = `${validatorName} · Validator Dashboard`;
 
   safeSetText(document.getElementById("validator-name-head"), validatorName);
-  safeSetText(document.getElementById("validator-name-badge"), validatorName);
+  safeSetText(document.getElementById("validator-name-badge"), `Viewed: ${validatorName}`);
 
   const headerVote = document.getElementById("header-vote-key");
   if (headerVote) {
     headerVote.textContent = CURRENT.voteKey
-      ? CURRENT.voteKey
-      : "mainnet validator";
+      ? `Vote account: ${CURRENT.voteKey}`
+      : "Vote account: mainnet validator";
+  }
+
+  const currentContext = document.getElementById("current-context");
+  if (currentContext) {
+    const isDefault = !CURRENT.voteFromUrl;
+    currentContext.textContent = isDefault
+      ? "Default profile loaded."
+      : "Custom validator loaded from the URL.";
   }
 
   const shareLink = buildShareUrl();
@@ -723,7 +731,6 @@ async function main() {
     };
   }
 
-  // Non-blocking: opening a validator page should register it for backend tracking.
   registerValidatorForTracking(CURRENT.voteKey).catch(err => {
     console.warn("tracking registration error:", err);
   });
