@@ -1,13 +1,6 @@
 /**
- * Validator Transparency Dashboard – app.js
- *
- * Public blocks:
- * - Trust Card
- * - Recent performance (up to last 30 epochs)
- * - Profitability
- *
- * Mixed block:
- * - Browser-local tracking refreshed with current public inputs
+ * Validator Transparency Dashboard – app.js v33
+ * Now with persistent Supabase snapshot history (replaces localStorage).
  */
 
 const USE_LIVE = true;
@@ -23,33 +16,23 @@ const HELIUS_RPC =
 const JITO_PROXY =
   "https://validator-transparency-dashboard.vercel.app/api/jito";
 
-// ──────────────────────────────────────────────
-// URL overrides (?vote=&name=) + #vote=
-// ──────────────────────────────────────────────
+const SNAPSHOTS_API = "/api/snapshots";
 
 function getParam(name) {
   const qs = new URLSearchParams(window.location.search);
   if (qs.has(name)) return qs.get(name);
-
-  const hash = window.location.hash.startsWith("#")
-    ? window.location.hash.slice(1)
-    : window.location.hash;
+  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
   const hs = new URLSearchParams(hash);
   if (hs.has(name)) return hs.get(name);
-
   return null;
 }
 
 function computeCurrentValidator() {
-  const voteRaw = getParam("vote");
-  const nameRaw = getParam("name");
-
-  const vote = (voteRaw || "").trim();
-  const name = (nameRaw || "").trim();
-
+  const vote = (getParam("vote") || "").trim();
+  const name = (getParam("name") || "").trim();
   return {
-    voteKey: vote.length ? vote : VALIDATOR.voteKey,
-    name: name.length ? name : VALIDATOR.name,
+    voteKey:     vote.length ? vote : VALIDATOR.voteKey,
+    name:        name.length ? name : VALIDATOR.name,
     voteFromUrl: vote.length ? vote : null,
     nameFromUrl: name.length ? name : null
   };
@@ -59,1006 +42,392 @@ const CURRENT = computeCurrentValidator();
 
 function shortKey(k) {
   if (!k) return "—";
-  return k.length > 12 ? `${k.slice(0, 4)}…${k.slice(-4)}` : k;
+  return k.length > 12 ? `${k.slice(0, 6)}…${k.slice(-6)}` : k;
 }
 
-// ──────────────────────────────────────────────
-// HELPERS
-// ──────────────────────────────────────────────
-
 async function fetchJitoStatus(voteKey) {
-  if (!JITO_PROXY) return false;
-
   try {
-    const url = `${JITO_PROXY}?vote=${encodeURIComponent(voteKey)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Jito proxy HTTP ${res.status}`);
-    const json = await res.json();
-    return !!json.jito;
-  } catch (err) {
-    console.warn("Jito check failed:", err);
-    return false;
-  }
+    const res = await fetch(`${JITO_PROXY}?vote=${encodeURIComponent(voteKey)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return !!(await res.json()).jito;
+  } catch { return false; }
 }
 
 function buildShareUrl() {
   const base = `${window.location.origin}${window.location.pathname}`;
-  const isGitHubPages = window.location.hostname.includes("github.io");
-
+  const isGHP = window.location.hostname.includes("github.io");
   const params = new URLSearchParams();
   params.set("vote", CURRENT.voteKey);
   if (CURRENT.nameFromUrl) params.set("name", CURRENT.nameFromUrl);
-
-  return isGitHubPages ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
+  return isGHP ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
 }
 
-function updateShareBox() {
-  const input = document.getElementById("share-url");
-  if (!input) return;
+function fmtPct(v) { const n = Number(v); return Number.isFinite(n) ? `${n.toFixed(2)}%` : "—%"; }
+function fmtSol(v) { const n = Number(v); if (!Number.isFinite(n)) return "—"; return n >= 1000 ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : n.toFixed(2); }
+function average(nums) { const a = nums.filter(x => Number.isFinite(x)); return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null; }
+function stddev(nums) { const a = nums.filter(x => Number.isFinite(x)); if (a.length < 2) return 0; const avg = average(a); return Math.sqrt(a.reduce((s, x) => s + (x - avg) ** 2, 0) / a.length); }
+function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+function safeSetText(el, text) { if (el) el.textContent = text; }
 
-  const link = buildShareUrl();
-  input.value = link;
-
-  const copyBtn = document.getElementById("copy-btn");
-  if (copyBtn) {
-    copyBtn.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(link);
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
-      } catch (err) {
-        console.warn("Clipboard copy failed:", err);
-        copyBtn.textContent = "Error";
-        setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
-      }
-    };
-  }
-}
-
-function fmtPct(v) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "—%";
-  return `${n.toFixed(2)}%`;
-}
-
-function fmtSol(v) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "—";
-  return n >= 1000 ? n.toFixed(0) : n.toFixed(2);
-}
-
-function average(nums) {
-  const a = nums.filter((x) => Number.isFinite(x));
-  if (!a.length) return null;
-  return a.reduce((s, x) => s + x, 0) / a.length;
-}
-
-function stddev(nums) {
-  const a = nums.filter((x) => Number.isFinite(x));
-  if (a.length < 2) return 0;
-  const avg = average(a);
-  const variance = a.reduce((s, x) => s + ((x - avg) ** 2), 0) / a.length;
-  return Math.sqrt(variance);
-}
-
-function clamp(n, a, b) {
-  return Math.max(a, Math.min(b, n));
-}
-
-function appendSentence(base, extra) {
-  if (!base) return extra;
-  if (!extra) return base;
-  return `${base} ${extra}`;
-}
-
-function safeSetText(el, text) {
-  if (el) el.textContent = text;
-}
-
-function safeSetHTML(el, html) {
-  if (el) el.innerHTML = html;
-}
-
-function safeSetTip(el, text) {
-  if (el && el.dataset) {
-    el.dataset.tip = text;
-  }
-}
-
-function getSampleReliability(windowCount) {
-  if (!Number.isFinite(windowCount) || windowCount <= 0) {
-    return {
-      level: "none",
-      note: "No recent data yet."
-    };
-  }
-
-  if (windowCount <= 4) {
-    return {
-      level: "very_low",
-      note: `Based on limited recent data (${windowCount} epochs).`
-    };
-  }
-
-  if (windowCount <= 8) {
-    return {
-      level: "low",
-      note: `Limited sample: ${windowCount} epochs.`
-    };
-  }
-
-  if (windowCount <= 15) {
-    return {
-      level: "medium",
-      note: `${windowCount} epochs observed.`
-    };
-  }
-
-  return {
-    level: "higher",
-    note: `${windowCount} epochs observed.`
-  };
+function getSampleReliability(n) {
+  if (!Number.isFinite(n) || n <= 0) return { level: "none",     note: "No recent data yet." };
+  if (n <= 4)  return { level: "very_low", note: `Limited data (${n} epochs).` };
+  if (n <= 8)  return { level: "low",      note: `Limited: ${n} epochs.` };
+  if (n <= 15) return { level: "medium",   note: `${n} epochs observed.` };
+  return           { level: "higher",  note: `${n} epochs observed.` };
 }
 
 function simplifyTrendDelta(diff) {
   const n = Math.abs(diff);
-
   if (!Number.isFinite(n)) return null;
-  if (n < 10) return "slightly";
-  if (n < 25) return "moderately";
-  return "clearly";
+  if (n < 10) return "slightly"; if (n < 25) return "moderately"; return "clearly";
 }
 
-// ──────────────────────────────────────────────
-// UI COPY ADJUSTMENTS FROM JS
-// ──────────────────────────────────────────────
-
-function applyStaticCopyClarifications() {
-  const trustCard = document.getElementById("commission")?.closest(".card");
-  const recentPerfCard = document.getElementById("perf-window-value")?.closest(".card");
-  const localCard = document.getElementById("stability-score")?.closest(".card");
-
-  if (trustCard) {
-    const mutedRows = trustCard.querySelectorAll(".muted");
-    if (mutedRows[1]) {
-      const vcInfo = mutedRows[1].querySelector(".info-dot");
-      safeSetTip(
-        vcInfo,
-        "Shows how stable the validator’s voting performance has been in recent epochs. Higher values mean more consistent rewards and fewer missed votes."
-      );
-    }
-  }
-
-  if (recentPerfCard) {
-    const titleInfo = recentPerfCard.querySelector(".title .info-dot");
-    safeSetTip(
-      titleInfo,
-      "This section uses public data only. It looks at up to the last 30 usable recent epochs. If only a few epochs are available, treat the result as an early signal, not a final conclusion."
-    );
-
-    const sub = recentPerfCard.querySelector(".subtext");
-    safeSetText(
-      sub,
-      "Simple recent signals that add context beyond the Trust Card. Uses up to the last 30 usable recent epochs."
-    );
-
-    const windowInfo = document.querySelector("#perf-window-value")?.closest(".behavior-item")?.querySelector(".info-dot");
-    safeSetTip(
-      windowInfo,
-      "Shows how many recent usable epochs were available for this view. Maximum: 30."
-    );
-
-    const trendInfo = document.querySelector("#perf-trend-value")?.closest(".behavior-item")?.querySelector(".info-dot");
-    safeSetTip(
-      trendInfo,
-      "Shows whether the latest part of the recent window looks stronger, weaker, or broadly stable compared with the earlier part."
-    );
-
-    const varInfo = document.querySelector("#perf-var-value")?.closest(".behavior-item")?.querySelector(".info-dot");
-    safeSetTip(
-      varInfo,
-      "Shows how even or uneven recent performance has been."
-    );
-
-    const rewardInfo = document.querySelector("#perf-reward-value")?.closest(".behavior-item")?.querySelector(".info-dot");
-    safeSetTip(
-      rewardInfo,
-      "Shows reward context from public APY data and Jito status."
-    );
-  }
-
-  if (localCard) {
-    const title = localCard.querySelector(".title");
-    safeSetHTML(
-      title,
-      `Personal validator insights (this browser only) + current public inputs
-        <span
-          class="info-dot"
-          tabindex="0"
-          data-tip="This block mixes browser-local history with current public inputs. It is personal to this browser and is not a universal public rating."
-        >i</span>`
-    );
-
-    const sub = localCard.querySelector(".subtext");
-    safeSetText(
-      sub,
-      "This block mixes browser-local history with current public inputs. It is personal to this browser and not shared across devices."
-    );
-
-    const sourceLabel = localCard.querySelector(".source-label");
-    safeSetText(sourceLabel, "Source model");
-
-    const chips = localCard.querySelectorAll(".source-row .source-chip");
-    if (chips[0]) chips[0].textContent = "Browser localStorage (main history)";
-    if (chips[1]) chips[1].textContent = "Current live status input";
-    if (chips[2]) chips[2].textContent = "Current APY input";
-    if (chips[3]) chips[3].textContent = "Current pool input";
-
-    const kpiBlocks = localCard.querySelectorAll(".kpi-block");
-    if (kpiBlocks[0]) {
-      safeSetTip(
-        kpiBlocks[0].querySelector(".info-dot"),
-        "Browser-based score built mostly from local history, then refreshed with current public inputs."
-      );
-    }
-    if (kpiBlocks[1]) {
-      safeSetTip(
-        kpiBlocks[1].querySelector(".info-dot"),
-        "Quick label based on the score below. Helpful, but not final."
-      );
-    }
-    if (kpiBlocks[2]) {
-      safeSetTip(
-        kpiBlocks[2].querySelector(".info-dot"),
-        "How much local history this browser has stored for this validator."
-      );
-    }
-  }
-
-  const footer = document.querySelector(".footer");
-  safeSetHTML(
-    footer,
-    `
-      <p><strong>Source model.</strong> Public blocks use external data. The lower block mixes browser-local history with current public inputs.</p>
-      <p><strong>What this means.</strong> This dashboard highlights how stable and reliable a validator looks based on recent behavior and public data.</p>
-      <p><strong>Methodology (technical).</strong> Voting reliability compares recent epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher values mean steadier recent voting.</p>
-    `
-  );
-}
-
-// ──────────────────────────────────────────────
-// Ratings API
-// ──────────────────────────────────────────────
-
+// ── RATINGS ──────────────────────────────────────
 async function fetchRatings(voteKey) {
-  const url = `/api/ratings?vote=${encodeURIComponent(voteKey)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`/api/ratings -> HTTP ${res.status}`);
+  const res = await fetch(`/api/ratings?vote=${encodeURIComponent(voteKey)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-function pickTrilliumApy(trilliumObj) {
-  if (!trilliumObj) return null;
-  const candidates = [
-    trilliumObj.average_delegator_total_apy,
-    trilliumObj.delegator_total_apy,
-    trilliumObj.total_overall_apy
-  ];
-  for (const c of candidates) {
-    const n = Number(c);
-    if (Number.isFinite(n)) return n;
+function pickTrilliumApy(t) {
+  if (!t) return null;
+  for (const c of [t.average_delegator_total_apy, t.delegator_total_apy, t.total_overall_apy]) {
+    const n = Number(c); if (Number.isFinite(n)) return n;
   }
   return null;
 }
 
 function renderRatings(r) {
-  const elMedian = document.getElementById("apy-median");
-  const elStakewiz = document.getElementById("apy-stakewiz");
-  const elTrillium = document.getElementById("apy-trillium");
-  const elPoolsCount = document.getElementById("pools-count");
-  const elPoolsTotals = document.getElementById("pools-totals");
-  const elPoolsList = document.getElementById("pools-list");
-  const elSourcesNote = document.getElementById("apy-sources-note");
-
-  if (elMedian) elMedian.textContent = fmtPct(r?.derived?.apy_median);
-  if (elStakewiz) elStakewiz.textContent = fmtPct(r?.sources?.stakewiz?.total_apy);
-
-  const trilliumObj = r?.sources?.trillium;
-  const trilliumApy = pickTrilliumApy(trilliumObj);
-  if (elTrillium) elTrillium.textContent = fmtPct(trilliumApy);
-
   const pools = Array.isArray(r?.pools?.stake_pools) ? r.pools.stake_pools : [];
-  if (elPoolsCount) elPoolsCount.textContent = pools.length ? String(pools.length) : "—";
+  const median = r?.derived?.apy_median;
+  const trApy  = pickTrilliumApy(r?.sources?.trillium);
 
-  if (elPoolsTotals) {
-    const a = fmtSol(r?.pools?.total_from_stake_pools);
-    const b = fmtSol(r?.pools?.total_not_from_stake_pools);
-    elPoolsTotals.textContent = `Stake from pools: ${a} SOL • Not from pools: ${b} SOL`;
-  }
+  safeSetText(document.getElementById("apy-median"),      fmtPct(median));
+  safeSetText(document.getElementById("apy-median-2"),    fmtPct(median));
+  safeSetText(document.getElementById("pools-count-kpi"), pools.length ? String(pools.length) : "—");
+  safeSetText(document.getElementById("apy-stakewiz"),    fmtPct(r?.sources?.stakewiz?.total_apy));
+  safeSetText(document.getElementById("apy-trillium"),    fmtPct(trApy));
+  safeSetText(document.getElementById("stake-from-pools"), fmtSol(r?.pools?.total_from_stake_pools) + " SOL");
+  safeSetText(document.getElementById("stake-not-pools"),  fmtSol(r?.pools?.total_not_from_stake_pools) + " SOL");
 
-  if (elPoolsList) {
-    elPoolsList.innerHTML = "";
-    const top = pools.slice(0, 12);
-
+  const poolList = document.getElementById("pools-list");
+  if (poolList) {
+    poolList.innerHTML = "";
+    const top = pools.slice(0, 14);
     if (!top.length) {
-      const empty = document.createElement("div");
-      empty.className = "muted small";
-      empty.textContent = "No stake pool data available right now.";
-      elPoolsList.appendChild(empty);
+      poolList.innerHTML = '<span style="font-size:12px;color:var(--muted)">No stake pool data available.</span>';
     } else {
       for (const p of top) {
         const b = document.createElement("span");
-        b.className = "pool-badge";
+        b.className = "pool-tag";
         b.textContent = `${p.name}: ${fmtSol(p.sol)} SOL`;
-        elPoolsList.appendChild(b);
+        poolList.appendChild(b);
       }
       if (pools.length > top.length) {
         const more = document.createElement("span");
-        more.className = "pool-badge";
+        more.className = "pool-tag";
         more.textContent = `+${pools.length - top.length} more`;
-        elPoolsList.appendChild(more);
+        poolList.appendChild(more);
       }
     }
   }
 
-  if (elSourcesNote) {
-    const sw = r?.sources?.stakewiz;
-    const trOk = trilliumObj && !trilliumObj?.error && trilliumApy !== null;
-
-    let text = "Public API status: ";
-
-    if (!sw || sw.error) {
-      const err = (sw?.error || "").toLowerCase();
-      text += err.includes("timeout") ? "Stakewiz timeout. " : "Stakewiz unavailable. ";
-    } else {
-      text += "Stakewiz OK. ";
-    }
-
-    text += trOk ? "Trillium OK." : "Trillium unavailable.";
-    elSourcesNote.textContent = text;
-  }
+  const sw = r?.sources?.stakewiz;
+  const trOk = r?.sources?.trillium && !r?.sources?.trillium?.error && trApy !== null;
+  safeSetText(document.getElementById("apy-sources-note"),
+    "Source status: " + (!sw || sw.error ? "Stakewiz unavailable. " : "Stakewiz OK. ") + (trOk ? "Trillium OK." : "Trillium unavailable."));
 }
 
-// ──────────────────────────────────────────────
-// LIVE DATA: Solana JSON-RPC
-// ──────────────────────────────────────────────
-
+// ── LIVE DATA ─────────────────────────────────────
 async function fetchLive(voteKey) {
-  const RPCS = [
-    HELIUS_RPC,
-    "https://api.mainnet-beta.solana.com",
-    "https://rpc.ankr.com/solana"
-  ];
-
-  const requestBody = {
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getVoteAccounts",
-    params: [{ commitment: "finalized" }]
-  };
-
-  const EMPTY = {
-    commissionHistory: Array(10).fill(0),
-    uptimeLast5EpochsPct: 0,
-    jito: false,
-    status: "error",
-    votePubkey: null,
-    nodePubkey: null,
-    epochCreditsLen: 0,
-    epochConsistencySeries: []
-  };
+  const RPCS = [HELIUS_RPC, "https://api.mainnet-beta.solana.com", "https://rpc.ankr.com/solana"];
+  const body = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getVoteAccounts", params: [{ commitment: "finalized" }] });
+  const EMPTY = { commissionHistory: Array(10).fill(0), uptimeLast5EpochsPct: 0, jito: false, status: "error", votePubkey: null, nodePubkey: null, epochCreditsLen: 0, epochConsistencySeries: [] };
 
   for (const rpc of RPCS) {
     try {
-      const res = await fetch(rpc, {
-        method: "POST",
-        headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!res.ok) throw new Error(`RPC ${rpc} → HTTP ${res.status}`);
-
+      const res = await fetch(rpc, { method: "POST", headers: { "content-type": "application/json" }, body });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      const current = json?.result?.current || [];
+      const current    = json?.result?.current   || [];
       const delinquent = json?.result?.delinquent || [];
-      const all = current.concat(delinquent);
-
-      const me = all.find((v) => v.votePubkey === voteKey);
+      const me = [...current, ...delinquent].find(v => v.votePubkey === voteKey);
       if (!me) return { ...EMPTY, status: "not found" };
 
-      const commission = Number(me.commission ?? 0);
-      const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
-      const status = isDelinquent ? "delinquent" : "healthy";
+      const commission   = Number(me.commission ?? 0);
+      const isDelinquent = delinquent.some(v => v.votePubkey === me.votePubkey);
 
-      let uptimePct = 0;
-      let epochConsistencySeries = [];
-
+      let uptimePct = 0, epochConsistencySeries = [];
       try {
         const credits = Array.isArray(me.epochCredits) ? me.epochCredits : [];
-        const deltas = [];
-
-        for (let i = 1; i < credits.length; i++) {
-          const prevCredits = credits[i - 1]?.[1] ?? 0;
-          const curCredits = credits[i]?.[1] ?? 0;
-          deltas.push(Math.max(0, curCredits - prevCredits));
+        const deltas  = [];
+        for (let i = 1; i < credits.length; i++) deltas.push(Math.max(0, (credits[i]?.[1] ?? 0) - (credits[i-1]?.[1] ?? 0)));
+        const recent = deltas.slice(-30);
+        if (recent.length) {
+          const maxD = Math.max(...recent, 1);
+          epochConsistencySeries = recent.map(d => Math.round((d / maxD) * 10000) / 100);
         }
-
-        const recentDeltas = deltas.slice(-30);
-        if (recentDeltas.length) {
-          const maxDelta = Math.max(...recentDeltas, 1);
-          epochConsistencySeries = recentDeltas.map((d) =>
-            Math.round(((d / maxDelta) * 100) * 100) / 100
-          );
-        }
-
         const last5 = epochConsistencySeries.slice(-5);
-        uptimePct = last5.length
-          ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) / 100
-          : 0;
-      } catch (err) {
-        console.warn("Failed to build epoch consistency series:", err);
-        uptimePct = 0;
-        epochConsistencySeries = [];
-      }
+        uptimePct = last5.length ? Math.round(last5.reduce((s, x) => s + x, 0) / last5.length * 100) / 100 : 0;
+      } catch (e) { console.warn("epoch calc:", e); }
 
       const jito = await fetchJitoStatus(voteKey);
-
-      return {
-        commissionHistory: Array(10).fill(commission),
-        uptimeLast5EpochsPct: uptimePct,
-        jito,
-        status,
-        votePubkey: me.votePubkey,
-        nodePubkey: me.nodePubkey || null,
-        epochCreditsLen: Array.isArray(me.epochCredits) ? me.epochCredits.length : 0,
-        epochConsistencySeries
-      };
-    } catch (err) {
-      console.warn("RPC failed:", rpc, err.message || err);
-    }
+      return { commissionHistory: Array(10).fill(commission), uptimeLast5EpochsPct: uptimePct, jito, status: isDelinquent ? "delinquent" : "healthy", votePubkey: me.votePubkey, nodePubkey: me.nodePubkey || null, epochCreditsLen: Array.isArray(me.epochCredits) ? me.epochCredits.length : 0, epochConsistencySeries };
+    } catch (err) { console.warn("RPC failed:", rpc, err.message); }
   }
-
   return EMPTY;
 }
 
-// ──────────────────────────────────────────────
-// PUBLIC RECENT PERFORMANCE
-// ──────────────────────────────────────────────
+// ── SUPABASE SNAPSHOTS ────────────────────────────
+async function loadSnapshotsFromDB(voteKey) {
+  try {
+    const res = await fetch(`${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&limit=120`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("DB load failed, using localStorage:", err);
+    try { const a = JSON.parse(localStorage.getItem(`vtd_snapshots_${voteKey}`)); return Array.isArray(a) ? a : []; } catch { return []; }
+  }
+}
 
+async function saveSnapshotToDB(snap) {
+  try {
+    const res = await fetch(SNAPSHOTS_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(snap) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const j = await res.json();
+    if (!j.skipped) console.log("Snapshot saved to Supabase ✓");
+  } catch (err) {
+    console.warn("DB save failed, saving locally:", err);
+    try {
+      const key = `vtd_snapshots_${snap.vote_key}`;
+      const arr = JSON.parse(localStorage.getItem(key) || "[]");
+      arr.push({ ...snap, t: Date.now() });
+      localStorage.setItem(key, JSON.stringify(arr.slice(-120)));
+    } catch {}
+  }
+}
+
+// ── RECENT PERFORMANCE ────────────────────────────
 function computeRecentPerformance({ live, ratings }) {
-  const series = Array.isArray(live?.epochConsistencySeries)
-    ? live.epochConsistencySeries.filter((x) => Number.isFinite(x))
-    : [];
-
-  const windowCount = series.length;
-  const avg = average(series);
-  const volatility = stddev(series);
-
-  const mid = Math.floor(windowCount / 2);
-  const firstHalf = series.slice(0, mid);
-  const secondHalf = series.slice(mid);
-
-  const firstAvg = average(firstHalf);
-  const secondAvg = average(secondHalf);
-  const diff =
-    Number.isFinite(firstAvg) && Number.isFinite(secondAvg)
-      ? secondAvg - firstAvg
-      : null;
-
-  const reliability = getSampleReliability(windowCount);
-
+  const series = (live?.epochConsistencySeries || []).filter(x => Number.isFinite(x));
+  const n = series.length, volatility = stddev(series), mid = Math.floor(n / 2);
+  const diff = n >= 4 ? (average(series.slice(mid)) - average(series.slice(0, mid))) : null;
+  const rel = getSampleReliability(n), jito = !!live?.jito;
   const apyMedian = Number(ratings?.derived?.apy_median);
-  const sw = Number(ratings?.sources?.stakewiz?.total_apy);
-  const tr = pickTrilliumApy(ratings?.sources?.trillium);
-  const jito = !!live?.jito;
+  const sw = Number(ratings?.sources?.stakewiz?.total_apy), tr = pickTrilliumApy(ratings?.sources?.trillium);
 
   const out = {
-    window: {
-      value: "—",
-      sub: "No recent data yet."
-    },
-    trend: {
-      value: "—",
-      sub: "Not enough recent data."
-    },
-    variability: {
-      value: "—",
-      sub: "Not enough recent data."
-    },
-    reward: {
-      value: jito ? "Jito enabled" : "Jito not detected",
-      sub: "Reward context from public APY data."
-    }
+    window:      { value: "—", sub: "No data yet." },
+    trend:       { value: "—", sub: "Not enough data." },
+    variability: { value: "—", sub: "Not enough data." },
+    reward:      { value: jito ? "Jito ON" : "Jito OFF", sub: "—" }
   };
 
-  if (windowCount > 0) {
-    out.window.value = `${windowCount} epochs`;
-    out.window.sub = appendSentence(
-      `This view uses ${windowCount} recent usable epochs (max 30).`,
-      reliability.note
-    );
+  if (n > 0) { out.window.value = `${n} epochs`; out.window.sub = `Up to 30. ${rel.note}`; }
+
+  if (n >= 4 && Number.isFinite(diff)) {
+    const s = simplifyTrendDelta(diff);
+    const cap = s ? s[0].toUpperCase() + s.slice(1) : "";
+    if (diff >= 3)       { out.trend.value = "Improving"; out.trend.sub = `${cap} improvement recently.`.trim(); }
+    else if (diff <= -3) { out.trend.value = "Declining"; out.trend.sub = `${cap} decline recently.`.trim(); }
+    else                 { out.trend.value = "Stable";    out.trend.sub = "No clear recent change."; }
+    if (rel.level === "very_low" || rel.level === "low") { out.trend.value = "Limited data"; out.trend.sub = rel.note; }
+  } else if (n > 0) { out.trend.value = "Limited"; out.trend.sub = rel.note; }
+
+  if (n >= 2 && Number.isFinite(volatility)) {
+    if (volatility <= 5)       { out.variability.value = "Low";      out.variability.sub = "Performance looks steady."; }
+    else if (volatility <= 12) { out.variability.value = "Moderate"; out.variability.sub = "Some fluctuation, not unstable."; }
+    else                       { out.variability.value = "High";     out.variability.sub = "Uneven recent performance."; }
+    if (rel.level === "very_low") out.variability.sub += " " + rel.note;
   }
 
-  if (windowCount >= 4 && Number.isFinite(diff)) {
-    const strength = simplifyTrendDelta(diff);
-
-    if (diff >= 3) {
-      out.trend.value =
-        reliability.level === "very_low" || reliability.level === "low"
-          ? "Slight improvement"
-          : "Improving";
-      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} improvement in recent performance.`.trim();
-    } else if (diff <= -3) {
-      out.trend.value =
-        reliability.level === "very_low" || reliability.level === "low"
-          ? "Slight decline"
-          : "Declining";
-      out.trend.sub = `${strength ? strength.charAt(0).toUpperCase() + strength.slice(1) : ""} decline in recent performance.`.trim();
-    } else {
-      out.trend.value = "Stable";
-      out.trend.sub = "No clear recent change.";
-    }
-
-    if (reliability.level === "very_low" || reliability.level === "low") {
-      out.trend.sub = appendSentence(out.trend.sub, reliability.note);
-    }
-  } else if (windowCount > 0) {
-    out.trend.value = "Limited data";
-    out.trend.sub = reliability.note;
-  }
-
-  if (windowCount >= 2 && Number.isFinite(volatility)) {
-    if (volatility <= 5) {
-      out.variability.value = reliability.level === "very_low" ? "Low variability" : "Low";
-      out.variability.sub = "Recent performance looks steady.";
-    } else if (volatility <= 12) {
-      out.variability.value = reliability.level === "very_low" ? "Moderate variability" : "Moderate";
-      out.variability.sub = "Some fluctuation in recent performance, but not unstable.";
-    } else {
-      out.variability.value =
-        reliability.level === "very_low" || reliability.level === "low"
-          ? "High variability"
-          : "High";
-      out.variability.sub = "Recent performance looks uneven.";
-    }
-
-    if (reliability.level === "very_low" || reliability.level === "low") {
-      out.variability.sub = appendSentence(out.variability.sub, reliability.note);
-    }
-  } else if (windowCount === 1) {
-    out.variability.value = "Limited data";
-    out.variability.sub = reliability.note;
-  }
-
-  const rewardParts = [];
-  rewardParts.push(jito ? "Jito enabled – additional rewards active." : "No Jito rewards detected.");
-
-  if (Number.isFinite(apyMedian)) {
-    rewardParts.push(`Median APY: ${apyMedian.toFixed(2)}%.`);
-  }
-
-  if (Number.isFinite(sw) && Number.isFinite(tr)) {
-    const delta = Math.abs(sw - tr);
-    rewardParts.push(delta <= 1 ? "APY sources match closely." : "APY sources differ.");
-  } else if (Number.isFinite(sw) || Number.isFinite(tr)) {
-    rewardParts.push("Only one APY source is available.");
-  } else {
-    rewardParts.push("APY data unavailable.");
-  }
-
-  out.reward.sub = rewardParts.join(" ");
+  const rp = [jito ? "Jito enabled – extra rewards active." : "No Jito rewards detected."];
+  if (Number.isFinite(apyMedian)) rp.push(`Median APY: ${apyMedian.toFixed(2)}%.`);
+  rp.push(Number.isFinite(sw) && Number.isFinite(tr) ? (Math.abs(sw - tr) <= 1 ? "APY sources match closely." : "APY sources differ.") : "Limited APY data.");
+  out.reward.sub = rp.join(" ");
   return out;
 }
 
 function renderRecentPerformance(perf) {
-  const windowValue = document.getElementById("perf-window-value");
-  const windowSub = document.getElementById("perf-window-sub");
-  const trendValue = document.getElementById("perf-trend-value");
-  const trendSub = document.getElementById("perf-trend-sub");
-  const varValue = document.getElementById("perf-var-value");
-  const varSub = document.getElementById("perf-var-sub");
-  const rewardValue = document.getElementById("perf-reward-value");
-  const rewardSub = document.getElementById("perf-reward-sub");
-
-  if (windowValue) windowValue.textContent = perf.window.value;
-  if (windowSub) windowSub.textContent = perf.window.sub;
-
-  if (trendValue) trendValue.textContent = perf.trend.value;
-  if (trendSub) trendSub.textContent = perf.trend.sub;
-
-  if (varValue) varValue.textContent = perf.variability.value;
-  if (varSub) varSub.textContent = perf.variability.sub;
-
-  if (rewardValue) rewardValue.textContent = perf.reward.value;
-  if (rewardSub) rewardSub.textContent = perf.reward.sub;
+  safeSetText(document.getElementById("perf-window-value"), perf.window.value);
+  safeSetText(document.getElementById("perf-window-sub"),   perf.window.sub);
+  safeSetText(document.getElementById("perf-trend-value"),  perf.trend.value);
+  safeSetText(document.getElementById("perf-trend-sub"),    perf.trend.sub);
+  safeSetText(document.getElementById("perf-var-value"),    perf.variability.value);
+  safeSetText(document.getElementById("perf-var-sub"),      perf.variability.sub);
+  safeSetText(document.getElementById("perf-reward-value"), perf.reward.value);
+  safeSetText(document.getElementById("perf-reward-sub"),   perf.reward.sub);
 }
 
-// ──────────────────────────────────────────────
-// LOCAL SNAPSHOTS FOR LOCAL TRACKING ONLY
-// ──────────────────────────────────────────────
+// ── STABILITY ─────────────────────────────────────
+function computeStability({ live, ratings, poolsCount, snaps }) {
+  const n = snaps.length, nowStatus = live?.status || "—", nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
+  const sw = Number(ratings?.sources?.stakewiz?.total_apy), tr = pickTrilliumApy(ratings?.sources?.trillium);
+  const apyDiff = Number.isFinite(sw) && Number.isFinite(tr) ? Math.abs(sw - tr) : null;
 
-function safeJsonParse(s) {
-  try {
-    return JSON.parse(s);
-  } catch {
-    return null;
-  }
-}
-
-function lsKeyForVote(voteKey) {
-  return `vtd_snapshots_${voteKey}`;
-}
-
-function loadSnapshots(voteKey) {
-  try {
-    const raw = localStorage.getItem(lsKeyForVote(voteKey));
-    const arr = safeJsonParse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveSnapshots(voteKey, snaps) {
-  try {
-    localStorage.setItem(lsKeyForVote(voteKey), JSON.stringify(snaps));
-  } catch {}
-}
-
-function pushSnapshotIfNeeded(voteKey, snap) {
-  const snaps = loadSnapshots(voteKey);
-  const last = snaps.length ? snaps[snaps.length - 1] : null;
-
-  if (last && Number.isFinite(last.t) && (snap.t - last.t) < 30 * 60 * 1000) {
-    return snaps;
-  }
-
-  snaps.push(snap);
-  const trimmed = snaps.slice(-120);
-  saveSnapshots(voteKey, trimmed);
-  return trimmed;
-}
-
-// ──────────────────────────────────────────────
-// LOCAL TRACKING + CURRENT PUBLIC INPUTS
-// ──────────────────────────────────────────────
-
-function computeStability({ live, ratings, poolsCount }) {
-  const snaps = loadSnapshots(CURRENT.voteKey);
-  const n = snaps.length;
-
-  const nowStatus = live?.status || "—";
-  const nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
-
-  const sw = Number(ratings?.sources?.stakewiz?.total_apy);
-  const tr = pickTrilliumApy(ratings?.sources?.trillium);
-  const apyDiff =
-    Number.isFinite(sw) && Number.isFinite(tr) ? Math.abs(sw - tr) : null;
-
-  let delinquentCount = 0;
-  let commissionChanges = 0;
-
-  for (let i = 0; i < snaps.length; i++) {
+  let delinquentCount = 0, commissionChanges = 0;
+  for (let i = 0; i < n; i++) {
     if (snaps[i]?.status && snaps[i].status !== "healthy") delinquentCount++;
-    if (
-      i > 0 &&
-      Number.isFinite(snaps[i].commission) &&
-      Number.isFinite(snaps[i - 1].commission)
-    ) {
-      if (snaps[i].commission !== snaps[i - 1].commission) commissionChanges++;
-    }
+    if (i > 0 && Number.isFinite(snaps[i].commission) && Number.isFinite(snaps[i-1].commission) && snaps[i].commission !== snaps[i-1].commission) commissionChanges++;
   }
-
-  const delinquentRate = n ? delinquentCount / n : 0;
 
   let score = 100;
   if (nowStatus === "delinquent") score -= 40;
-  score -= delinquentRate * 40;
+  score -= (n ? delinquentCount / n : 0) * 40;
   score -= clamp(commissionChanges * 5, 0, 20);
-
-  if (Number.isFinite(nowUptime) && nowUptime < 95) {
-    score -= clamp((95 - nowUptime) * 1.5, 0, 20);
-  }
-
-  if (apyDiff !== null && apyDiff > 1) {
-    score -= clamp((apyDiff - 1) * 5, 0, 15);
-  }
-
+  if (Number.isFinite(nowUptime) && nowUptime < 95) score -= clamp((95 - nowUptime) * 1.5, 0, 20);
+  if (apyDiff !== null && apyDiff > 1) score -= clamp((apyDiff - 1) * 5, 0, 15);
   if (!Number.isFinite(poolsCount) || poolsCount <= 0) score -= 10;
   score = clamp(Math.round(score), 0, 100);
 
-  let label = "—";
-  if (score >= 85) label = "Strong";
-  else if (score >= 70) label = "Good";
-  else if (score >= 50) label = "Watch";
-  else label = "Risk";
+  const label = score >= 85 ? "Strong" : score >= 70 ? "Good" : score >= 50 ? "Watch" : "Risk";
 
-  let trackingText = "Today";
-  let trackingNote =
-    "Tracking starts building in this browser. Short history means lower confidence.";
-
+  let trackingText = "Today", trackingNote = "Building history. Early data = lower confidence.";
   if (n >= 2) {
-    const t0 = snaps[0].t;
-    const t1 = snaps[n - 1].t;
+    const t0 = new Date(snaps[0].captured_at || snaps[0].t || Date.now()).getTime();
+    const t1 = new Date(snaps[n-1].captured_at || snaps[n-1].t || Date.now()).getTime();
     const days = Math.max(0, (t1 - t0) / (24 * 3600 * 1000));
-    const daysNice =
-      days >= 1
-        ? `${days.toFixed(0)}d`
-        : `${Math.max(1, (days * 24).toFixed(0))}h`;
-    trackingText = `${daysNice}`;
-    trackingNote = `${n} snapshots stored in this browser. This is a browser-based view, not a universal public rating.`;
+    trackingText = days >= 1 ? `${Math.round(days)}d` : `${Math.max(1, Math.round(days * 24))}h`;
+    trackingNote = `${n} snapshots over ${trackingText}. Universal history — shared across all visitors.`;
   }
 
   const pills = [];
-
   if (n >= 2) {
-    pills.push({
-      ok: delinquentCount === 0,
-      text:
-        delinquentCount === 0
-          ? "No delinquency observed locally"
-          : `Delinquency seen locally (${delinquentCount}/${n})`,
-      tip: "Based on snapshots stored in this browser."
-    });
+    pills.push({ ok: delinquentCount === 0, text: delinquentCount === 0 ? "No delinquency in history" : `Delinquency seen (${delinquentCount}/${n})`, tip: "Based on all recorded snapshots." });
   } else {
-    pills.push({
-      ok: nowStatus === "healthy",
-      text: nowStatus === "healthy" ? "Healthy right now" : `Status: ${nowStatus}`,
-      tip: "Current live status input."
-    });
+    pills.push({ ok: nowStatus === "healthy", text: nowStatus === "healthy" ? "Healthy right now" : `Status: ${nowStatus}`, tip: "Current live status." });
   }
-
   if (n >= 2) {
-    pills.push({
-      ok: commissionChanges === 0,
-      text:
-        commissionChanges === 0
-          ? "No recent commission changes"
-          : `Commission changed locally (${commissionChanges})`,
-      tip: "Based on browser-local snapshots."
-    });
+    pills.push({ ok: commissionChanges === 0, text: commissionChanges === 0 ? "Commission stable" : `Commission changed ${commissionChanges}x`, tip: "Based on recorded snapshots." });
   } else {
-    pills.push({
-      ok: true,
-      text: "Commission tracking builds locally",
-      tip: "Needs more local snapshots."
-    });
+    pills.push({ ok: true, text: "Commission history building", tip: "Needs more snapshots." });
   }
-
   if (apyDiff === null) {
-    pills.push({
-      ok: false,
-      text: "APY agreement unavailable",
-      tip: "Needs current APY data from Stakewiz and Trillium."
-    });
+    pills.push({ ok: false, text: "APY comparison unavailable", tip: "Needs both APY sources." });
   } else if (apyDiff <= 0.75) {
-    pills.push({
-      ok: true,
-      text: `APY estimates are consistent (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Current APY inputs are closely aligned."
-    });
+    pills.push({ ok: true, text: `APY sources consistent (Δ ${apyDiff.toFixed(2)}%)`, tip: "APY inputs closely aligned." });
   } else if (apyDiff <= 1.5) {
-    pills.push({
-      ok: true,
-      text: `APY estimates are fairly close (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Current APY inputs show a moderate difference."
-    });
+    pills.push({ ok: true, text: `APY fairly close (Δ ${apyDiff.toFixed(2)}%)`, tip: "Moderate APY difference." });
   } else {
-    pills.push({
-      ok: false,
-      text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Current APY inputs show a large difference."
-    });
+    pills.push({ ok: false, text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)`, tip: "Large APY difference." });
   }
+  const uptimeOk = Number.isFinite(nowUptime) && nowUptime >= 90;
+  pills.push({ ok: uptimeOk, text: !Number.isFinite(nowUptime) ? "Voting data unavailable" : nowUptime >= 95 ? `Voting strong (${nowUptime.toFixed(1)}%)` : nowUptime >= 90 ? `Voting good (${nowUptime.toFixed(1)}%)` : `Voting needs attention (${nowUptime.toFixed(1)}%)`, tip: "Current voting reliability." });
+  pills.push({ ok: Number.isFinite(poolsCount) && poolsCount > 0, text: Number.isFinite(poolsCount) && poolsCount > 0 ? `${poolsCount} stake pools delegating` : "No stake pool presence", tip: "Current pool input." });
 
-  let vcText = "Recent voting reliability unavailable";
-  let vcOk = false;
-  if (Number.isFinite(nowUptime)) {
-    if (nowUptime >= 95) {
-      vcText = `Recent voting reliability: strong (${nowUptime.toFixed(2)}%)`;
-      vcOk = true;
-    } else if (nowUptime >= 90) {
-      vcText = `Recent voting reliability: good (${nowUptime.toFixed(2)}%)`;
-      vcOk = true;
-    } else {
-      vcText = `Recent voting reliability: needs attention (${nowUptime.toFixed(2)}%)`;
-    }
-  }
+  let reliabilityNote = "Confidence low — short history.";
+  if (n >= 48) reliabilityNote = "Confidence strong — extensive history.";
+  else if (n >= 24) reliabilityNote = "Confidence moderate — meaningful history.";
+  else if (n >= 8)  reliabilityNote = "Confidence improving — limited history.";
 
-  pills.push({
-    ok: vcOk,
-    text: vcText,
-    tip: "Current voting-reliability input inside this browser-based score."
-  });
-
-  pills.push({
-    ok: Number.isFinite(poolsCount) && poolsCount > 0,
-    text:
-      Number.isFinite(poolsCount) && poolsCount > 0
-        ? `Stake pool presence (${poolsCount})`
-        : "No stake pool presence",
-      tip: "Current pool input inside this browser-based score."
-  });
-
-  let reliabilityNote = "Confidence is still low because local history is short.";
-  if (n >= 48) {
-    reliabilityNote = "Confidence is stronger because this browser has a long local history.";
-  } else if (n >= 24) {
-    reliabilityNote = "Confidence is moderate because this browser has a meaningful local history.";
-  } else if (n >= 8) {
-    reliabilityNote = "Confidence is improving, but local history is still limited.";
-  }
-
-  const formulaLine =
-    "This score starts at 100 and applies penalties for delinquency, commission changes, lower recent voting consistency, APY disagreement, and missing pool presence. " +
-    reliabilityNote;
-
-  return { score, label, trackingText, trackingNote, pills, formulaLine };
+  return { score, label, trackingText, trackingNote, pills, formulaLine: "Score starts at 100, penalised for: delinquency, commission changes, low voting, APY disagreement, no pool presence. " + reliabilityNote };
 }
 
 function renderStability(st) {
-  const elScore = document.getElementById("stability-score");
-  const elLabel = document.getElementById("stability-label");
-  const elTracking = document.getElementById("stability-tracking");
-  const elPills = document.getElementById("stability-pills");
-  const elNote = document.getElementById("stability-note");
-  const elFormula = document.getElementById("stability-formula");
-
-  if (elScore) elScore.textContent = `${st.score} / 100`;
-  if (elLabel) elLabel.textContent = st.label;
-  if (elTracking) elTracking.textContent = st.trackingText;
-
-  if (elPills) {
-    elPills.innerHTML = "";
+  safeSetText(document.getElementById("score-val"),         `${st.score} / 100`);
+  safeSetText(document.getElementById("score-assess"),      st.label);
+  safeSetText(document.getElementById("score-tracking"),    st.trackingText);
+  safeSetText(document.getElementById("stability-note"),    st.trackingNote);
+  safeSetText(document.getElementById("stability-formula"), st.formulaLine);
+  const pillsEl = document.getElementById("stability-pills");
+  if (pillsEl) {
+    pillsEl.innerHTML = "";
     for (const p of st.pills) {
       const span = document.createElement("span");
       span.className = `pill ${p.ok ? "pill-ok" : "pill-warn"}`;
       span.textContent = p.text;
       if (p.tip) span.title = p.tip;
-      elPills.appendChild(span);
+      pillsEl.appendChild(span);
     }
   }
-
-  if (elNote) elNote.textContent = st.trackingNote;
-  if (elFormula) elFormula.textContent = st.formulaLine;
+  if (window.animateScoreRing) window.animateScoreRing(st.score);
 }
 
-// ──────────────────────────────────────────────
-// MAIN
-// ──────────────────────────────────────────────
-
+// ── MAIN ─────────────────────────────────────────
 async function main() {
-  applyStaticCopyClarifications();
+  const validatorName = CURRENT.nameFromUrl || CURRENT.name;
+  document.title = `${validatorName} · Validator Dashboard`;
+  safeSetText(document.getElementById("page-title"), validatorName);
+  safeSetText(document.getElementById("header-sub"), `Solana validator transparency dashboard · ${shortKey(CURRENT.voteKey)}`);
 
-  const nameEl = document.getElementById("validator-name");
-  if (nameEl) {
-    const label = CURRENT.nameFromUrl
-      ? CURRENT.nameFromUrl
-      : `vote ${shortKey(CURRENT.voteKey)}`;
-    nameEl.textContent = `Validator: ${label}`;
+  const avatar = document.getElementById("id-avatar");
+  if (avatar) avatar.textContent = validatorName.slice(0, 2).toUpperCase();
+  safeSetText(document.getElementById("id-name"),    validatorName);
+  safeSetText(document.getElementById("id-votekey"), CURRENT.voteKey);
+
+  const shareLink = buildShareUrl();
+  const shareInput = document.getElementById("share-url");
+  if (shareInput) shareInput.value = shareLink;
+  const copyBtn = document.getElementById("copy-btn");
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      try { await navigator.clipboard.writeText(shareLink); copyBtn.textContent = "Copied!"; }
+      catch { copyBtn.textContent = "Error"; }
+      setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+    };
   }
 
   let live;
   try {
-    live = USE_LIVE
-      ? await fetchLive(CURRENT.voteKey)
-      : {
-          commissionHistory: Array(10).fill(0),
-          uptimeLast5EpochsPct: 99.2,
-          jito: true,
-          status: "healthy",
-          nodePubkey: null,
-          epochCreditsLen: 8,
-          epochConsistencySeries: [99, 98, 100, 97, 99, 98, 100, 99]
-        };
+    live = USE_LIVE ? await fetchLive(CURRENT.voteKey) : { commissionHistory: Array(10).fill(0), uptimeLast5EpochsPct: 99.2, jito: true, status: "healthy", nodePubkey: null, epochCreditsLen: 8, epochConsistencySeries: [88, 92, 95, 97, 99, 98, 100, 99, 97, 98] };
   } catch (err) {
-    console.error("Fatal error in fetchLive:", err);
-    live = {
-      commissionHistory: Array(10).fill(0),
-      uptimeLast5EpochsPct: 0,
-      jito: false,
-      status: "error",
-      votePubkey: null,
-      nodePubkey: null,
-      epochCreditsLen: 0,
-      epochConsistencySeries: []
-    };
+    console.error("fetchLive:", err);
+    live = { commissionHistory: Array(10).fill(0), uptimeLast5EpochsPct: 0, jito: false, status: "error", votePubkey: null, nodePubkey: null, epochCreditsLen: 0, epochConsistencySeries: [] };
   }
 
-  if (nameEl) {
-    const finalLabel = CURRENT.nameFromUrl
-      ? CURRENT.nameFromUrl
-      : live.nodePubkey
-        ? `node ${shortKey(live.nodePubkey)}`
-        : `vote ${shortKey(CURRENT.voteKey)}`;
-    nameEl.textContent = `Validator: ${finalLabel}`;
-  }
+  safeSetText(document.getElementById("node-key"), live.nodePubkey || "Not available");
 
-  const jitoBadge = document.getElementById("jito-badge");
-  if (jitoBadge) {
-    jitoBadge.textContent = `Jito: ${live.jito ? "ON" : "OFF"}`;
-    jitoBadge.classList.remove("ok", "warn");
-    jitoBadge.classList.add(live.jito ? "ok" : "warn");
+  const statusVal = live.status || "—";
+  const statusChip = document.getElementById("status-chip");
+  const statusText = document.getElementById("status-text");
+  if (statusText) statusText.textContent = statusVal.charAt(0).toUpperCase() + statusVal.slice(1);
+  if (statusChip) statusChip.className = `status-chip ${statusVal === "healthy" ? "healthy" : "delinquent"}`;
+
+  const jitoChip = document.getElementById("jito-chip");
+  if (jitoChip) {
+    jitoChip.textContent  = `⚡ Jito: ${live.jito ? "ON" : "OFF"}`;
+    jitoChip.style.background  = live.jito ? "rgba(153,69,255,.1)"  : "rgba(255,107,53,.08)";
+    jitoChip.style.borderColor = live.jito ? "rgba(153,69,255,.3)"  : "rgba(255,107,53,.2)";
+    jitoChip.style.color       = live.jito ? "#c084fc"              : "#fdba74";
   }
 
   const history = live.commissionHistory || [];
-  const latestCommission = history.length ? Number(history[history.length - 1]) : 0;
+  const latestCom = history.length ? Number(history[history.length - 1]) : 0;
+  safeSetText(document.getElementById("commission"), `${Number.isFinite(latestCom) ? latestCom.toFixed(0) : 0}%`);
+  const uptimeNum = Number(live.uptimeLast5EpochsPct);
+  safeSetText(document.getElementById("uptime"), Number.isFinite(uptimeNum) ? `${uptimeNum.toFixed(1)}%` : "—%");
 
-  const commissionEl = document.getElementById("commission");
-  if (commissionEl) {
-    commissionEl.textContent = `${Number.isFinite(latestCommission) ? latestCommission.toFixed(0) : 0}%`;
+  const ts = new Date().toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "short" });
+  safeSetText(document.getElementById("last-updated"),      `Last updated: ${ts}`);
+  safeSetText(document.getElementById("last-updated-card"), `Last updated: ${ts}`);
+
+  if (live.epochConsistencySeries?.length && window.renderEpochChart) {
+    window.renderEpochChart(live.epochConsistencySeries);
   }
-
-  const uptimeEl = document.getElementById("uptime");
-  if (uptimeEl) {
-    const uptimeNum = Number(live.uptimeLast5EpochsPct);
-    uptimeEl.textContent = Number.isFinite(uptimeNum) ? `${uptimeNum.toFixed(2)}%` : "—%";
-  }
-
-  const statusEl = document.getElementById("status");
-  if (statusEl) {
-    const statusText =
-      live.status === "healthy"
-        ? "healthy"
-        : live.status === "delinquent"
-          ? "delinquent"
-          : live.status === "not found"
-            ? "not found"
-            : live.status || "—";
-
-    statusEl.textContent = statusText;
-    statusEl.classList.remove("ok", "warn");
-    statusEl.classList.add(live.status === "healthy" ? "ok" : "warn");
-  }
-
-  const tsEl = document.getElementById("last-updated");
-  if (tsEl) {
-    const ts = new Date();
-    const fmt = ts.toLocaleString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      day: "2-digit",
-      month: "short"
-    });
-    tsEl.textContent = `Last updated: ${fmt}`;
-  }
-
-  updateShareBox();
 
   let ratings = null;
-  try {
-    ratings = await fetchRatings(CURRENT.voteKey);
-    renderRatings(ratings);
-  } catch (e) {
-    console.warn("ratings fetch failed:", e);
-  }
+  try { ratings = await fetchRatings(CURRENT.voteKey); renderRatings(ratings); }
+  catch (e) { console.warn("ratings failed:", e); }
 
-  const perf = computeRecentPerformance({ live, ratings });
-  renderRecentPerformance(perf);
+  renderRecentPerformance(computeRecentPerformance({ live, ratings }));
 
-  const poolsCount = Array.isArray(ratings?.pools?.stake_pools)
-    ? ratings.pools.stake_pools.length
-    : null;
-
+  const poolsCount = Array.isArray(ratings?.pools?.stake_pools) ? ratings.pools.stake_pools.length : null;
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
 
-  const snap = {
-    t: Date.now(),
-    status: live.status || null,
-    commission: Number.isFinite(latestCommission) ? latestCommission : null,
-    uptime: Number.isFinite(Number(live.uptimeLast5EpochsPct))
-      ? Number(live.uptimeLast5EpochsPct)
-      : null,
-    sw_apy: Number.isFinite(sw) ? sw : null,
-    tr_apy: Number.isFinite(tr) ? tr : null,
-    pools: Number.isFinite(poolsCount) ? poolsCount : null
-  };
-  pushSnapshotIfNeeded(CURRENT.voteKey, snap);
+  await saveSnapshotToDB({
+    vote_key:   CURRENT.voteKey,
+    status:     live.status     || null,
+    commission: Number.isFinite(latestCom) ? latestCom : null,
+    uptime:     Number.isFinite(uptimeNum) ? uptimeNum : null,
+    sw_apy:     Number.isFinite(sw) ? sw : null,
+    tr_apy:     Number.isFinite(tr) ? tr : null,
+    pools:      Number.isFinite(poolsCount) ? poolsCount : null
+  });
 
-  const st = computeStability({ live, ratings, poolsCount });
-  renderStability(st);
+  const snaps = await loadSnapshotsFromDB(CURRENT.voteKey);
+  renderStability(computeStability({ live, ratings, poolsCount, snaps }));
 }
 
 main();
