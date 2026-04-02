@@ -1,6 +1,7 @@
 /**
- * Validator Transparency Dashboard – app.js v34
+ * Validator Transparency Dashboard – app.js v35
  * Backend-only snapshot model:
+ * page open -> /api/track-validator -> tracked_validators
  * CRON -> /api/collect -> Supabase -> frontend reads only
  */
 
@@ -14,10 +15,15 @@ const VALIDATOR = {
 const HELIUS_RPC =
   "https://mainnet.helius-rpc.com/?api-key=REDACTED";
 
-const JITO_PROXY =
-  "/api/jito";
-
+const JITO_PROXY = "/api/jito";
 const SNAPSHOTS_API = "/api/snapshots";
+const TRACK_VALIDATOR_API = "/api/track-validator";
+
+/**
+ * Avoid touching the backend on every refresh.
+ * One browser will re-touch the same validator at most once per 6 hours.
+ */
+const TRACK_TOUCH_TTL_MS = 6 * 60 * 60 * 1000;
 
 function getParam(name) {
   const qs = new URLSearchParams(window.location.search);
@@ -86,7 +92,9 @@ function safeSetText(el, text) {
 }
 
 function getSampleReliability(n) {
-  if (!Number.isFinite(n) || n <= 0) return { level: "none", note: "No recent data yet." };
+  if (!Number.isFinite(n) || n <= 0) {
+    return { level: "none", note: "No recent data yet." };
+  }
   if (n <= 4) return { level: "very_low", note: `Limited data (${n} epochs).` };
   if (n <= 8) return { level: "low", note: `Limited: ${n} epochs.` };
   if (n <= 15) return { level: "medium", note: `${n} epochs observed.` };
@@ -110,6 +118,71 @@ function buildShareUrl() {
   if (CURRENT.nameFromUrl) params.set("name", CURRENT.nameFromUrl);
 
   return isGHP ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
+}
+
+function isProbablyVoteKey(value) {
+  if (!value || typeof value !== "string") return false;
+  const v = value.trim();
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v);
+}
+
+function getTrackStorageKey(voteKey) {
+  return `validator-tracked-touch:${voteKey}`;
+}
+
+function shouldTouchTracking(voteKey) {
+  try {
+    const raw = localStorage.getItem(getTrackStorageKey(voteKey));
+    if (!raw) return true;
+
+    const prev = Number(raw);
+    if (!Number.isFinite(prev)) return true;
+
+    return Date.now() - prev > TRACK_TOUCH_TTL_MS;
+  } catch {
+    return true;
+  }
+}
+
+function markTrackingTouched(voteKey) {
+  try {
+    localStorage.setItem(getTrackStorageKey(voteKey), String(Date.now()));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+async function registerValidatorForTracking(voteKey) {
+  if (!isProbablyVoteKey(voteKey)) {
+    return { ok: false, skipped: true, reason: "invalid_vote_key" };
+  }
+
+  if (!shouldTouchTracking(voteKey)) {
+    return { ok: true, skipped: true, reason: "recently_touched" };
+  }
+
+  try {
+    const res = await fetch(TRACK_VALIDATOR_API, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        vote: voteKey
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const json = await res.json();
+    markTrackingTouched(voteKey);
+    return { ok: true, data: json };
+  } catch (err) {
+    console.warn("track-validator failed:", err);
+    return { ok: false, skipped: false, reason: err?.message || "track_failed" };
+  }
 }
 
 async function fetchJitoStatus(voteKey) {
@@ -150,9 +223,18 @@ function renderRatings(r) {
 
   safeSetText(document.getElementById("apy-median"), fmtPct(median));
   safeSetText(document.getElementById("apy-median-2"), fmtPct(median));
-  safeSetText(document.getElementById("pools-count"), pools.length ? String(pools.length) : "—");
-  safeSetText(document.getElementById("pools-count-kpi"), pools.length ? String(pools.length) : "—");
-  safeSetText(document.getElementById("apy-stakewiz"), fmtPct(r?.sources?.stakewiz?.total_apy));
+  safeSetText(
+    document.getElementById("pools-count"),
+    pools.length ? String(pools.length) : "—"
+  );
+  safeSetText(
+    document.getElementById("pools-count-kpi"),
+    pools.length ? String(pools.length) : "—"
+  );
+  safeSetText(
+    document.getElementById("apy-stakewiz"),
+    fmtPct(r?.sources?.stakewiz?.total_apy)
+  );
   safeSetText(document.getElementById("apy-trillium"), fmtPct(trApy));
   safeSetText(
     document.getElementById("stake-from-pools"),
@@ -164,7 +246,9 @@ function renderRatings(r) {
   );
   safeSetText(
     document.getElementById("pools-totals"),
-    `Stake from pools: ${fmtSol(r?.pools?.total_from_stake_pools)} SOL • Not from pools: ${fmtSol(r?.pools?.total_not_from_stake_pools)} SOL`
+    `Stake from pools: ${fmtSol(
+      r?.pools?.total_from_stake_pools
+    )} SOL • Not from pools: ${fmtSol(r?.pools?.total_not_from_stake_pools)} SOL`
   );
 
   const poolList = document.getElementById("pools-list");
@@ -273,7 +357,9 @@ async function fetchLive(voteKey) {
 
         const last5 = epochConsistencySeries.slice(-5);
         uptimePct = last5.length
-          ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) / 100
+          ? Math.round(
+              (last5.reduce((s, x) => s + x, 0) / last5.length) * 100
+            ) / 100
           : 0;
       } catch (e) {
         console.warn("epoch calc:", e);
@@ -302,7 +388,9 @@ async function fetchLive(voteKey) {
 // ── SNAPSHOTS: READ ONLY ──────────────────────────
 async function loadSnapshotsFromDB(voteKey) {
   try {
-    const res = await fetch(`${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&limit=120`);
+    const res = await fetch(
+      `${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&limit=120`
+    );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const json = await res.json();
@@ -315,7 +403,9 @@ async function loadSnapshotsFromDB(voteKey) {
 
 // ── RECENT PERFORMANCE ────────────────────────────
 function computeRecentPerformance({ live, ratings }) {
-  const series = (live?.epochConsistencySeries || []).filter(x => Number.isFinite(x));
+  const series = (live?.epochConsistencySeries || []).filter(x =>
+    Number.isFinite(x)
+  );
   const n = series.length;
   const volatility = stddev(series);
   const mid = Math.floor(n / 2);
@@ -415,7 +505,8 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
   const nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
-  const apyDiff = Number.isFinite(sw) && Number.isFinite(tr) ? Math.abs(sw - tr) : null;
+  const apyDiff =
+    Number.isFinite(sw) && Number.isFinite(tr) ? Math.abs(sw - tr) : null;
 
   let delinquentCount = 0;
   let commissionChanges = 0;
@@ -434,10 +525,14 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
 
   let score = 100;
   if (nowStatus === "delinquent") score -= 40;
-  score -= (n ? delinquentCount / n : 0) * 40;
+  score -= (n ? (delinquentCount / n) * 40 : 0);
   score -= clamp(commissionChanges * 5, 0, 20);
-  if (Number.isFinite(nowUptime) && nowUptime < 95) score -= clamp((95 - nowUptime) * 1.5, 0, 20);
-  if (apyDiff !== null && apyDiff > 1) score -= clamp((apyDiff - 1) * 5, 0, 15);
+  if (Number.isFinite(nowUptime) && nowUptime < 95) {
+    score -= clamp((95 - nowUptime) * 1.5, 0, 20);
+  }
+  if (apyDiff !== null && apyDiff > 1) {
+    score -= clamp((apyDiff - 1) * 5, 0, 15);
+  }
   if (!Number.isFinite(poolsCount) || poolsCount <= 0) score -= 10;
 
   score = clamp(Math.round(score), 0, 100);
@@ -456,14 +551,16 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
     const t1 = new Date(snaps[n - 1].captured_at || Date.now()).getTime();
     const days = Math.max(0, (t1 - t0) / (24 * 3600 * 1000));
 
-    trackingText = days >= 1
-      ? `${Math.round(days)}d`
-      : `${Math.max(1, Math.round(days * 24))}h`;
+    trackingText =
+      days >= 1
+        ? `${Math.round(days)}d`
+        : `${Math.max(1, Math.round(days * 24))}h`;
 
     trackingNote = `${n} backend snapshots over ${trackingText}. Shared history for this validator.`;
   } else if (n === 1) {
     trackingText = "1 snapshot";
-    trackingNote = "Backend history has started, but it is still too short for stronger conclusions.";
+    trackingNote =
+      "Backend history has started, but it is still too short for stronger conclusions.";
   }
 
   const pills = [];
@@ -471,9 +568,10 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
   if (n >= 2) {
     pills.push({
       ok: delinquentCount === 0,
-      text: delinquentCount === 0
-        ? "No delinquency in snapshot history"
-        : `Delinquency seen (${delinquentCount}/${n})`,
+      text:
+        delinquentCount === 0
+          ? "No delinquency in snapshot history"
+          : `Delinquency seen (${delinquentCount}/${n})`,
       tip: "Based on backend-collected snapshots."
     });
   } else {
@@ -487,9 +585,10 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
   if (n >= 2) {
     pills.push({
       ok: commissionChanges === 0,
-      text: commissionChanges === 0
-        ? "Commission stable"
-        : `Commission changed ${commissionChanges}x`,
+      text:
+        commissionChanges === 0
+          ? "Commission stable"
+          : `Commission changed ${commissionChanges}x`,
       tip: "Based on backend-collected snapshots."
     });
   } else {
@@ -541,9 +640,10 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
 
   pills.push({
     ok: Number.isFinite(poolsCount) && poolsCount > 0,
-    text: Number.isFinite(poolsCount) && poolsCount > 0
-      ? `${poolsCount} stake pools delegating`
-      : "No stake pool presence",
+    text:
+      Number.isFinite(poolsCount) && poolsCount > 0
+        ? `${poolsCount} stake pools delegating`
+        : "No stake pool presence",
     tip: "Current pool input."
   });
 
@@ -595,7 +695,10 @@ async function main() {
   safeSetText(document.getElementById("page-title"), validatorName);
   safeSetText(document.getElementById("validator-name-head"), validatorName);
   safeSetText(document.getElementById("validator-name-badge"), validatorName);
-  safeSetText(document.getElementById("header-sub"), `Solana validator transparency dashboard · ${shortKey(CURRENT.voteKey)}`);
+  safeSetText(
+    document.getElementById("header-sub"),
+    `Solana validator transparency dashboard · ${shortKey(CURRENT.voteKey)}`
+  );
 
   const headerVote = document.getElementById("header-vote-key");
   if (headerVote) {
@@ -629,6 +732,11 @@ async function main() {
     };
   }
 
+  // Non-blocking: opening a validator page should register it for backend tracking.
+  registerValidatorForTracking(CURRENT.voteKey).catch(err => {
+    console.warn("tracking registration error:", err);
+  });
+
   let live;
   try {
     live = USE_LIVE
@@ -661,7 +769,8 @@ async function main() {
   const statusVal = live.status || "—";
   const statusEl = document.getElementById("status");
   if (statusEl) {
-    statusEl.textContent = statusVal.charAt(0).toUpperCase() + statusVal.slice(1);
+    statusEl.textContent =
+      statusVal.charAt(0).toUpperCase() + statusVal.slice(1);
     statusEl.className = `status-big ${statusVal === "healthy" ? "ok" : "warn"}`;
   }
 
@@ -673,7 +782,10 @@ async function main() {
 
   const history = live.commissionHistory || [];
   const latestCom = history.length ? Number(history[history.length - 1]) : 0;
-  safeSetText(document.getElementById("commission"), `${Number.isFinite(latestCom) ? latestCom.toFixed(0) : 0}%`);
+  safeSetText(
+    document.getElementById("commission"),
+    `${Number.isFinite(latestCom) ? latestCom.toFixed(0) : 0}%`
+  );
 
   const uptimeNum = Number(live.uptimeLast5EpochsPct);
   safeSetText(
@@ -690,7 +802,10 @@ async function main() {
   });
 
   safeSetText(document.getElementById("last-updated"), `Last updated: ${ts}`);
-  safeSetText(document.getElementById("last-updated-card"), `Last updated: ${ts}`);
+  safeSetText(
+    document.getElementById("last-updated-card"),
+    `Last updated: ${ts}`
+  );
 
   if (live.epochConsistencySeries?.length && window.renderEpochChart) {
     window.renderEpochChart(live.epochConsistencySeries);
