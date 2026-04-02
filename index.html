@@ -112,7 +112,14 @@
       word-break: break-word;
     }
 
-    h1 span { color: var(--accent); }
+    .validator-name-head {
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: 700;
+      color: var(--accent);
+      word-break: break-word;
+    }
 
     .header-vote {
       margin-top: 10px;
@@ -120,6 +127,14 @@
       font-size: 12px;
       color: var(--text3);
       word-break: break-all;
+    }
+
+    .header-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text3);
+      line-height: 1.5;
+      max-width: 560px;
     }
 
     .live-pill {
@@ -206,6 +221,14 @@
       content: '';
       flex: 1; height: 1px;
       background: var(--border);
+    }
+
+    .card-note {
+      font-size: 11px;
+      color: var(--text3);
+      line-height: 1.6;
+      margin-top: -8px;
+      margin-bottom: 12px;
     }
 
     .badge-row {
@@ -637,8 +660,12 @@
   <div class="header">
     <div class="header-left">
       <div class="eyebrow">Solana Validator</div>
-      <h1>Validator <span id="validator-name-head">AndrewInUA</span></h1>
+      <h1>Viewing Validator</h1>
+      <div id="validator-name-head" class="validator-name-head">—</div>
       <div class="header-vote" id="header-vote-key">Loading…</div>
+      <div class="header-note">
+        This dashboard displays data for any Solana validator based on its vote account.
+      </div>
     </div>
     <div class="live-pill">
       <div class="live-dot"></div>
@@ -653,7 +680,7 @@
       <div class="card">
         <div class="card-title">Trust Card</div>
         <div class="badge-row">
-          <span id="validator-name-badge" class="badge info">— validator</span>
+          <span id="validator-name-badge" class="badge info">—</span>
           <span id="jito-badge" class="badge">Jito: —</span>
         </div>
         <div class="stat-2col">
@@ -771,6 +798,9 @@
           Stability score (shared snapshot history)
           <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. Snapshot collection is server-side and scheduled; it does not depend on who is currently viewing the page. The resulting history is shared for the validator, not tied to one visitor or one browser.">i</span>
         </div>
+        <div class="card-note">
+          History builds over time after a validator is first viewed.
+        </div>
         <div class="stability-layout">
           <div class="ring-wrap">
             <div class="score-ring">
@@ -804,7 +834,7 @@
       <div class="card">
         <div class="card-title">Share this dashboard</div>
         <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:4px">
-          Any Solana validator can view their stats using a link with
+          Any Solana validator can be viewed using a link with
           <code style="font-family:var(--mono);color:var(--accent2);font-size:11px">?vote=</code>
           (vote account). <code style="font-family:var(--mono);color:var(--accent2);font-size:11px">&amp;name=</code> is optional.
         </p>
@@ -830,7 +860,7 @@
   <div class="footer">
     <div><strong>Source model.</strong> Public blocks use live Solana RPC + Stakewiz + Trillium + Jito proxy. The stability block uses backend-collected snapshot history combined with current public inputs.</div>
     <div><strong>Methodology.</strong> Voting reliability is derived from recent epoch-credit changes in vote account data. Each recent epoch is compared with the strongest recent epoch in the same window, converted into a relative percentage, and the displayed value is the average of the latest 5 such observations. Higher means steadier recent voting, not a guarantee of future performance.</div>
-    <div><strong>History model.</strong> Snapshot history is collected server-side on a schedule for the validator and then reused for all viewers of that validator page. It is not browser-local and does not depend on who is currently visiting the dashboard.</div>
+    <div><strong>History model.</strong> Opening a validator page can register it for backend tracking. Snapshot history is then collected server-side on a schedule and reused for all viewers of that validator page. It is not browser-local and does not depend on who is currently visiting the dashboard.</div>
     <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
     </div>
@@ -1020,7 +1050,7 @@
   });
 </script>
 
-<script src="./app.js?v=34" defer></script>
+<script src="./app.js?v=36" defer></script>
 
 </body>
 </html>
