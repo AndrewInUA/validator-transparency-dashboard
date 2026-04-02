@@ -1,4 +1,4 @@
-# Validator Transparency Dashboard (starter)
+# Validator Transparency Dashboard (starter) 
 
 A clean, beginner-friendly Solana validator dashboard:
 - Trust Card (commission, uptime snapshot, Jito on/off)
