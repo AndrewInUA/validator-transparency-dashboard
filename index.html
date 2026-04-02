@@ -64,6 +64,15 @@
       padding: 40px 20px 60px;
     }
 
+    .product-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 18px;
+    }
+
     .header {
       display: flex;
       align-items: flex-start;
@@ -142,11 +151,7 @@
       50% { opacity:.35; transform:scale(.75); }
     }
 
-    .main-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+    .main-grid { display: flex; flex-direction: column; gap: 14px; }
 
     .row-2 {
       display: grid;
@@ -284,11 +289,7 @@
       margin-bottom: 12px;
     }
 
-    .chart-legend {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
+    .chart-legend { display: flex; gap: 14px; flex-wrap: wrap; }
 
     .legend-item {
       display: flex;
@@ -360,11 +361,7 @@
       margin-bottom: 5px;
     }
 
-    .perf-sub {
-      font-size: 12px;
-      color: var(--text2);
-      line-height: 1.5;
-    }
+    .perf-sub { font-size: 12px; color: var(--text2); line-height: 1.5; }
 
     .apy-row {
       display: grid;
@@ -402,12 +399,7 @@
 
     .apy-value.blue { color: var(--accent2); }
 
-    .pool-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 10px;
-    }
+    .pool-badges { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 
     .pool-badge {
       display: inline-flex;
@@ -441,11 +433,7 @@
       gap: 6px;
     }
 
-    .score-ring {
-      position: relative;
-      width: 96px;
-      height: 96px;
-    }
+    .score-ring { position: relative; width: 96px; height: 96px; }
 
     .score-ring svg { transform: rotate(-90deg); }
 
@@ -489,11 +477,7 @@
       color: var(--text3);
     }
 
-    .pills-col {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
+    .pills-col { display: flex; flex-direction: column; gap: 7px; }
 
     .pill {
       display: inline-flex;
@@ -521,15 +505,10 @@
     .pill.pill-warn{ border-color:rgba(255,107,74,.2); background:rgba(255,107,74,.04); color:#ffcfbf; }
     .pill.pill-warn::before{ background:var(--warn); }
 
-    .share-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
+    .share-row { display: flex; gap: 10px; margin-top: 12px; }
 
     .share-input {
-      flex: 1;
-      min-width: 0;
+      flex: 1; min-width: 0;
       background: var(--surface2);
       border: 1px solid var(--border2);
       border-radius: 8px;
@@ -560,12 +539,7 @@
 
     .copy-btn:hover { opacity: .85; }
 
-    .source-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 16px;
-    }
+    .source-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 
     .source-chip {
       font-family: var(--mono);
@@ -658,6 +632,8 @@
 <body>
 <div class="wrap">
 
+  <div class="product-name">Validator Transparency Dashboard</div>
+
   <div class="header">
     <div class="header-left">
       <div class="eyebrow">Solana Validator</div>
@@ -688,7 +664,7 @@
           <div>
             <div class="stat-label">
               Voting reliability
-              <span class="info-dot" tabindex="0" data-tip="How stable the validator's voting performance has been in recent epochs. Higher means steadier recent vote-credit behaviour, which usually points to more consistent validator operation.">i</span>
+              <span class="info-dot" tabindex="0" data-tip="Derived from recent epoch-credit changes in Solana vote account data. The dashboard compares each recent epoch’s vote-credit gain with the strongest epoch in the same recent window, then normalises that into percentages. The final value shown here is the average of the latest 5 normalised epochs. Higher means steadier recent voting; it is an indicator, not a guarantee.">i</span>
             </div>
             <div id="uptime" class="stat-value">—%</div>
           </div>
@@ -790,7 +766,7 @@
       <div class="card">
         <div class="card-title">
           Stability score (shared snapshot history)
-          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. This is shared validator history, not browser-local tracking.">i</span>
+          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. This is shared validator history stored server-side, not browser-local tracking and not personal to one visitor.">i</span>
         </div>
         <div class="stability-layout">
           <div class="ring-wrap">
@@ -851,7 +827,7 @@
 
   <div class="footer">
     <div><strong>Source model.</strong> Public blocks use live Solana RPC + Stakewiz + Trillium + Jito proxy. The stability block uses backend-collected snapshot history combined with current public inputs.</div>
-    <div><strong>Methodology.</strong> Voting reliability compares epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher means steadier recent voting, not a guarantee of future performance.</div>
+    <div><strong>Methodology.</strong> Voting reliability is derived from recent epoch-credit changes in vote account data. Each recent epoch is compared with the strongest recent epoch in the same window, converted into a relative percentage, and the displayed value is the average of the latest 5 such observations. Higher means steadier recent voting, not a guarantee of future performance.</div>
     <div><strong>History model.</strong> Snapshot history is collected server-side on a schedule and shared across all visitors viewing the same validator.</div>
     <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
