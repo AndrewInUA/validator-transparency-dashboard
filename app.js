@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v35
+ * Validator Transparency Dashboard – app.js v36
  * Backend-only snapshot model:
  * page open -> /api/track-validator -> tracked_validators
  * CRON -> /api/collect -> Supabase -> frontend reads only
@@ -688,30 +688,21 @@ function renderStability(st) {
 
 // ── MAIN ─────────────────────────────────────────
 async function main() {
-  const validatorName = CURRENT.nameFromUrl || CURRENT.name;
+  const validatorName =
+    CURRENT.nameFromUrl ||
+    (CURRENT.voteFromUrl ? shortKey(CURRENT.voteKey) : CURRENT.name);
 
   document.title = `${validatorName} · Validator Dashboard`;
 
-  safeSetText(document.getElementById("page-title"), validatorName);
   safeSetText(document.getElementById("validator-name-head"), validatorName);
   safeSetText(document.getElementById("validator-name-badge"), validatorName);
-  safeSetText(
-    document.getElementById("header-sub"),
-    `Solana validator transparency dashboard · ${shortKey(CURRENT.voteKey)}`
-  );
 
   const headerVote = document.getElementById("header-vote-key");
   if (headerVote) {
     headerVote.textContent = CURRENT.voteKey
-      ? `${CURRENT.voteKey.slice(0, 8)}…${CURRENT.voteKey.slice(-8)}`
+      ? CURRENT.voteKey
       : "mainnet validator";
   }
-
-  const avatar = document.getElementById("id-avatar");
-  if (avatar) avatar.textContent = validatorName.slice(0, 2).toUpperCase();
-
-  safeSetText(document.getElementById("id-name"), validatorName);
-  safeSetText(document.getElementById("id-votekey"), CURRENT.voteKey);
 
   const shareLink = buildShareUrl();
   const shareInput = document.getElementById("share-url");
@@ -764,8 +755,6 @@ async function main() {
     };
   }
 
-  safeSetText(document.getElementById("node-key"), live.nodePubkey || "Not available");
-
   const statusVal = live.status || "—";
   const statusEl = document.getElementById("status");
   if (statusEl) {
@@ -802,10 +791,6 @@ async function main() {
   });
 
   safeSetText(document.getElementById("last-updated"), `Last updated: ${ts}`);
-  safeSetText(
-    document.getElementById("last-updated-card"),
-    `Last updated: ${ts}`
-  );
 
   if (live.epochConsistencySeries?.length && window.renderEpochChart) {
     window.renderEpochChart(live.epochConsistencySeries);
