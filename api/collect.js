@@ -14,31 +14,36 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const DEFAULT_VALIDATORS = [
+const FALLBACK_VALIDATORS = [
   {
-    name: "AndrewInUA",
     voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
   }
 ];
 
-function parseValidatorsFromEnv() {
-  const raw = process.env.SNAPSHOT_VALIDATORS_JSON;
-  if (!raw) return DEFAULT_VALIDATORS;
+async function getTrackedValidators() {
+  const limitRaw = Number(process.env.TRACKED_VALIDATORS_LIMIT || 100);
+  const limit = Number.isFinite(limitRaw)
+    ? Math.max(1, Math.min(limitRaw, 1000))
+    : 100;
 
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || !parsed.length) return DEFAULT_VALIDATORS;
+  const { data, error } = await supabase
+    .from("tracked_validators")
+    .select("vote_key")
+    .eq("is_active", true)
+    .order("last_requested_at", { ascending: false })
+    .limit(limit);
 
-    return parsed
-      .map(v => ({
-        name: String(v.name || "").trim(),
-        voteKey: String(v.voteKey || v.vote_key || "").trim()
-      }))
-      .filter(v => v.voteKey);
-  } catch (err) {
-    console.error("Failed to parse SNAPSHOT_VALIDATORS_JSON:", err);
-    return DEFAULT_VALIDATORS;
+  if (error) {
+    throw error;
   }
+
+  const validators = (data || [])
+    .map((v) => ({
+      voteKey: String(v.vote_key || "").trim()
+    }))
+    .filter((v) => v.voteKey);
+
+  return validators.length ? validators : FALLBACK_VALIDATORS;
 }
 
 async function fetchVoteAccounts() {
@@ -76,13 +81,17 @@ function computeEpochConsistencySeries(epochCredits) {
   if (!recent.length) return [];
 
   const maxD = Math.max(...recent, 1);
-  return recent.map(d => Math.round((d / maxD) * 10000) / 100);
+  return recent.map((d) => Math.round((d / maxD) * 10000) / 100);
 }
 
 function computeUptimePct(series) {
   const last5 = series.slice(-5);
   if (!last5.length) return null;
-  return Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) / 100;
+  return (
+    Math.round(
+      (last5.reduce((sum, value) => sum + value, 0) / last5.length) * 100
+    ) / 100
+  );
 }
 
 async function fetchJitoStatus(voteKey) {
@@ -101,7 +110,7 @@ async function fetchJitoStatus(voteKey) {
 async function snapshotForValidator(voteKey, voteAccountsJson) {
   const current = voteAccountsJson?.result?.current || [];
   const delinquent = voteAccountsJson?.result?.delinquent || [];
-  const me = [...current, ...delinquent].find(v => v.votePubkey === voteKey);
+  const me = [...current, ...delinquent].find((v) => v.votePubkey === voteKey);
 
   if (!me) {
     return {
@@ -117,8 +126,10 @@ async function snapshotForValidator(voteKey, voteAccountsJson) {
     };
   }
 
-  const isDelinquent = delinquent.some(v => v.votePubkey === me.votePubkey);
-  const commission = Number.isFinite(Number(me.commission)) ? Number(me.commission) : null;
+  const isDelinquent = delinquent.some((v) => v.votePubkey === me.votePubkey);
+  const commission = Number.isFinite(Number(me.commission))
+    ? Number(me.commission)
+    : null;
   const series = computeEpochConsistencySeries(me.epochCredits);
   const uptime = computeUptimePct(series);
   const jito = await fetchJitoStatus(voteKey);
@@ -137,9 +148,7 @@ async function snapshotForValidator(voteKey, voteAccountsJson) {
 }
 
 async function insertSnapshot(row) {
-  const { error } = await supabase
-    .from("validator_snapshots")
-    .insert(row);
+  const { error } = await supabase.from("validator_snapshots").insert(row);
 
   if (error) {
     throw error;
@@ -153,14 +162,17 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const validators = parseValidatorsFromEnv();
+    const validators = await getTrackedValidators();
     const voteAccountsJson = await fetchVoteAccounts();
 
     const results = [];
 
     for (const validator of validators) {
       try {
-        const row = await snapshotForValidator(validator.voteKey, voteAccountsJson);
+        const row = await snapshotForValidator(
+          validator.voteKey,
+          voteAccountsJson
+        );
         await insertSnapshot(row);
 
         results.push({
@@ -181,7 +193,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      collected: results.filter(r => r.ok).length,
+      collected: results.filter((r) => r.ok).length,
       total: results.length,
       results
     });
