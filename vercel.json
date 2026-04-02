@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/collect?secret=andrew_snapshot_x9K2mP_2026",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}
