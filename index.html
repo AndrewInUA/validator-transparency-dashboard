@@ -64,7 +64,6 @@
       padding: 40px 20px 60px;
     }
 
-    /* HEADER */
     .header {
       display: flex;
       align-items: flex-start;
@@ -143,8 +142,11 @@
       50% { opacity:.35; transform:scale(.75); }
     }
 
-    /* LAYOUT */
-    .main-grid { display: flex; flex-direction: column; gap: 14px; }
+    .main-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
 
     .row-2 {
       display: grid;
@@ -152,9 +154,10 @@
       gap: 14px;
     }
 
-    @media (max-width: 840px) { .row-2 { grid-template-columns: 1fr; } }
+    @media (max-width: 840px) {
+      .row-2 { grid-template-columns: 1fr; }
+    }
 
-    /* CARD */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -200,8 +203,12 @@
       background: var(--border);
     }
 
-    /* BADGES */
-    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
 
     .badge {
       display: inline-flex;
@@ -221,7 +228,6 @@
     .badge.warn{ border-color:rgba(255,107,74,.3); background:rgba(255,107,74,.06); color:var(--warn); }
     .badge.info{ border-color:rgba(0,200,255,.3);  background:rgba(0,200,255,.06);  color:var(--accent2); }
 
-    /* STAT */
     .stat-2col {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -254,7 +260,6 @@
     .stat-value.blue  { color: var(--accent2); }
     .stat-value.red   { color: var(--warn); }
 
-    /* STATUS */
     .status-big {
       display: inline-flex;
       align-items: center;
@@ -270,7 +275,6 @@
     #status.ok   { border:1px solid rgba(0,245,160,.4); background:rgba(0,245,160,.07); color:var(--accent); }
     #status.warn { border:1px solid rgba(255,107,74,.4); background:rgba(255,107,74,.07); color:var(--warn); }
 
-    /* CHART */
     .chart-header {
       display: flex;
       align-items: center;
@@ -280,7 +284,11 @@
       margin-bottom: 12px;
     }
 
-    .chart-legend { display: flex; gap: 14px; flex-wrap: wrap; }
+    .chart-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
 
     .legend-item {
       display: flex;
@@ -315,14 +323,15 @@
       border-radius: 8px;
     }
 
-    /* PERF GRID */
     .perf-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
 
-    @media (max-width: 500px) { .perf-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 500px) {
+      .perf-grid { grid-template-columns: 1fr; }
+    }
 
     .perf-item {
       background: var(--surface2);
@@ -351,9 +360,12 @@
       margin-bottom: 5px;
     }
 
-    .perf-sub { font-size: 12px; color: var(--text2); line-height: 1.5; }
+    .perf-sub {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
 
-    /* APY */
     .apy-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -361,7 +373,9 @@
       margin-bottom: 14px;
     }
 
-    @media (max-width: 640px) { .apy-row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) {
+      .apy-row { grid-template-columns: 1fr 1fr; }
+    }
 
     .apy-block {
       background: var(--surface2);
@@ -388,8 +402,12 @@
 
     .apy-value.blue { color: var(--accent2); }
 
-    /* POOLS */
-    .pool-badges { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .pool-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
 
     .pool-badge {
       display: inline-flex;
@@ -404,7 +422,6 @@
       color: var(--text2);
     }
 
-    /* STABILITY */
     .stability-layout {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -413,7 +430,9 @@
       margin-bottom: 14px;
     }
 
-    @media (max-width: 500px) { .stability-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 500px) {
+      .stability-layout { grid-template-columns: 1fr; }
+    }
 
     .ring-wrap {
       display: flex;
@@ -422,7 +441,11 @@
       gap: 6px;
     }
 
-    .score-ring { position: relative; width: 96px; height: 96px; }
+    .score-ring {
+      position: relative;
+      width: 96px;
+      height: 96px;
+    }
 
     .score-ring svg { transform: rotate(-90deg); }
 
@@ -466,7 +489,11 @@
       color: var(--text3);
     }
 
-    .pills-col { display: flex; flex-direction: column; gap: 7px; }
+    .pills-col {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
 
     .pill {
       display: inline-flex;
@@ -494,11 +521,15 @@
     .pill.pill-warn{ border-color:rgba(255,107,74,.2); background:rgba(255,107,74,.04); color:#ffcfbf; }
     .pill.pill-warn::before{ background:var(--warn); }
 
-    /* SHARE */
-    .share-row { display: flex; gap: 10px; margin-top: 12px; }
+    .share-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
 
     .share-input {
-      flex: 1; min-width: 0;
+      flex: 1;
+      min-width: 0;
       background: var(--surface2);
       border: 1px solid var(--border2);
       border-radius: 8px;
@@ -529,8 +560,12 @@
 
     .copy-btn:hover { opacity: .85; }
 
-    /* SOURCE CHIPS */
-    .source-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .source-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
 
     .source-chip {
       font-family: var(--mono);
@@ -543,7 +578,6 @@
       color: var(--text3);
     }
 
-    /* MISC */
     .last-updated {
       font-family: var(--mono);
       font-size: 10px;
@@ -567,7 +601,6 @@
       user-select: none;
     }
 
-    /* FOOTER */
     .footer {
       margin-top: 28px;
       padding-top: 18px;
@@ -585,7 +618,6 @@
     a { color: var(--accent2); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* TOOLTIP */
     .mobile-tooltip {
       position: fixed;
       left: 12px; right: 12px; bottom: 12px;
@@ -626,7 +658,6 @@
 <body>
 <div class="wrap">
 
-  <!-- HEADER -->
   <div class="header">
     <div class="header-left">
       <div class="eyebrow">Solana Validator</div>
@@ -641,7 +672,6 @@
 
   <div class="main-grid">
 
-    <!-- ROW 1: Trust Card + Chart -->
     <div class="row-2">
 
       <div class="card">
@@ -658,7 +688,7 @@
           <div>
             <div class="stat-label">
               Voting reliability
-              <span class="info-dot" tabindex="0" data-tip="How stable the validator's voting performance has been in recent epochs. Higher = more consistent rewards and fewer missed votes.">i</span>
+              <span class="info-dot" tabindex="0" data-tip="How stable the validator's voting performance has been in recent epochs. Higher means steadier recent vote-credit behaviour, which usually points to more consistent validator operation.">i</span>
             </div>
             <div id="uptime" class="stat-value">—%</div>
           </div>
@@ -691,11 +721,10 @@
 
     </div>
 
-    <!-- ROW 2: Recent Performance -->
     <div class="card">
       <div class="card-title">
         Recent performance (up to last 30 epochs)
-        <span class="info-dot" tabindex="0" data-tip="Uses public data only. If only a few epochs are available, treat the result as an early signal, not a final conclusion.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Uses public live inputs only. If only a few epochs are available, treat the result as an early signal rather than a final conclusion.">i</span>
       </div>
       <div class="source-row">
         <span class="source-chip">Solana RPC</span>
@@ -705,29 +734,28 @@
       </div>
       <div class="perf-grid">
         <div class="perf-item">
-          <div class="perf-label">Data window <span class="info-dot" tabindex="0" data-tip="How many recent usable epochs available for this view. Maximum: 30.">i</span></div>
+          <div class="perf-label">Data window <span class="info-dot" tabindex="0" data-tip="How many recent usable epochs are available for this view. Maximum: 30.">i</span></div>
           <div id="perf-window-value" class="perf-value">—</div>
           <div id="perf-window-sub" class="perf-sub">—</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting trend <span class="info-dot" tabindex="0" data-tip="Whether latest epochs look stronger, weaker, or stable vs the earlier part of the window.">i</span></div>
+          <div class="perf-label">Voting trend <span class="info-dot" tabindex="0" data-tip="Whether the latest epochs look stronger, weaker, or stable versus the earlier part of the same window.">i</span></div>
           <div id="perf-trend-value" class="perf-value">—</div>
           <div id="perf-trend-sub" class="perf-sub">—</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting variability <span class="info-dot" tabindex="0" data-tip="How even or uneven recent performance has been.">i</span></div>
+          <div class="perf-label">Voting variability <span class="info-dot" tabindex="0" data-tip="How even or uneven recent performance has been inside the observed epoch window.">i</span></div>
           <div id="perf-var-value" class="perf-value">—</div>
           <div id="perf-var-sub" class="perf-sub">—</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Reward profile <span class="info-dot" tabindex="0" data-tip="Reward context from public APY data and Jito status.">i</span></div>
+          <div class="perf-label">Reward profile <span class="info-dot" tabindex="0" data-tip="Reward context from public APY inputs and current Jito status.">i</span></div>
           <div id="perf-reward-value" class="perf-value">—</div>
           <div id="perf-reward-sub" class="perf-sub">—</div>
         </div>
       </div>
     </div>
 
-    <!-- ROW 3: APY + Pools -->
     <div class="card">
       <div class="card-title">Profitability (APY) &amp; Pool presence</div>
       <div class="source-row">
@@ -757,13 +785,12 @@
       <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: —</div>
     </div>
 
-    <!-- ROW 4: Stability + Share -->
     <div class="row-2">
 
       <div class="card">
         <div class="card-title">
-          Personal stability score (this browser)
-          <span class="info-dot" tabindex="0" data-tip="Mixes browser-local history with current public inputs. Personal to this browser — not a universal public rating.">i</span>
+          Stability score (shared snapshot history)
+          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. This is shared validator history, not browser-local tracking.">i</span>
         </div>
         <div class="stability-layout">
           <div class="ring-wrap">
@@ -823,9 +850,10 @@
   </div>
 
   <div class="footer">
-    <div><strong>Source model.</strong> Public blocks use live Solana RPC + Stakewiz + Trillium + Jito proxy. The stability block mixes browser-local history with current public inputs.</div>
-    <div><strong>Methodology.</strong> Voting reliability compares epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher = steadier recent voting.</div>
-    <div>Built by <strong>AndrewInUA</strong> — open for any Solana validator ·
+    <div><strong>Source model.</strong> Public blocks use live Solana RPC + Stakewiz + Trillium + Jito proxy. The stability block uses backend-collected snapshot history combined with current public inputs.</div>
+    <div><strong>Methodology.</strong> Voting reliability compares epoch-to-epoch vote-credit observations with the strongest recent one in the same window. Higher means steadier recent voting, not a guarantee of future performance.</div>
+    <div><strong>History model.</strong> Snapshot history is collected server-side on a schedule and shared across all visitors viewing the same validator.</div>
+    <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
     </div>
   </div>
@@ -834,39 +862,39 @@
 
 <div id="mobile-tooltip" class="mobile-tooltip"></div>
 
-<!-- Chart.js from CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-  // ── CHART ──
   window.renderEpochChart = function(series) {
-    const canvas  = document.getElementById('epochChart');
+    const canvas = document.getElementById('epochChart');
     const emptyEl = document.getElementById('chart-empty');
-    const badge   = document.getElementById('epoch-count-badge');
+    const badge = document.getElementById('epoch-count-badge');
 
     if (!canvas) return;
+
     if (!series || !series.length) {
       canvas.style.display = 'none';
       if (emptyEl) emptyEl.style.display = 'flex';
       return;
     }
+
     canvas.style.display = 'block';
     if (emptyEl) emptyEl.style.display = 'none';
     if (badge) badge.textContent = series.length + ' epochs';
 
-    const avg = series.reduce((a,b)=>a+b,0)/series.length;
+    const avg = series.reduce((a, b) => a + b, 0) / series.length;
     const ctx = canvas.getContext('2d');
 
     if (window._chartInst) window._chartInst.destroy();
 
-    const grad = ctx.createLinearGradient(0,0,0,175);
+    const grad = ctx.createLinearGradient(0, 0, 0, 175);
     grad.addColorStop(0, 'rgba(0,245,160,0.22)');
     grad.addColorStop(1, 'rgba(0,245,160,0.01)');
 
     window._chartInst = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: series.map((_,i) => 'E-'+(series.length-i)),
+        labels: series.map((_, i) => 'E-' + (series.length - i)),
         datasets: [
           {
             label: 'Consistency %',
@@ -884,10 +912,10 @@
           },
           {
             label: 'Average',
-            data: series.map(()=>avg),
+            data: series.map(() => avg),
             borderColor: 'rgba(0,245,160,0.22)',
             borderWidth: 1,
-            borderDash: [4,4],
+            borderDash: [4, 4],
             pointRadius: 0,
             fill: false,
           }
@@ -896,19 +924,19 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode:'index', intersect:false },
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
             backgroundColor: '#0b1529',
             borderColor: '#1c2e4a',
             borderWidth: 1,
-            titleFont: { family:'Space Mono', size:10 },
-            bodyFont:  { family:'Space Mono', size:11 },
+            titleFont: { family: 'Space Mono', size: 10 },
+            bodyFont: { family: 'Space Mono', size: 11 },
             titleColor: '#7a9abf',
-            bodyColor:  '#e8f0ff',
+            bodyColor: '#e8f0ff',
             callbacks: {
-              label: c => c.datasetIndex===0
+              label: c => c.datasetIndex === 0
                 ? ` ${c.parsed.y.toFixed(1)}%`
                 : ` avg ${c.parsed.y.toFixed(1)}%`
             }
@@ -916,128 +944,105 @@
         },
         scales: {
           x: {
-            ticks: { color:'#4a6a8a', font:{family:'Space Mono',size:9}, maxTicksLimit:8, maxRotation:0 },
-            grid: { color:'rgba(255,255,255,0.025)' },
-            border: { color:'transparent' }
+            ticks: {
+              color: '#4a6a8a',
+              font: { family: 'Space Mono', size: 9 },
+              maxTicksLimit: 8,
+              maxRotation: 0
+            },
+            grid: { color: 'rgba(255,255,255,0.025)' },
+            border: { color: 'transparent' }
           },
           y: {
-            min: 0, max: 105,
-            ticks: { color:'#4a6a8a', font:{family:'Space Mono',size:9}, callback:v=>v+'%', maxTicksLimit:5 },
-            grid: { color:'rgba(255,255,255,0.035)' },
-            border: { color:'transparent' }
+            min: 0,
+            max: 105,
+            ticks: {
+              color: '#4a6a8a',
+              font: { family: 'Space Mono', size: 9 },
+              callback: v => v + '%',
+              maxTicksLimit: 5
+            },
+            grid: { color: 'rgba(255,255,255,0.035)' },
+            border: { color: 'transparent' }
           }
         }
       }
     });
   };
 
-  // ── RING ANIMATION ──
   window.animateRing = function(score) {
     const arc = document.getElementById('score-arc');
     if (!arc) return;
+
     const c = 251.3;
-    arc.style.strokeDashoffset = c - (score/100)*c;
-    if      (score >= 85) arc.setAttribute('stroke','#00f5a0');
-    else if (score >= 70) arc.setAttribute('stroke','#00c8ff');
-    else if (score >= 50) arc.setAttribute('stroke','#f5a623');
-    else                  arc.setAttribute('stroke','#ff6b4a');
+    arc.style.strokeDashoffset = c - (score / 100) * c;
+
+    if (score >= 85) arc.setAttribute('stroke', '#00f5a0');
+    else if (score >= 70) arc.setAttribute('stroke', '#00c8ff');
+    else if (score >= 50) arc.setAttribute('stroke', '#f5a623');
+    else arc.setAttribute('stroke', '#ff6b4a');
   };
 
-  // ── TOOLTIP ──
-  function isTouch() { return window.matchMedia('(hover:none),(pointer:coarse)').matches; }
+  function isTouch() {
+    return window.matchMedia('(hover:none),(pointer:coarse)').matches;
+  }
+
   function closeTip() {
     const b = document.getElementById('mobile-tooltip');
-    if (b) { b.classList.remove('show'); b.innerHTML=''; }
+    if (b) {
+      b.classList.remove('show');
+      b.innerHTML = '';
+    }
   }
+
   function openTip(text) {
     const b = document.getElementById('mobile-tooltip');
     if (!b || !text) return;
     b.innerHTML = `<div>${text}</div><button class="tooltip-close">Close</button>`;
     b.classList.add('show');
-    b.querySelector('.tooltip-close').addEventListener('click', closeTip, {once:true});
+    b.querySelector('.tooltip-close').addEventListener('click', closeTip, { once: true });
   }
-  function wireDots(root=document) {
-    root.querySelectorAll('.info-dot:not([data-w])').forEach(d=>{
-      d.setAttribute('data-w','1');
-      d.addEventListener('click', e=>{e.stopPropagation(); openTip(d.dataset.tip);});
-      d.addEventListener('mouseenter',()=>{ if(!isTouch()) openTip(d.dataset.tip); });
-      d.addEventListener('mouseleave',()=>{ if(!isTouch()) closeTip(); });
-      d.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();openTip(d.dataset.tip);} });
+
+  function wireDots(root = document) {
+    root.querySelectorAll('.info-dot:not([data-w])').forEach(d => {
+      d.setAttribute('data-w', '1');
+      d.addEventListener('click', e => {
+        e.stopPropagation();
+        openTip(d.dataset.tip);
+      });
+      d.addEventListener('mouseenter', () => {
+        if (!isTouch()) openTip(d.dataset.tip);
+      });
+      d.addEventListener('mouseleave', () => {
+        if (!isTouch()) closeTip();
+      });
+      d.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openTip(d.dataset.tip);
+        }
+      });
     });
   }
-  document.addEventListener('click', e=>{ if(!e.target.closest('.info-dot,#mobile-tooltip')) closeTip(); });
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeTip(); });
 
-  // ── OVERRIDE renderRecentPerformance (before app.js loads) ──
-  window.renderRecentPerformance = function(perf) {
-    const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
-    set('perf-window-value', perf.window.value);
-    set('perf-window-sub',   perf.window.sub);
-    set('perf-trend-value',  perf.trend.value);
-    set('perf-trend-sub',    perf.trend.sub);
-    set('perf-var-value',    perf.variability.value);
-    set('perf-var-sub',      perf.variability.sub);
-    set('perf-reward-value', perf.reward.value);
-    set('perf-reward-sub',   perf.reward.sub);
-  };
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.info-dot,#mobile-tooltip')) closeTip();
+  });
 
-  // ── OVERRIDE renderStability ──
-  window.renderStability = function(st) {
-    const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
-    set('stability-score',    st.score);
-    set('stability-label',    st.label);
-    set('stability-tracking', st.trackingText);
-    set('stability-note',     st.trackingNote);
-    set('stability-formula',  st.formulaLine);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeTip();
+  });
 
-    const pills = document.getElementById('stability-pills');
-    if (pills) {
-      pills.innerHTML = '';
-      for (const p of st.pills) {
-        const s = document.createElement('span');
-        s.className = 'pill ' + (p.ok ? 'pill-ok' : 'pill-warn');
-        s.textContent = p.text;
-        if (p.tip) s.title = p.tip;
-        pills.appendChild(s);
-      }
-    }
-    window.animateRing(st.score);
-  };
-
-  // ── PATCH computeRecentPerformance to trigger chart ──
-  const _patchChart = setInterval(()=>{
-    if (typeof computeRecentPerformance !== 'undefined') {
-      clearInterval(_patchChart);
-      const orig = computeRecentPerformance;
-      window.computeRecentPerformance = function(args) {
-        const result = orig(args);
-        const series = args?.live?.epochConsistencySeries || [];
-        if (series.length > 0) setTimeout(()=>window.renderEpochChart(series), 80);
-        return result;
-      };
-    }
-  }, 80);
-
-  // ── HEADER NAME ──
-  (function(){
-    const qs   = new URLSearchParams(window.location.search);
-    const name = qs.get('name') || 'AndrewInUA';
-    const vote = qs.get('vote') || '';
-    const h    = document.getElementById('validator-name-head');
-    const b    = document.getElementById('validator-name-badge');
-    const v    = document.getElementById('header-vote-key');
-    if (h) h.textContent = name;
-    if (b) b.textContent = name;
-    if (v) v.textContent = vote ? vote.slice(0,8)+'…'+vote.slice(-8) : 'mainnet validator';
-  })();
-
-  document.addEventListener('DOMContentLoaded', ()=>{
+  document.addEventListener('DOMContentLoaded', () => {
     wireDots();
-    new MutationObserver(()=>wireDots()).observe(document.body,{childList:true,subtree:true});
+    new MutationObserver(() => wireDots()).observe(document.body, {
+      childList: true,
+      subtree: true
+    });
   });
 </script>
 
-<script src="./app.js?v=32" defer></script>
+<script src="./app.js?v=34" defer></script>
 
 </body>
 </html>
