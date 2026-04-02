@@ -664,7 +664,7 @@
           <div>
             <div class="stat-label">
               Voting reliability
-              <span class="info-dot" tabindex="0" data-tip="Derived from recent epoch-credit changes in Solana vote account data. The dashboard compares each recent epoch’s vote-credit gain with the strongest epoch in the same recent window, then normalises that into percentages. The final value shown here is the average of the latest 5 normalised epochs. Higher means steadier recent voting; it is an indicator, not a guarantee.">i</span>
+              <span class="info-dot" tabindex="0" data-tip="Derived from recent epoch-credit changes in Solana vote account data. The dashboard compares each recent epoch’s vote-credit gain with the strongest epoch in the same recent window, converts those results into relative percentages, and shows the average of the latest 5 normalised epochs. Higher means steadier recent voting. This is a directional indicator, not a guarantee.">i</span>
             </div>
             <div id="uptime" class="stat-value">—%</div>
           </div>
@@ -675,7 +675,10 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Voting consistency — last 30 epochs</div>
+        <div class="card-title">
+          Voting consistency – last 30 epochs
+          <span class="info-dot" tabindex="0" data-tip="Built from Solana vote account epoch-credit history. For each recent epoch, the dashboard measures the validator’s vote-credit gain and compares it with the strongest gain inside the same recent window, then expresses that as a percentage. This chart shows those relative percentages across up to 30 recent epochs. Source: public Solana RPC vote account data.">i</span>
+        </div>
         <div class="chart-header">
           <div class="chart-legend">
             <div class="legend-item">
@@ -766,7 +769,7 @@
       <div class="card">
         <div class="card-title">
           Stability score (shared snapshot history)
-          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. This is shared validator history stored server-side, not browser-local tracking and not personal to one visitor.">i</span>
+          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. Snapshot collection is server-side and scheduled; it does not depend on who is currently viewing the page. The resulting history is shared for the validator, not tied to one visitor or one browser.">i</span>
         </div>
         <div class="stability-layout">
           <div class="ring-wrap">
@@ -816,7 +819,6 @@
             <div class="pill pill-ok">Delinquency alerts</div>
             <div class="pill pill-ok">Validator comparison</div>
             <div class="pill pill-ok">Persistent backend (Supabase)</div>
-            <div class="pill pill-ok">UA / EN language toggle</div>
           </div>
         </div>
       </div>
@@ -828,7 +830,7 @@
   <div class="footer">
     <div><strong>Source model.</strong> Public blocks use live Solana RPC + Stakewiz + Trillium + Jito proxy. The stability block uses backend-collected snapshot history combined with current public inputs.</div>
     <div><strong>Methodology.</strong> Voting reliability is derived from recent epoch-credit changes in vote account data. Each recent epoch is compared with the strongest recent epoch in the same window, converted into a relative percentage, and the displayed value is the average of the latest 5 such observations. Higher means steadier recent voting, not a guarantee of future performance.</div>
-    <div><strong>History model.</strong> Snapshot history is collected server-side on a schedule and shared across all visitors viewing the same validator.</div>
+    <div><strong>History model.</strong> Snapshot history is collected server-side on a schedule for the validator and then reused for all viewers of that validator page. It is not browser-local and does not depend on who is currently visiting the dashboard.</div>
     <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
     </div>
