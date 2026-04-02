@@ -1,0 +1,8 @@
+{
+  "name": "validator-transparency-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8"
+  }
+}
