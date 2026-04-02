@@ -103,38 +103,48 @@
       background: var(--accent);
     }
 
-    h1 {
+    .header-title {
       font-family: var(--mono);
-      font-size: clamp(22px, 4vw, 36px);
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      word-break: break-word;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 8px;
     }
 
     .validator-name-head {
-      margin-top: 6px;
       font-family: var(--mono);
-      font-size: clamp(18px, 3vw, 28px);
+      font-size: clamp(28px, 5vw, 46px);
       font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
       color: var(--accent);
       word-break: break-word;
+      margin-bottom: 10px;
     }
 
     .header-vote {
-      margin-top: 10px;
       font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text3);
+      font-size: 13px;
+      color: var(--text2);
       word-break: break-all;
+      margin-bottom: 8px;
     }
 
     .header-note {
-      margin-top: 10px;
       font-size: 12px;
       color: var(--text3);
-      line-height: 1.5;
-      max-width: 560px;
+      line-height: 1.55;
+      max-width: 620px;
+    }
+
+    .header-context {
+      margin-top: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--accent2);
+      text-transform: uppercase;
     }
 
     .live-pill {
@@ -647,7 +657,7 @@
 
     @media (max-width: 480px) {
       .wrap { padding: 20px 12px 40px; }
-      h1 { font-size: 20px; }
+      .validator-name-head { font-size: 30px; }
       .stat-value { font-size: 24px; }
     }
   </style>
@@ -659,13 +669,14 @@
 
   <div class="header">
     <div class="header-left">
-      <div class="eyebrow">Solana Validator</div>
-      <h1>Viewing Validator</h1>
+      <div class="eyebrow">Solana Validator Viewer</div>
+      <div class="header-title">Currently viewing</div>
       <div id="validator-name-head" class="validator-name-head">—</div>
       <div class="header-vote" id="header-vote-key">Loading…</div>
       <div class="header-note">
-        This dashboard displays data for any Solana validator based on its vote account.
+        This dashboard can display any Solana validator from its vote account. Shared history and analytics shown below belong to the currently viewed validator, not to the dashboard creator.
       </div>
+      <div id="current-context" class="header-context">Loading context…</div>
     </div>
     <div class="live-pill">
       <div class="live-dot"></div>
@@ -1050,7 +1061,7 @@
   });
 </script>
 
-<script src="./app.js?v=36" defer></script>
+<script src="./app.js?v=37" defer></script>
 
 </body>
 </html>
