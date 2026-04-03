@@ -12,9 +12,16 @@ const VALIDATOR = {
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 
-const JITO_PROXY = "/api/jito";
-const SNAPSHOTS_API = "/api/snapshots";
-const TRACK_VALIDATOR_API = "/api/track-validator";
+const HELIUS_RPC =
+  "https://mainnet.helius-rpc.com/?api-key=REDACTED";
+
+const API_BASE = window.location.hostname.includes("github.io")
+  ? "https://validator-transparency-dashboard.vercel.app"
+  : "";
+
+const JITO_PROXY = `${API_BASE}/api/jito`;
+const SNAPSHOTS_API = `${API_BASE}/api/snapshots`;
+const TRACK_VALIDATOR_API = `${API_BASE}/api/track-validator`;
 
 /**
  * Avoid touching the backend on every refresh.
@@ -213,7 +220,7 @@ async function fetchJitoStatus(voteKey) {
 
 // ── RATINGS ──────────────────────────────────────
 async function fetchRatings(voteKey) {
-  const res = await fetch(`/api/ratings?vote=${encodeURIComponent(voteKey)}`);
+  const res = await fetch(`${API_BASE}/api/ratings?vote=${encodeURIComponent(voteKey)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -305,6 +312,7 @@ function renderRatings(r) {
 // ── LIVE DATA ─────────────────────────────────────
 async function fetchLive(voteKey) {
   const RPCS = [
+    HELIUS_RPC,
     "https://api.mainnet-beta.solana.com",
     "https://rpc.ankr.com/solana"
   ];
