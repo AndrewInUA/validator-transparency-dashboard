@@ -63,6 +63,12 @@
       --shadow-card: 0 6px 24px rgba(10, 12, 20, 0.06);
       --shadow-float: 0 12px 40px rgba(10, 12, 20, 0.14);
       --transition: 180ms ease;
+      --layout-gap: 20px;
+      --layout-gap-tight: 12px;
+      --card-pad-x: 24px;
+      --card-pad-y: 22px;
+      --radius-nested: 16px;
+      --chart-area-height: 220px;
       color-scheme: light;
     }
 
@@ -116,7 +122,7 @@
       z-index: 1;
       max-width: 1200px;
       margin: 0 auto;
-      padding: 40px 24px 60px;
+      padding: calc(var(--layout-gap) * 2) 24px calc(var(--layout-gap) * 3);
     }
 
     .product-name {
@@ -129,16 +135,114 @@
       margin-bottom: 18px;
     }
 
-    .header {
+    .top-bar {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 32px;
+      gap: var(--layout-gap);
+      margin-bottom: var(--layout-gap-tight);
       flex-wrap: wrap;
     }
 
-    .header-left { flex: 1; min-width: 0; }
+    .top-bar .product-name {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .row-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+      gap: var(--layout-gap);
+      align-items: stretch;
+      margin-bottom: var(--layout-gap);
+    }
+
+    .hero-left-stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--layout-gap);
+      min-width: 0;
+      min-height: 100%;
+    }
+
+    @media (max-width: 960px) {
+      .row-hero {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stability-card-sidebar .stability-layout {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      gap: var(--layout-gap-tight);
+      margin-bottom: var(--layout-gap-tight);
+    }
+
+    .stability-card-sidebar .ring-wrap {
+      align-items: center;
+    }
+
+    .stability-card-sidebar .pills-col {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .stability-card-sidebar .card-note {
+      font-size: 12px;
+      margin-bottom: var(--layout-gap-tight);
+    }
+
+    .identity-card {
+      margin-bottom: 20px;
+    }
+
+    .row-hero .identity-card {
+      margin-bottom: 0;
+    }
+
+    .trust-card-hero {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .trust-card-hero .last-updated {
+      margin-top: auto;
+      padding-top: var(--layout-gap-tight);
+    }
+
+    .identity-card .card-title {
+      margin-bottom: 14px;
+    }
+
+    .identity-card .validator-name-head {
+      margin-bottom: 8px;
+    }
+
+    .identity-card .header-vote {
+      margin-bottom: 14px;
+    }
+
+    .identity-card .badge-row {
+      margin-bottom: 4px;
+    }
+
+    .identity-card .header-context {
+      margin-top: 10px;
+    }
+
+    .identity-note {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text2);
+      line-height: 1.55;
+      margin-top: var(--layout-gap-tight);
+      padding-top: var(--layout-gap-tight);
+      border-top: 1px solid var(--border);
+      max-width: 100%;
+    }
 
     .eyebrow {
       font-family: var(--font);
@@ -213,7 +317,7 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 12px;
+      gap: var(--layout-gap-tight);
       flex-shrink: 0;
     }
 
@@ -305,23 +409,39 @@
       50% { opacity:.35; transform:scale(.75); }
     }
 
-    .main-grid { display: flex; flex-direction: column; gap: 16px; }
-
-    .row-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+    .main-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--layout-gap);
     }
 
-    @media (max-width: 840px) {
-      .row-2 { grid-template-columns: 1fr; }
+    .chart-card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-card .chart-header {
+      flex-shrink: 0;
+    }
+
+    .chart-card-wide .chart-canvas-wrap {
+      min-height: var(--chart-area-height);
+      height: var(--chart-area-height);
+    }
+
+    .chart-card-wide #epochChart {
+      height: var(--chart-area-height) !important;
+    }
+
+    .chart-card-wide .chart-empty {
+      height: var(--chart-area-height);
     }
 
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--card-radius);
-      padding: 24px 24px 22px;
+      padding: var(--card-pad-y) var(--card-pad-x);
       position: relative;
       overflow: hidden;
       box-shadow: var(--shadow-card);
@@ -339,11 +459,6 @@
       to   { opacity:1; transform:translateY(0); }
     }
 
-    .card:nth-child(2) { animation-delay:.06s; }
-    .card:nth-child(3) { animation-delay:.12s; }
-    .card:nth-child(4) { animation-delay:.18s; }
-    .card:nth-child(5) { animation-delay:.24s; }
-
     .card-title {
       font-family: var(--font);
       font-size: 11px;
@@ -351,7 +466,8 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--text2);
-      margin-bottom: 18px;
+      margin-bottom: var(--layout-gap-tight);
+      min-height: 1.35em;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -399,8 +515,8 @@
     .stat-2col {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 18px;
-      margin-bottom: 18px;
+      gap: var(--layout-gap);
+      margin-bottom: var(--layout-gap-tight);
     }
 
     .stat-label {
@@ -482,27 +598,27 @@
     .chart-canvas-wrap {
       position: relative;
       width: 100%;
-      height: 175px;
+      height: var(--chart-area-height);
     }
 
-    #epochChart { width:100%!important; height:175px!important; }
+    #epochChart { width:100%!important; height:var(--chart-area-height)!important; }
 
     .chart-empty {
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 175px;
+      height: var(--chart-area-height);
       color: var(--text3);
       font-family: var(--font);
       font-size: 13px;
       border: 1px dashed var(--border);
-      border-radius: 16px;
+      border-radius: var(--radius-nested);
     }
 
     .perf-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: var(--layout-gap-tight);
     }
 
     @media (max-width: 500px) {
@@ -512,8 +628,8 @@
     .perf-item {
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: var(--radius-nested);
+      padding: 14px 16px;
     }
 
     .perf-label {
@@ -542,8 +658,8 @@
     .apy-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: var(--layout-gap-tight);
+      margin-bottom: var(--layout-gap-tight);
     }
 
     @media (max-width: 640px) {
@@ -553,7 +669,7 @@
     .apy-block {
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: var(--radius-nested);
       padding: 14px 16px;
     }
 
@@ -576,7 +692,12 @@
 
     .apy-value.blue { color: var(--accent2); }
 
-    .pool-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .pool-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--layout-gap-tight);
+      margin-top: var(--layout-gap-tight);
+    }
 
     .pool-badge {
       display: inline-flex;
@@ -594,9 +715,9 @@
     .stability-layout {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: 20px;
+      gap: var(--layout-gap);
       align-items: start;
-      margin-bottom: 14px;
+      margin-bottom: var(--layout-gap-tight);
     }
 
     @media (max-width: 500px) {
@@ -656,7 +777,11 @@
       color: var(--text3);
     }
 
-    .pills-col { display: flex; flex-direction: column; gap: 8px; }
+    .pills-col {
+      display: flex;
+      flex-direction: column;
+      gap: var(--layout-gap-tight);
+    }
 
     .pill {
       display: inline-flex;
@@ -722,7 +847,12 @@
     .copy-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-card); }
     .copy-btn:active { transform: scale(0.98); }
 
-    .source-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .source-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--layout-gap-tight);
+      margin-bottom: var(--layout-gap-tight);
+    }
 
     .source-chip {
       font-family: var(--font);
@@ -765,8 +895,8 @@
     .info-dot:hover { background: var(--border); }
 
     .footer {
-      margin-top: 28px;
-      padding-top: 18px;
+      margin-top: calc(var(--layout-gap) * 1.25);
+      padding-top: var(--layout-gap);
       border-top: 1px solid var(--border);
       font-size: 13px;
       color: var(--text2);
@@ -824,19 +954,8 @@
 <body>
 <div class="wrap">
 
-  <div class="product-name">Validator Transparency Dashboard</div>
-
-  <div class="header">
-    <div class="header-left">
-      <div class="eyebrow">Solana Validator Viewer</div>
-      <div class="header-title">Currently viewing</div>
-      <div id="validator-name-head" class="validator-name-head">—</div>
-      <div class="header-vote" id="header-vote-key">Loading…</div>
-      <div class="header-note">
-        This dashboard can display any Solana validator from its vote account. Shared history and analytics shown below belong to the currently viewed validator, not to the dashboard creator.
-      </div>
-      <div id="current-context" class="header-context">Loading context…</div>
-    </div>
+  <div class="top-bar">
+    <div class="product-name">Validator Transparency Dashboard</div>
     <div class="header-actions">
       <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" title="Theme">
         <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
@@ -849,16 +968,24 @@
     </div>
   </div>
 
-  <div class="main-grid">
-
-    <div class="row-2">
-
-      <div class="card">
-        <div class="card-title">Trust Card</div>
+  <div class="row-hero">
+    <div class="hero-left-stack">
+      <div class="card identity-card">
+        <div class="card-title">Validator profile</div>
+        <div id="validator-name-head" class="validator-name-head">—</div>
+        <div class="header-vote" id="header-vote-key">Loading…</div>
         <div class="badge-row">
           <span id="validator-name-badge" class="badge info">—</span>
           <span id="jito-badge" class="badge">Jito: —</span>
         </div>
+        <div id="current-context" class="header-context">Loading context…</div>
+        <div class="header-note identity-note">
+          This dashboard can display any Solana validator from its vote account. Shared history and analytics shown below belong to the currently viewed validator, not to the dashboard creator.
+        </div>
+      </div>
+
+      <div class="card trust-card-hero">
+        <div class="card-title">Trust Card</div>
         <div class="stat-2col">
           <div>
             <div class="stat-label">Commission</div>
@@ -876,31 +1003,100 @@
         <div id="status" class="status-big ok">—</div>
         <div class="last-updated" id="last-updated">Last updated: —</div>
       </div>
+    </div>
 
-      <div class="card">
-        <div class="card-title">
-          Recent voting consistency – last 30 epochs
-          <span class="info-dot" tabindex="0" data-tip="Built from Solana vote account epoch-credit history. For each recent epoch, the dashboard measures the validator’s vote-credit gain, normalizes it against the strongest gain in the same recent window, and displays the result as a relative percentage. This chart shows those relative percentages across up to 30 recent epochs. Source: public Solana RPC vote account data.">i</span>
-        </div>
-        <div class="chart-header">
-          <div class="chart-legend">
-            <div class="legend-item">
-              <div class="legend-dot legend-dot-chart"></div>
-              Consistency %
-            </div>
-            <div class="legend-item legend-item-avg">
-              <div class="chart-avg-line" aria-hidden="true"></div>
-              Avg
+    <div class="card stability-card-sidebar">
+      <div class="card-title">
+        Stability score (shared snapshot history)
+        <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. Snapshot collection is server-side and scheduled, so it does not depend on one viewer or one browser. This makes it more suitable for historical assessment than short-term page-level signals.">i</span>
+      </div>
+      <div class="card-note">
+        History builds over time after a validator is first viewed.
+      </div>
+      <div class="stability-layout">
+        <div class="ring-wrap">
+          <div class="score-ring">
+            <svg width="116" height="116" viewBox="0 0 116 116">
+              <circle cx="58" cy="58" r="50" fill="none" stroke="var(--ring-track)" stroke-width="8"/>
+              <circle id="score-arc" cx="58" cy="58" r="50" fill="none"
+                stroke="var(--chart-line)" stroke-width="8"
+                stroke-linecap="round"
+                stroke-dasharray="314.16"
+                stroke-dashoffset="314.16"
+                style="transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)"/>
+            </svg>
+            <div class="ring-center">
+              <div id="stability-score" class="ring-num">—</div>
+              <div class="ring-denom">/100</div>
             </div>
           </div>
-          <span id="epoch-count-badge" class="badge">— epochs</span>
+          <div id="stability-label" class="ring-label">—</div>
+          <div class="ring-tracking">
+            Tracking: <span id="stability-tracking">—</span>
+          </div>
         </div>
-        <div class="chart-canvas-wrap">
-          <canvas id="epochChart"></canvas>
-          <div id="chart-empty" class="chart-empty" style="display:none">No epoch data yet</div>
+        <div class="pills-col" id="stability-pills">
+          <div class="pill">Loading…</div>
         </div>
       </div>
+      <div class="last-updated" id="stability-note">—</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
+    </div>
+  </div>
 
+  <div class="main-grid">
+
+    <div class="card chart-card chart-card-wide">
+      <div class="card-title">
+        Recent voting consistency – last 30 epochs
+        <span class="info-dot" tabindex="0" data-tip="Built from Solana vote account epoch-credit history. For each recent epoch, the dashboard measures the validator’s vote-credit gain, normalizes it against the strongest gain in the same recent window, and displays the result as a relative percentage. This chart shows those relative percentages across up to 30 recent epochs. Source: public Solana RPC vote account data.">i</span>
+      </div>
+      <div class="chart-header">
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-dot legend-dot-chart"></div>
+            Consistency %
+          </div>
+          <div class="legend-item legend-item-avg">
+            <div class="chart-avg-line" aria-hidden="true"></div>
+            Avg
+          </div>
+        </div>
+        <span id="epoch-count-badge" class="badge">— epochs</span>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="epochChart"></canvas>
+        <div id="chart-empty" class="chart-empty" style="display:none">No epoch data yet</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Profitability (APY) &amp; Pool presence</div>
+      <div class="source-row">
+        <span class="source-chip">Stakewiz API</span>
+        <span class="source-chip">Trillium API</span>
+      </div>
+      <div class="apy-row">
+        <div class="apy-block">
+          <div class="apy-label">APY (median)</div>
+          <div id="apy-median" class="apy-value">—%</div>
+        </div>
+        <div class="apy-block">
+          <div class="apy-label">Stakewiz APY</div>
+          <div id="apy-stakewiz" class="apy-value">—%</div>
+        </div>
+        <div class="apy-block">
+          <div class="apy-label">Trillium APY</div>
+          <div id="apy-trillium" class="apy-value">—%</div>
+        </div>
+        <div class="apy-block">
+          <div class="apy-label">Pools delegating</div>
+          <div id="pools-count" class="apy-value blue">—</div>
+        </div>
+      </div>
+      <div class="last-updated" id="pools-totals">Stake from pools: — SOL • Not from pools: — SOL</div>
+      <div class="pool-badges" id="pools-list"></div>
+      <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: —</div>
     </div>
 
     <div class="card">
@@ -939,75 +1135,6 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Profitability (APY) &amp; Pool presence</div>
-      <div class="source-row">
-        <span class="source-chip">Stakewiz API</span>
-        <span class="source-chip">Trillium API</span>
-      </div>
-      <div class="apy-row">
-        <div class="apy-block">
-          <div class="apy-label">APY (median)</div>
-          <div id="apy-median" class="apy-value">—%</div>
-        </div>
-        <div class="apy-block">
-          <div class="apy-label">Stakewiz APY</div>
-          <div id="apy-stakewiz" class="apy-value">—%</div>
-        </div>
-        <div class="apy-block">
-          <div class="apy-label">Trillium APY</div>
-          <div id="apy-trillium" class="apy-value">—%</div>
-        </div>
-        <div class="apy-block">
-          <div class="apy-label">Pools delegating</div>
-          <div id="pools-count" class="apy-value blue">—</div>
-        </div>
-      </div>
-      <div class="last-updated" id="pools-totals">Stake from pools: — SOL • Not from pools: — SOL</div>
-      <div class="pool-badges" id="pools-list"></div>
-      <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: —</div>
-    </div>
-
-    <div class="row-2">
-
-      <div class="card">
-        <div class="card-title">
-          Stability score (shared snapshot history)
-          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. Snapshot collection is server-side and scheduled, so it does not depend on one viewer or one browser. This makes it more suitable for historical assessment than short-term page-level signals.">i</span>
-        </div>
-        <div class="card-note">
-          History builds over time after a validator is first viewed.
-        </div>
-        <div class="stability-layout">
-          <div class="ring-wrap">
-            <div class="score-ring">
-              <svg width="116" height="116" viewBox="0 0 116 116">
-                <circle cx="58" cy="58" r="50" fill="none" stroke="var(--ring-track)" stroke-width="8"/>
-                <circle id="score-arc" cx="58" cy="58" r="50" fill="none"
-                  stroke="var(--chart-line)" stroke-width="8"
-                  stroke-linecap="round"
-                  stroke-dasharray="314.16"
-                  stroke-dashoffset="314.16"
-                  style="transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)"/>
-              </svg>
-              <div class="ring-center">
-                <div id="stability-score" class="ring-num">—</div>
-                <div class="ring-denom">/100</div>
-              </div>
-            </div>
-            <div id="stability-label" class="ring-label">—</div>
-            <div class="ring-tracking">
-              Tracking: <span id="stability-tracking">—</span>
-            </div>
-          </div>
-          <div class="pills-col" id="stability-pills">
-            <div class="pill">Loading…</div>
-          </div>
-        </div>
-        <div class="last-updated" id="stability-note">—</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
-      </div>
-
-      <div class="card">
         <div class="card-title">Share this dashboard</div>
         <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:4px">
           Any Solana validator can be viewed using a link with
@@ -1027,8 +1154,6 @@
             <div class="pill pill-ok">Persistent backend (Supabase)</div>
           </div>
         </div>
-      </div>
-
     </div>
 
   </div>
@@ -1093,10 +1218,14 @@
     const avg = series.reduce((a, b) => a + b, 0) / series.length;
     const ctx = canvas.getContext("2d");
     const th = chartTheme();
+    const chRaw = getComputedStyle(document.documentElement)
+      .getPropertyValue("--chart-area-height")
+      .trim();
+    const chartH = parseFloat(chRaw) || 220;
 
     if (window._chartInst) window._chartInst.destroy();
 
-    const grad = ctx.createLinearGradient(0, 0, 0, 175);
+    const grad = ctx.createLinearGradient(0, 0, 0, chartH);
     grad.addColorStop(0, th.fillTop);
     grad.addColorStop(1, th.fillBottom);
 
