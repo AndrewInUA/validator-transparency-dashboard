@@ -122,7 +122,7 @@
       z-index: 1;
       max-width: 1200px;
       margin: 0 auto;
-      padding: calc(var(--layout-gap) * 2) 24px calc(var(--layout-gap) * 3);
+      padding: calc(var(--layout-gap) * 2) 24px calc(var(--layout-gap) * 2);
     }
 
     .product-name {
@@ -154,7 +154,7 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
       gap: var(--layout-gap);
-      align-items: start;
+      align-items: stretch;
       margin-bottom: var(--layout-gap);
     }
 
@@ -163,6 +163,7 @@
       flex-direction: column;
       gap: var(--layout-gap);
       min-width: 0;
+      min-height: 0;
       grid-column: 1;
       grid-row: 1;
     }
@@ -175,12 +176,13 @@
       grid-column: 2;
       grid-row: 1;
       min-width: 0;
-      align-self: end;
+      align-self: start;
     }
 
     @media (max-width: 960px) {
       .row-hero {
         grid-template-columns: 1fr;
+        align-items: start;
       }
 
       .hero-col-left {
@@ -194,12 +196,12 @@
         align-self: stretch;
       }
 
-      .trust-card-mid {
+      .hero-col-left .trust-card-hero {
         flex: 0 1 auto;
       }
 
-      .trust-card-mid-pad {
-        display: none;
+      .trust-card-hero .last-updated {
+        margin-top: 10px;
       }
     }
 
@@ -228,57 +230,68 @@
       margin-bottom: 20px;
     }
 
-    .trust-card-hero {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .trust-card-top {
-      flex: 0 0 auto;
-    }
-
-    .trust-card-mid {
+    .hero-col-left .trust-card-hero {
       flex: 1 1 auto;
       min-height: 0;
       display: flex;
       flex-direction: column;
     }
 
-    .trust-card-mid-inner {
-      flex: 0 0 auto;
+    .trust-card-hero .card-title {
+      margin-bottom: 10px;
+    }
+
+    .trust-stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--layout-gap);
+      align-items: start;
+    }
+
+    .trust-stat-col {
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+    }
+
+    .trust-card-hero .stat-label {
+      margin-bottom: 6px;
+    }
+
+    .trust-card-hero .stat-hint {
+      font-size: 11px;
+      line-height: 1.45;
+      font-weight: 400;
+      color: var(--text3);
+      margin: 8px 0 0;
+      max-width: 100%;
+    }
+
+    .trust-card-hero .trust-status-block {
+      margin-top: var(--layout-gap-tight);
+    }
+
+    .trust-card-hero #status {
+      margin-bottom: 0;
+    }
+
+    .trust-card-hero .trust-card-metrics {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .trust-card-hero .last-updated {
+      flex-shrink: 0;
+      margin-top: auto;
       padding-top: var(--layout-gap-tight);
     }
 
-    .trust-card-mid-pad {
-      flex: 1 1 auto;
-      min-height: 0;
-    }
-
-    .trust-card-mid-inner .last-updated {
-      margin-top: 0;
-      padding-top: 2px;
-    }
-
-    .trust-card-hint {
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text2);
-      line-height: 1.55;
-      margin: 0;
-    }
-
-    .trust-card-code {
-      font-family: var(--font);
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--heading);
-      background: var(--surface2);
-      padding: 2px 6px;
-      border-radius: 6px;
+    @media (max-width: 520px) {
+      .trust-stat-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .identity-card .card-title {
@@ -306,8 +319,8 @@
       font-weight: 400;
       color: var(--text2);
       line-height: 1.55;
-      margin-top: var(--layout-gap-tight);
-      padding-top: var(--layout-gap-tight);
+      margin-top: 10px;
+      padding-top: 10px;
       border-top: 1px solid var(--border);
       max-width: 100%;
     }
@@ -785,30 +798,30 @@
 
     .apy-value.blue { color: var(--accent2); }
 
-    .profitability-card > .card-title {
-      margin-bottom: calc(var(--layout-gap-tight) + 6px);
-    }
-
-    .profitability-intro-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: var(--layout-gap);
+    .profitability-card > .source-row {
+      margin-top: -4px;
       margin-bottom: var(--layout-gap-tight);
     }
 
-    .profitability-intro-row .profitability-note {
-      flex: 1 1 280px;
-      min-width: 0;
-      margin-top: 0;
-      margin-bottom: 0;
+    .roadmap-block {
+      margin-top: 14px;
     }
 
-    .profitability-intro-row .profitability-source-row {
-      flex: 0 0 auto;
-      margin-top: 0;
-      margin-bottom: 0;
+    .open-validator-blurb {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.55;
+      margin-bottom: 4px;
+    }
+
+    .inline-code {
+      font-family: var(--font);
+      color: var(--heading);
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface2);
+      padding: 2px 6px;
+      border-radius: 6px;
     }
 
     .pool-badges {
@@ -1022,8 +1035,8 @@
     .info-dot:hover { background: var(--border); }
 
     .footer {
-      margin-top: calc(var(--layout-gap) * 1.25);
-      padding-top: var(--layout-gap);
+      margin-top: var(--layout-gap);
+      padding-top: var(--layout-gap-tight);
       border-top: 1px solid var(--border);
       font-size: 13px;
       color: var(--text2);
@@ -1072,7 +1085,7 @@
     .tooltip-close:active { transform: scale(0.98); }
 
     @media (max-width: 480px) {
-      .wrap { padding: 20px 12px 40px; }
+      .wrap { padding: 20px 12px 28px; }
       .validator-name-head { font-size: 30px; }
       .stat-value { font-size: 24px; }
     }
@@ -1099,59 +1112,56 @@
     <div class="hero-col-left">
       <div class="card identity-card">
         <div class="card-title">Validator profile</div>
-        <div id="validator-name-head" class="validator-name-head">—</div>
+        <div id="validator-name-head" class="validator-name-head">–</div>
         <div class="header-vote" id="header-vote-key">Loading…</div>
         <div class="badge-row">
-          <span id="validator-name-badge" class="badge info">—</span>
-          <span id="jito-badge" class="badge">Jito: —</span>
+          <span id="validator-name-badge" class="badge info">–</span>
+          <span id="jito-badge" class="badge">Jito: –</span>
         </div>
         <div id="current-context" class="header-context">Loading context…</div>
         <div class="header-note identity-note">
-          This dashboard can load any Solana validator from its vote account in the URL. All history and analytics below are for that validator—not for whoever opened the page.
+          Data on this page follows the vote account in the URL.
         </div>
       </div>
 
       <div class="card trust-card-hero">
-        <div class="trust-card-top">
+        <div class="trust-card-metrics">
           <div class="card-title">Trust Card</div>
-          <div class="stat-2col">
-            <div>
+          <div class="trust-stat-grid">
+            <div class="trust-stat-col">
               <div class="stat-label">
                 Commission
-                <span class="info-dot" tabindex="0" data-tip="The fee this validator charges on staking rewards, as reported on-chain. 0% means they take none of your rewards through commission (other costs or pool rules may still apply).">i</span>
+                <span class="info-dot" tabindex="0" data-tip="The fee this validator charges on staking rewards, as reported on-chain. 0% means none of that commission is taken from delegator rewards via this setting (other costs or pool rules may still apply).">i</span>
               </div>
-              <div id="commission" class="stat-value green">—%</div>
+              <div id="commission" class="stat-value green">–%</div>
+              <p class="stat-hint">On-chain staking commission for this validator. 0% here means no commission is taken through this on-chain setting (liquid-staking or pool rules can still apply).</p>
+              <div class="trust-status-block">
+                <div class="stat-label">
+                  Status
+                  <span class="info-dot" tabindex="0" data-tip="A simple health label from live RPC checks (for example whether the vote account looks active). It can change quickly and is not a full security audit.">i</span>
+                </div>
+                <div id="status" class="status-big ok">–</div>
+                <p class="stat-hint">What the network reports for this vote account right now (for example active vs delinquent). It updates often and is not a security review.</p>
+              </div>
             </div>
-            <div>
+            <div class="trust-stat-col">
               <div class="stat-label">
                 Recent voting consistency
-                <span class="info-dot" tabindex="0" data-tip="In plain terms: we compare how many vote credits this validator earned in recent epochs to the best epoch in the same short window, and show that as a percentage. The headline number is the average of the last five epochs. Higher usually means steadier voting lately—not a guarantee of future behavior.">i</span>
+                <span class="info-dot" tabindex="0" data-tip="We compare vote-credit growth in recent epochs to the strongest epoch in the same short window. The headline value is the average of the last five epochs. Higher usually means steadier participation – not a promise about the future.">i</span>
               </div>
-              <div id="uptime" class="stat-value">—%</div>
+              <div id="uptime" class="stat-value">–%</div>
+              <p class="stat-hint">How steady this validator’s voting activity has been across recent epochs, next to the best epoch in the same period. The large number is the average of the last five – higher tends to mean more even participation, not a grade of “good validator.”</p>
             </div>
           </div>
-          <div class="stat-label">
-            Status
-            <span class="info-dot" tabindex="0" data-tip="A simple health label from live RPC checks (for example whether the vote account looks active). It can change quickly and is not a full security audit.">i</span>
-          </div>
-          <div id="status" class="status-big ok">—</div>
         </div>
-        <div class="trust-card-mid">
-          <div class="trust-card-mid-inner">
-            <p class="trust-card-hint">
-              <strong>How to read this card:</strong> Commission is what the validator charges on rewards. Voting consistency compares recent epochs so you can see if participation looks steady. Status is a quick live check. APY and pool presence for this validator are in the <strong>full-width section</strong> under the top row. To <strong>open a different validator</strong>, use <strong>Open another validator</strong> at the bottom—put any vote account in <code class="trust-card-code">?vote=</code> in the address bar. Numbers here are informational—always do your own research before staking.
-            </p>
-            <div class="last-updated" id="last-updated">Last updated: —</div>
-          </div>
-          <div class="trust-card-mid-pad" aria-hidden="true"></div>
-        </div>
+        <div class="last-updated" id="last-updated">Last updated: –</div>
       </div>
     </div>
 
     <div class="card stability-card-sidebar">
       <div class="card-title">
         Stability score (shared snapshot history)
-        <span class="info-dot" tabindex="0" data-tip="A 0–100 score from saved server history plus public data (commission, pools, APIs). It is meant as a slower, history-based snapshot—not a minute-by-minute trading signal. The score gets more meaningful after this validator has been tracked for a while.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="A 0–100 score from saved server history plus public data (commission, pools, APIs). It is meant as a slower, history-based snapshot – not a minute-by-minute trading signal. The score gets more meaningful after this validator has been tracked for a while.">i</span>
       </div>
       <div class="card-note">
         History builds over time after a validator is first viewed.
@@ -1169,20 +1179,20 @@
                 style="transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)"/>
             </svg>
             <div class="ring-center">
-              <div id="stability-score" class="ring-num">—</div>
+              <div id="stability-score" class="ring-num">–</div>
               <div class="ring-denom">/100</div>
             </div>
           </div>
-          <div id="stability-label" class="ring-label">—</div>
+          <div id="stability-label" class="ring-label">–</div>
           <div class="ring-tracking">
-            Tracking: <span id="stability-tracking">—</span>
+            Tracking: <span id="stability-tracking">–</span>
           </div>
         </div>
         <div class="pills-col" id="stability-pills">
           <div class="pill">Loading…</div>
         </div>
       </div>
-      <div class="last-updated" id="stability-note">—</div>
+      <div class="last-updated" id="stability-note">–</div>
       <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
     </div>
   </div>
@@ -1192,38 +1202,33 @@
     <div class="card profitability-card">
       <div class="card-title">
         Profitability (APY) &amp; Pool presence
-        <span class="info-dot" tabindex="0" data-tip="APY figures are estimates from public websites (Stakewiz and Trillium), not live on-chain payouts. Pool presence shows how many staking-pool programs delegate to this validator in public data—useful context, not a quality score. APIs can be down or rate-limited; dashes mean data was not available.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="APY figures are estimates from public websites (Stakewiz and Trillium), not live on-chain payouts. Pool presence shows how many staking-pool programs delegate to this validator in public data – useful context, not a quality score. APIs can be down or rate-limited; dashes mean data was not available. APY is not a guide to how much SOL a potential delegator or staker might earn.">i</span>
       </div>
-      <div class="profitability-intro-row">
-        <p class="card-note profitability-note">
-          Yield numbers are third-party estimates and can disagree. Pool counts show how many liquid-staking style programs include this validator—they are not a guide to how much SOL a potential delegator or staker might earn.
-        </p>
-        <div class="source-row profitability-source-row">
-          <span class="source-chip">Stakewiz API</span>
-          <span class="source-chip">Trillium API</span>
-        </div>
+      <div class="source-row">
+        <span class="source-chip">Stakewiz API</span>
+        <span class="source-chip">Trillium API</span>
       </div>
       <div class="apy-row">
         <div class="apy-block">
-          <div class="apy-label">APY (median) <span class="info-dot" tabindex="0" data-tip="When both Stakewiz and Trillium give a number, this is the value in the middle between them—one simple line to scan. It is not an official quote from the chain.">i</span></div>
-          <div id="apy-median" class="apy-value">—%</div>
+          <div class="apy-label">APY (median) <span class="info-dot" tabindex="0" data-tip="When both Stakewiz and Trillium give a number, this is the value in the middle between them – one simple line to scan. It is not an official quote from the chain.">i</span></div>
+          <div id="apy-median" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
           <div class="apy-label">Stakewiz APY <span class="info-dot" tabindex="0" data-tip="Yield-style estimate from Stakewiz, a third-party staking analytics site. Methodology and timing can differ from other dashboards.">i</span></div>
-          <div id="apy-stakewiz" class="apy-value">—%</div>
+          <div id="apy-stakewiz" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
           <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="Yield-style estimate from Trillium’s public API (staking data provider; unrelated to Tulip). Compare with Stakewiz rather than treating either as exact future returns.">i</span></div>
-          <div id="apy-trillium" class="apy-value">—%</div>
+          <div id="apy-trillium" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="Count of liquid-staking / pool programs that delegate to this validator in public pool data. More pools means broader program participation—not automatically better or worse for delegators.">i</span></div>
-          <div id="pools-count" class="apy-value blue">—</div>
+          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="Count of liquid-staking / pool programs that delegate to this validator in public pool data. More pools means broader program participation – not automatically better or worse for delegators.">i</span></div>
+          <div id="pools-count" class="apy-value blue">–</div>
         </div>
       </div>
-      <div class="last-updated" id="pools-totals">Stake from pools: — SOL • Not from pools: — SOL</div>
+      <div class="last-updated" id="pools-totals">Stake from pools: – SOL • Not from pools: – SOL</div>
       <div class="pool-badges" id="pools-list"></div>
-      <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: —</div>
+      <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: –</div>
     </div>
 
     <div class="row-epoch-metrics">
@@ -1243,7 +1248,7 @@
             Avg
           </div>
         </div>
-        <span id="epoch-count-badge" class="badge">— epochs</span>
+        <span id="epoch-count-badge" class="badge">– epochs</span>
       </div>
       <div class="chart-canvas-wrap">
         <canvas id="epochChart"></canvas>
@@ -1254,7 +1259,7 @@
     <div class="card epoch-perf-card">
       <div class="card-title">
         Recent performance (up to last 30 epochs)
-        <span class="info-dot" tabindex="0" data-tip="Built from live public feeds only. These tiles summarize the last stretch of epochs in everyday language. When only a few epochs are visible, treat it as a rough snapshot—not a verdict on long-term quality.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Each tile looks at the same recent epochs (as many as 30, sometimes fewer). Data window = how many we got. Voting trend = newer epochs vs older ones in that slice. Variability = how jumpy the numbers are. Reward profile = public Jito + APY hints. Not financial advice – just a readable summary.">i</span>
       </div>
       <div class="source-row">
         <span class="source-chip">Solana RPC</span>
@@ -1264,24 +1269,24 @@
       </div>
       <div class="perf-grid">
         <div class="perf-item">
-          <div class="perf-label">Data window <span class="info-dot" tabindex="0" data-tip="How many recent epochs we could use here (up to 30). Smaller numbers mean the summary is based on less history—take it with more caution.">i</span></div>
-          <div id="perf-window-value" class="perf-value">—</div>
-          <div id="perf-window-sub" class="perf-sub">—</div>
+          <div class="perf-label">Data window <span class="info-dot" tabindex="0" data-tip="How many recent epochs are in this summary (max 30). Fewer epochs = a thinner picture of behavior.">i</span></div>
+          <div id="perf-window-value" class="perf-value">–</div>
+          <div id="perf-window-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting trend <span class="info-dot" tabindex="0" data-tip="Compares the newest epochs in this window with slightly older ones: does voting participation look stronger, weaker, or about the same?">i</span></div>
-          <div id="perf-trend-value" class="perf-value">—</div>
-          <div id="perf-trend-sub" class="perf-sub">—</div>
+          <div class="perf-label">Voting trend <span class="info-dot" tabindex="0" data-tip="Splits the available epochs into a newer half and an older half and asks: is voting activity picking up, fading, or about flat? Needs enough epochs to be meaningful.">i</span></div>
+          <div id="perf-trend-value" class="perf-value">–</div>
+          <div id="perf-trend-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting variability <span class="info-dot" tabindex="0" data-tip="Were recent epochs all close together, or did some spike high and others dip low? Higher variability means performance bounced around more in this window.">i</span></div>
-          <div id="perf-var-value" class="perf-value">—</div>
-          <div id="perf-var-sub" class="perf-sub">—</div>
+          <div class="perf-label">Voting variability <span class="info-dot" tabindex="0" data-tip="Measures how much the epoch scores bounce up and down. Low = steadier line; high = choppier. A tiny window can mislead – more epochs make this clearer.">i</span></div>
+          <div id="perf-var-value" class="perf-value">–</div>
+          <div id="perf-var-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Reward profile <span class="info-dot" tabindex="0" data-tip="Blends public APY-style estimates with whether Jito is enabled. It is background on how rewards are often discussed—not a promise of what any staker will earn.">i</span></div>
-          <div id="perf-reward-value" class="perf-value">—</div>
-          <div id="perf-reward-sub" class="perf-sub">—</div>
+          <div class="perf-label">Reward profile <span class="info-dot" tabindex="0" data-tip="Combines what public sites say about APY with whether Jito shows up in signals. Context only – not what any delegator will actually receive.">i</span></div>
+          <div id="perf-reward-value" class="perf-value">–</div>
+          <div id="perf-reward-sub" class="perf-sub">–</div>
         </div>
       </div>
     </div>
@@ -1289,18 +1294,14 @@
 
     <div class="card">
         <div class="card-title">Open another validator</div>
-        <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:4px">
-          This page can show <strong>any</strong> Solana mainnet validator. In your browser’s address bar, set the vote account after
-          <code style="font-family:var(--font);color:var(--heading);font-size:12px;font-weight:600;background:var(--surface2);padding:2px 6px;border-radius:6px">?vote=</code>
-          (that long address is the validator’s vote account). Open the new URL to load that validator’s metrics. Optional:
-          <code style="font-family:var(--font);color:var(--heading);font-size:12px;font-weight:600;background:var(--surface2);padding:2px 6px;border-radius:6px">&amp;name=</code>
-          adds a display label at the top. The field below is the link for <strong>this</strong> view—copy it to bookmark or edit the vote address to switch validators.
+        <p class="open-validator-blurb">
+          Put any mainnet vote account after <code class="inline-code">?vote=</code> in the address bar to load that validator. Optional <code class="inline-code">&amp;name=</code> sets the title. The field below is this page – copy or edit the vote segment to switch.
         </p>
         <div class="share-row">
           <input id="share-url" class="share-input" type="text" readonly value="Loading…" aria-label="URL for this validator view" />
           <button type="button" id="copy-btn" class="copy-btn">Copy URL</button>
         </div>
-        <div style="margin-top:22px">
+        <div class="roadmap-block">
           <div class="card-title">Roadmap</div>
           <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
             <div class="pill pill-ok">Per-epoch detail page</div>

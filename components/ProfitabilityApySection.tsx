@@ -51,7 +51,7 @@ async function fetchTrilliumDelegatorTotalApy(voteAccount: string): Promise<Tril
 }
 
 function formatPercent(value: number | null): string {
-  if (value === null) return "—";
+  if (value === null) return "–";
   return `${value.toFixed(2)}%`;
 }
 
@@ -59,7 +59,7 @@ function formatPercent(value: number | null): string {
  * Drop-in section: Trillium APY (fixes your 0.00% issue).
  * - Reads `?vote=` from URL
  * - Fetches Trillium
- * - Shows — instead of fake 0.00% on failures
+ * - Shows – instead of fake 0.00% on failures
  */
 export default function ProfitabilityApySection() {
   const vote = useMemo(() => getVoteFromUrl(), []);

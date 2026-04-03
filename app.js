@@ -58,18 +58,18 @@ function computeCurrentValidator() {
 const CURRENT = computeCurrentValidator();
 
 function shortKey(k) {
-  if (!k) return "—";
+  if (!k) return "–";
   return k.length > 12 ? `${k.slice(0, 6)}…${k.slice(-6)}` : k;
 }
 
 function fmtPct(v) {
   const n = Number(v);
-  return Number.isFinite(n) ? `${n.toFixed(2)}%` : "—%";
+  return Number.isFinite(n) ? `${n.toFixed(2)}%` : "–%";
 }
 
 function fmtSol(v) {
   const n = Number(v);
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n)) return "–";
   return n >= 1000
     ? n.toLocaleString("en-US", { maximumFractionDigits: 0 })
     : n.toFixed(2);
@@ -95,32 +95,13 @@ function safeSetText(el, text) {
   if (el) el.textContent = text;
 }
 
+/** How much recent epoch history we have; drives copy tone (not user-facing strings). */
 function getSampleReliability(n) {
-  if (!Number.isFinite(n) || n <= 0) {
-    return { level: "none", note: "No recent data yet." };
-  }
-  if (n <= 4) {
-    return {
-      level: "very_low",
-      note: `Short sample only: ${n} epoch${n === 1 ? "" : "s"}. Treat as an early signal.`
-    };
-  }
-  if (n <= 8) {
-    return {
-      level: "low",
-      note: `Limited sample: ${n} epochs. Useful, but still early.`
-    };
-  }
-  if (n <= 15) {
-    return {
-      level: "medium",
-      note: `${n} epochs observed. Moderate short-term confidence.`
-    };
-  }
-  return {
-    level: "higher",
-    note: `${n} epochs observed. Stronger short-term sample.`
-  };
+  if (!Number.isFinite(n) || n <= 0) return { level: "none" };
+  if (n <= 4) return { level: "very_low" };
+  if (n <= 8) return { level: "low" };
+  if (n <= 15) return { level: "medium" };
+  return { level: "higher" };
 }
 
 function simplifyTrendDelta(diff) {
@@ -247,11 +228,11 @@ function renderRatings(r) {
   safeSetText(document.getElementById("apy-median-2"), fmtPct(median));
   safeSetText(
     document.getElementById("pools-count"),
-    pools.length ? String(pools.length) : "—"
+    pools.length ? String(pools.length) : "–"
   );
   safeSetText(
     document.getElementById("pools-count-kpi"),
-    pools.length ? String(pools.length) : "—"
+    pools.length ? String(pools.length) : "–"
   );
   safeSetText(
     document.getElementById("apy-stakewiz"),
@@ -439,70 +420,86 @@ function computeRecentPerformance({ live, ratings }) {
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
 
   const out = {
-    window: { value: "—", sub: "No data yet." },
-    trend: { value: "—", sub: "Not enough recent epochs." },
-    variability: { value: "—", sub: "Not enough recent epochs." },
-    reward: { value: jito ? "Jito ON" : "Jito OFF", sub: "—" }
+    window: { value: "–", sub: "Waiting for recent epoch data from the network." },
+    trend: { value: "–", sub: "Not enough epochs to compare yet." },
+    variability: { value: "–", sub: "Not enough epochs to measure spread yet." },
+    reward: { value: jito ? "Jito ON" : "Jito OFF", sub: "–" }
   };
 
+  const smallSample = rel.level === "very_low" || rel.level === "low";
+
   if (n > 0) {
-    out.window.value = `${n} epochs`;
-    out.window.sub = `Maximum window: 30. ${rel.note}`;
+    out.window.value = `${n} epoch${n === 1 ? "" : "s"}`;
+    if (rel.level === "very_low") {
+      out.window.sub = `This block can use up to 30 recent epochs; only ${n} ${n === 1 ? "is" : "are"} available. Use it as a quick peek, not a full story.`;
+    } else if (rel.level === "low") {
+      out.window.sub = `Up to 30 epochs are considered; ${n} are in view, enough for a rough read, not a long track record.`;
+    } else if (rel.level === "medium") {
+      out.window.sub = `${n} epochs in view – a reasonable slice for short-term context.`;
+    } else {
+      out.window.sub = `${n} epochs in view – good coverage for this summary.`;
+    }
   }
 
   if (n >= 4 && Number.isFinite(diff)) {
     const s = simplifyTrendDelta(diff);
     const cap = s ? s[0].toUpperCase() + s.slice(1) : "";
 
-    if (diff >= 3) {
-      out.trend.value = "Improving";
-      out.trend.sub = `${cap} strengthening versus the earlier part of the same window.`.trim();
-    } else if (diff <= -3) {
-      out.trend.value = "Declining";
-      out.trend.sub = `${cap} weakening versus the earlier part of the same window.`.trim();
-    } else {
-      out.trend.value = "Stable";
-      out.trend.sub = "No clear short-term shift inside the current window.";
-    }
-
     if (rel.level === "very_low" || rel.level === "low") {
       out.trend.value = "Limited data";
-      out.trend.sub = rel.note;
+      out.trend.sub = `We compare the newer half of these ${n} epochs to the older half; with so few points the trend is unreliable – check again as history grows.`;
+    } else if (diff >= 3) {
+      out.trend.value = "Improving";
+      out.trend.sub = `${cap} stronger voting activity in the newer part of this window than in the older part.`;
+    } else if (diff <= -3) {
+      out.trend.value = "Declining";
+      out.trend.sub = `${cap} weaker voting activity in the newer part of this window than in the older part.`;
+    } else {
+      out.trend.value = "Stable";
+      out.trend.sub = "Newer and older epochs in this window look broadly similar.";
     }
   } else if (n > 0) {
     out.trend.value = "Limited data";
-    out.trend.sub = rel.note;
+    out.trend.sub =
+      n < 4
+        ? "Need at least four epochs before we can split the window into “newer” vs “older” fairly."
+        : "Not enough signal to describe a trend.";
   }
 
   if (n >= 2 && Number.isFinite(volatility)) {
     if (volatility <= 5) {
       out.variability.value = "Low";
-      out.variability.sub = "Recent performance looks fairly even.";
+      out.variability.sub = smallSample
+        ? "Numbers stay close together in this short window – the range can look smaller than it really is until more epochs arrive."
+        : "Epoch-to-epoch values sit fairly close together.";
     } else if (volatility <= 12) {
       out.variability.value = "Moderate";
-      out.variability.sub = "Some fluctuation, but not clearly unstable.";
+      out.variability.sub = smallSample
+        ? "Some bounce between epochs; with few data points this can look noisier than it really is."
+        : "Clear ups and downs, but not wild swings.";
     } else {
       out.variability.value = "High";
-      out.variability.sub = "Recent performance looks uneven.";
-    }
-
-    if (rel.level === "very_low") {
-      out.variability.sub += " " + rel.note;
+      out.variability.sub =
+        "Large differences between epochs in this window." +
+        (smallSample ? " Still a short sample – confirm with more history." : "");
     }
   }
 
-  const rp = [
-    jito ? "Jito enabled – extra rewards active." : "No Jito rewards detected."
-  ];
-
-  if (Number.isFinite(apyMedian)) rp.push(`Median APY: ${apyMedian.toFixed(2)}%.`);
-
+  const rp = [];
+  rp.push(
+    jito
+      ? "Public signals suggest Jito-style rewards may apply (check current network docs)."
+      : "No Jito-style reward flag seen in the public signals we read."
+  );
+  if (Number.isFinite(apyMedian)) {
+    rp.push(`Blended APY hint (median of public feeds): ~${apyMedian.toFixed(2)}% – not a guaranteed return.`);
+  }
   rp.push(
     Number.isFinite(sw) && Number.isFinite(tr)
       ? Math.abs(sw - tr) <= 1
-        ? "APY sources match closely."
-        : "APY sources differ."
-      : "Limited APY data."
+        ? "Stakewiz and Trillium are close on APY right now."
+        : "Stakewiz and Trillium disagree on APY – treat estimates as rough."
+      : "One or both APY feeds missing – yield context is thin."
   );
 
   out.reward.sub = rp.join(" ");
@@ -523,7 +520,7 @@ function renderRecentPerformance(perf) {
 // ── STABILITY ─────────────────────────────────────
 function computeStability({ live, ratings, poolsCount, snaps }) {
   const n = snaps.length;
-  const nowStatus = live?.status || "—";
+  const nowStatus = live?.status || "–";
   const nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
@@ -785,7 +782,7 @@ async function main() {
     };
   }
 
-  const statusVal = live.status || "—";
+  const statusVal = live.status || "–";
   const statusEl = document.getElementById("status");
   if (statusEl) {
     statusEl.textContent =
@@ -809,7 +806,7 @@ async function main() {
   const uptimeNum = Number(live.uptimeLast5EpochsPct);
   safeSetText(
     document.getElementById("uptime"),
-    Number.isFinite(uptimeNum) ? `${uptimeNum.toFixed(1)}%` : "—%"
+    Number.isFinite(uptimeNum) ? `${uptimeNum.toFixed(1)}%` : "–%"
   );
 
   const ts = new Date().toLocaleString("en-GB", {
