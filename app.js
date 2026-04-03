@@ -739,6 +739,7 @@ async function main() {
   if (shareInput) shareInput.value = shareLink;
 
   const copyBtn = document.getElementById("copy-btn");
+  const copyBtnDefault = "Copy URL";
   if (copyBtn) {
     copyBtn.onclick = async () => {
       try {
@@ -748,7 +749,7 @@ async function main() {
         copyBtn.textContent = "Error";
       }
       setTimeout(() => {
-        copyBtn.textContent = "COPY";
+        copyBtn.textContent = copyBtnDefault;
       }, 1500);
     };
   }
