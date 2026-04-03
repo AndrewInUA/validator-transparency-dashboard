@@ -3,7 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
   <title>Validator Transparency Dashboard</title>
+  <script>
+    (function () {
+      try {
+        var k = "vtd-theme";
+        var t = localStorage.getItem(k);
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,6 +40,22 @@
       --text2: #8B93A6;
       --text3: #B7BFCC;
       --nav-text: #3A4150;
+      --heading: #060314;
+      --btn-primary-bg: #060314;
+      --btn-primary-fg: #FFFFFF;
+      --stat-green: #3a7d00;
+      --pill-ok-fg: #3a6600;
+      --pill-warn-fg: #b03030;
+      --badge-info-fg: #5a6edd;
+      --ring-track: #E8EDF2;
+      --chart-line: #B8F000;
+      --chart-avg: rgba(185, 240, 0, 0.3);
+      --chart-fill-top: rgba(185, 240, 0, 0.18);
+      --chart-fill-bottom: rgba(185, 240, 0, 0.01);
+      --chart-grid: rgba(0, 0, 0, 0.04);
+      --chart-point-border: #FFFFFF;
+      --tooltip-bg: #060314;
+      --tooltip-border: #2a2540;
       --font: 'Inter', system-ui, sans-serif;
       --card-radius: 24px;
       --btn-radius: 18px;
@@ -32,6 +63,39 @@
       --shadow-card: 0 6px 24px rgba(10, 12, 20, 0.06);
       --shadow-float: 0 12px 40px rgba(10, 12, 20, 0.14);
       --transition: 180ms ease;
+      color-scheme: light;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #0c0e14;
+      --surface: #141821;
+      --surface2: #1a2030;
+      --surface-alt: #1c2433;
+      --border: #2a3142;
+      --border2: #3a4358;
+      --text: #e8ebf2;
+      --text2: #9aa3b8;
+      --text3: #6b7488;
+      --nav-text: #c8cedc;
+      --heading: #f0f3fa;
+      --btn-primary-bg: #c9ff15;
+      --btn-primary-fg: #060314;
+      --stat-green: #9fe000;
+      --pill-ok-fg: #c8f070;
+      --pill-warn-fg: #ff9a9a;
+      --badge-info-fg: #a8b4ff;
+      --ring-track: #2a3142;
+      --chart-line: #B8F000;
+      --chart-avg: rgba(185, 240, 0, 0.35);
+      --chart-fill-top: rgba(185, 240, 0, 0.22);
+      --chart-fill-bottom: rgba(185, 240, 0, 0.02);
+      --chart-grid: rgba(255, 255, 255, 0.06);
+      --chart-point-border: #141821;
+      --tooltip-bg: #1a2030;
+      --tooltip-border: #3a4358;
+      --shadow-card: 0 6px 28px rgba(0, 0, 0, 0.45);
+      --shadow-float: 0 14px 48px rgba(0, 0, 0, 0.55);
+      color-scheme: dark;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,6 +108,7 @@
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.22s ease, color 0.22s ease;
     }
 
     .wrap {
@@ -80,7 +145,7 @@
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.14em;
-      color: var(--accent-dark);
+      color: var(--heading);
       text-transform: uppercase;
       margin-bottom: 10px;
       display: flex;
@@ -112,7 +177,7 @@
       font-weight: 700;
       line-height: 1.05;
       letter-spacing: -0.02em;
-      color: var(--accent-dark);
+      color: var(--heading);
       word-break: break-word;
       margin-bottom: 10px;
     }
@@ -144,6 +209,71 @@
       text-transform: uppercase;
     }
 
+    .header-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: var(--pill-radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow-card);
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--border2);
+      box-shadow: var(--shadow-float);
+    }
+
+    .theme-toggle:active { transform: scale(0.98); }
+
+    .theme-toggle:focus-visible {
+      outline: 2px solid var(--accent2);
+      outline-offset: 2px;
+    }
+
+    .theme-toggle-track {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .theme-toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.22s ease;
+    }
+
+    html[data-theme="dark"] .theme-toggle-thumb {
+      transform: translateX(20px);
+    }
+
+    .theme-toggle-label { white-space: nowrap; }
+
     .live-pill {
       display: flex;
       align-items: center;
@@ -151,7 +281,7 @@
       font-family: var(--font);
       font-size: 12px;
       font-weight: 600;
-      color: var(--accent-dark);
+      color: var(--heading);
       letter-spacing: 0.08em;
       padding: 10px 18px;
       border: 1px solid var(--border);
@@ -195,7 +325,7 @@
       position: relative;
       overflow: hidden;
       box-shadow: var(--shadow-card);
-      transition: transform var(--transition), box-shadow var(--transition);
+      transition: transform var(--transition), box-shadow var(--transition), background-color 0.22s ease, border-color 0.22s ease;
       animation: fadeUp .45s ease both;
     }
 
@@ -262,9 +392,9 @@
       color: var(--nav-text);
     }
 
-    .badge.ok  { border-color:rgba(185,240,0,.4);  background:rgba(185,240,0,.1);  color:#3a6600; }
+    .badge.ok  { border-color:rgba(185,240,0,.4);  background:rgba(185,240,0,.1);  color:var(--pill-ok-fg); }
     .badge.warn{ border-color:rgba(243,107,107,.3); background:rgba(243,107,107,.08); color:var(--warn); }
-    .badge.info{ border-color:rgba(147,163,255,.35); background:rgba(147,163,255,.1); color:#5a6edd; }
+    .badge.info{ border-color:rgba(147,163,255,.35); background:rgba(147,163,255,.1); color:var(--badge-info-fg); }
 
     .stat-2col {
       display: grid;
@@ -295,7 +425,7 @@
       word-break: break-all;
     }
 
-    .stat-value.green { color: #3a7d00; }
+    .stat-value.green { color: var(--stat-green); }
     .stat-value.blue  { color: var(--accent2); }
     .stat-value.red   { color: var(--warn); }
 
@@ -311,7 +441,7 @@
       letter-spacing: .02em;
     }
 
-    #status.ok   { border:1px solid rgba(185,240,0,.4); background:rgba(185,240,0,.1); color:#3a6600; }
+    #status.ok   { border:1px solid rgba(185,240,0,.4); background:rgba(185,240,0,.1); color:var(--pill-ok-fg); }
     #status.warn { border:1px solid rgba(243,107,107,.35); background:rgba(243,107,107,.08); color:var(--warn); }
 
     .chart-header {
@@ -337,6 +467,16 @@
     .legend-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
+    }
+
+    .legend-dot-chart { background: var(--chart-line); }
+
+    .legend-item-avg { gap: 4px; }
+
+    .chart-avg-line {
+      width: 18px;
+      height: 0;
+      border-top: 1px dashed var(--chart-avg);
     }
 
     .chart-canvas-wrap {
@@ -431,7 +571,7 @@
       font-family: var(--font);
       font-size: 22px;
       font-weight: 700;
-      color: var(--accent-dark);
+      color: var(--heading);
     }
 
     .apy-value.blue { color: var(--accent2); }
@@ -540,9 +680,9 @@
       background: var(--text3);
     }
 
-    .pill.pill-ok  { border-color:rgba(185,240,0,.35); background:rgba(185,240,0,.08); color:#3a6600; }
+    .pill.pill-ok  { border-color:rgba(185,240,0,.35); background:rgba(185,240,0,.08); color:var(--pill-ok-fg); }
     .pill.pill-ok::before  { background:var(--success); }
-    .pill.pill-warn{ border-color:rgba(243,107,107,.3); background:rgba(243,107,107,.06); color:#c44; }
+    .pill.pill-warn{ border-color:rgba(243,107,107,.3); background:rgba(243,107,107,.06); color:var(--pill-warn-fg); }
     .pill.pill-warn::before{ background:var(--warn); }
 
     .share-row { display: flex; gap: 10px; margin-top: 12px; }
@@ -561,12 +701,12 @@
       transition: border-color var(--transition);
     }
 
-    .share-input:focus { border-color: var(--accent-dark); }
+    .share-input:focus { border-color: var(--heading); }
 
     .copy-btn {
       flex-shrink: 0;
-      background: var(--accent-dark);
-      color: #FFFFFF;
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
       border: none;
       border-radius: var(--btn-radius);
       padding: 0 24px;
@@ -660,8 +800,8 @@
 
     .tooltip-close {
       margin-top: 12px;
-      background: var(--accent-dark);
-      color: #FFFFFF;
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
       border: none;
       border-radius: var(--btn-radius);
       padding: 8px 16px;
@@ -697,9 +837,15 @@
       </div>
       <div id="current-context" class="header-context">Loading context…</div>
     </div>
-    <div class="live-pill">
-      <div class="live-dot"></div>
-      LIVE
+    <div class="header-actions">
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" title="Theme">
+        <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
+        <span class="theme-toggle-label" id="theme-toggle-label">Light</span>
+      </button>
+      <div class="live-pill">
+        <div class="live-dot"></div>
+        LIVE
+      </div>
     </div>
   </div>
 
@@ -739,11 +885,11 @@
         <div class="chart-header">
           <div class="chart-legend">
             <div class="legend-item">
-              <div class="legend-dot" style="background:#B8F000"></div>
+              <div class="legend-dot legend-dot-chart"></div>
               Consistency %
             </div>
-            <div class="legend-item" style="gap:4px;">
-              <div style="width:18px;height:1px;border-top:1px dashed rgba(185,240,0,0.4)"></div>
+            <div class="legend-item legend-item-avg">
+              <div class="chart-avg-line" aria-hidden="true"></div>
               Avg
             </div>
           </div>
@@ -835,9 +981,9 @@
           <div class="ring-wrap">
             <div class="score-ring">
               <svg width="116" height="116" viewBox="0 0 116 116">
-                <circle cx="58" cy="58" r="50" fill="none" stroke="#E8EDF2" stroke-width="8"/>
+                <circle cx="58" cy="58" r="50" fill="none" stroke="var(--ring-track)" stroke-width="8"/>
                 <circle id="score-arc" cx="58" cy="58" r="50" fill="none"
-                  stroke="#B8F000" stroke-width="8"
+                  stroke="var(--chart-line)" stroke-width="8"
                   stroke-linecap="round"
                   stroke-dasharray="314.16"
                   stroke-dashoffset="314.16"
@@ -865,8 +1011,8 @@
         <div class="card-title">Share this dashboard</div>
         <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:4px">
           Any Solana validator can be viewed using a link with
-          <code style="font-family:var(--font);color:var(--accent-dark);font-size:12px;font-weight:600;background:var(--surface2);padding:2px 6px;border-radius:6px">?vote=</code>
-          (vote account). <code style="font-family:var(--font);color:var(--accent-dark);font-size:12px;font-weight:600;background:var(--surface2);padding:2px 6px;border-radius:6px">&amp;name=</code> is optional.
+          <code style="font-family:var(--font);color:var(--heading);font-size:12px;font-weight:600;background:var(--surface2);padding:2px 6px;border-radius:6px">?vote=</code>
+          (vote account). <code style="font-family:var(--font);color:var(--heading);font-size:12px;font-weight:600;background:var(--surface2);padding:2px 6px;border-radius:6px">&amp;name=</code> is optional.
         </p>
         <div class="share-row">
           <input id="share-url" class="share-input" type="text" readonly value="Loading…"/>
@@ -903,111 +1049,143 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
+  function chartTheme() {
+    const s = getComputedStyle(document.documentElement);
+    const pick = (name, fb) => {
+      const v = s.getPropertyValue(name).trim();
+      return v || fb;
+    };
+    return {
+      line: pick("--chart-line", "#B8F000"),
+      fillTop: pick("--chart-fill-top", "rgba(185, 240, 0, 0.18)"),
+      fillBottom: pick("--chart-fill-bottom", "rgba(185, 240, 0, 0.01)"),
+      avg: pick("--chart-avg", "rgba(185, 240, 0, 0.3)"),
+      grid: pick("--chart-grid", "rgba(0,0,0,0.04)"),
+      pointBorder: pick("--chart-point-border", "#FFFFFF"),
+      tick: pick("--text2", "#8B93A6"),
+      tooltipBg: pick("--tooltip-bg", "#060314"),
+      tooltipBorder: pick("--tooltip-border", "#2a2540"),
+      titleColor: pick("--text2", "#8B93A6"),
+      bodyColor: pick("--text", "#101319")
+    };
+  }
+
   window.renderEpochChart = function(series) {
-    const canvas = document.getElementById('epochChart');
-    const emptyEl = document.getElementById('chart-empty');
-    const badge = document.getElementById('epoch-count-badge');
+    const canvas = document.getElementById("epochChart");
+    const emptyEl = document.getElementById("chart-empty");
+    const badge = document.getElementById("epoch-count-badge");
 
     if (!canvas) return;
 
     if (!series || !series.length) {
-      canvas.style.display = 'none';
-      if (emptyEl) emptyEl.style.display = 'flex';
+      window._lastEpochSeries = null;
+      canvas.style.display = "none";
+      if (emptyEl) emptyEl.style.display = "flex";
       return;
     }
 
-    canvas.style.display = 'block';
-    if (emptyEl) emptyEl.style.display = 'none';
-    if (badge) badge.textContent = series.length + ' epochs';
+    window._lastEpochSeries = series;
+
+    canvas.style.display = "block";
+    if (emptyEl) emptyEl.style.display = "none";
+    if (badge) badge.textContent = series.length + " epochs";
 
     const avg = series.reduce((a, b) => a + b, 0) / series.length;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
+    const th = chartTheme();
 
     if (window._chartInst) window._chartInst.destroy();
 
     const grad = ctx.createLinearGradient(0, 0, 0, 175);
-    grad.addColorStop(0, 'rgba(185, 240, 0, 0.18)');
-    grad.addColorStop(1, 'rgba(185, 240, 0, 0.01)');
+    grad.addColorStop(0, th.fillTop);
+    grad.addColorStop(1, th.fillBottom);
 
     window._chartInst = new Chart(ctx, {
-      type: 'line',
+      type: "line",
       data: {
-        labels: series.map((_, i) => 'E-' + (series.length - i)),
+        labels: series.map((_, i) => "E-" + (series.length - i)),
         datasets: [
           {
-            label: 'Consistency %',
+            label: "Consistency %",
             data: series,
-            borderColor: '#B8F000',
+            borderColor: th.line,
             backgroundColor: grad,
             borderWidth: 2,
             pointRadius: series.length > 15 ? 2 : 4,
             pointHoverRadius: 6,
-            pointBackgroundColor: '#B8F000',
-            pointBorderColor: '#FFFFFF',
+            pointBackgroundColor: th.line,
+            pointBorderColor: th.pointBorder,
             pointBorderWidth: 2,
             fill: true,
-            tension: 0.32,
+            tension: 0.32
           },
           {
-            label: 'Average',
+            label: "Average",
             data: series.map(() => avg),
-            borderColor: 'rgba(185, 240, 0, 0.3)',
+            borderColor: th.avg,
             borderWidth: 1,
             borderDash: [4, 4],
             pointRadius: 0,
-            fill: false,
+            fill: false
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: "index", intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#060314',
-            borderColor: '#2a2540',
+            backgroundColor: th.tooltipBg,
+            borderColor: th.tooltipBorder,
             borderWidth: 1,
-            titleFont: { family: 'Inter', size: 11 },
-            bodyFont: { family: 'Inter', size: 12 },
-            titleColor: '#8B93A6',
-            bodyColor: '#FFFFFF',
+            titleFont: { family: "Inter", size: 11 },
+            bodyFont: { family: "Inter", size: 12 },
+            titleColor: th.titleColor,
+            bodyColor: th.bodyColor,
             cornerRadius: 12,
             padding: 10,
             callbacks: {
-              label: c => c.datasetIndex === 0
-                ? ` ${c.parsed.y.toFixed(1)}%`
-                : ` avg ${c.parsed.y.toFixed(1)}%`
+              label: c =>
+                c.datasetIndex === 0
+                  ? ` ${c.parsed.y.toFixed(1)}%`
+                  : ` avg ${c.parsed.y.toFixed(1)}%`
             }
           }
         },
         scales: {
           x: {
             ticks: {
-              color: '#8B93A6',
-              font: { family: 'Inter', size: 10 },
+              color: th.tick,
+              font: { family: "Inter", size: 10 },
               maxTicksLimit: 8,
               maxRotation: 0
             },
-            grid: { color: 'rgba(0,0,0,0.04)' },
-            border: { color: 'transparent' }
+            grid: { color: th.grid },
+            border: { color: "transparent" }
           },
           y: {
             min: 0,
             max: 105,
             ticks: {
-              color: '#8B93A6',
-              font: { family: 'Inter', size: 10 },
-              callback: v => v + '%',
+              color: th.tick,
+              font: { family: "Inter", size: 10 },
+              callback: v => v + "%",
               maxTicksLimit: 5
             },
-            grid: { color: 'rgba(0,0,0,0.04)' },
-            border: { color: 'transparent' }
+            grid: { color: th.grid },
+            border: { color: "transparent" }
           }
         }
       }
     });
+  };
+
+  window.refreshEpochChartTheme = function () {
+    if (window._lastEpochSeries && window._lastEpochSeries.length && window.renderEpochChart) {
+      window.renderEpochChart(window._lastEpochSeries);
+    }
   };
 
   window.animateRing = function(score) {
@@ -1073,7 +1251,39 @@
     if (e.key === 'Escape') closeTip();
   });
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function syncThemeUi() {
+    const t = document.documentElement.getAttribute("data-theme") || "light";
+    const label = document.getElementById("theme-toggle-label");
+    const btn = document.getElementById("theme-toggle");
+    if (label) label.textContent = t === "dark" ? "Dark" : "Light";
+    if (btn) {
+      btn.setAttribute("aria-pressed", t === "dark" ? "true" : "false");
+      btn.setAttribute(
+        "aria-label",
+        t === "dark" ? "Switch to light theme" : "Switch to dark theme"
+      );
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    syncThemeUi();
+    const toggle = document.getElementById("theme-toggle");
+    if (toggle) {
+      toggle.addEventListener("click", () => {
+        const next =
+          document.documentElement.getAttribute("data-theme") === "dark"
+            ? "light"
+            : "dark";
+        try {
+          localStorage.setItem("vtd-theme", next);
+        } catch (e) {}
+        document.documentElement.setAttribute("data-theme", next);
+        syncThemeUi();
+        if (typeof window.refreshEpochChartTheme === "function") {
+          window.refreshEpochChartTheme();
+        }
+      });
+    }
     wireDots();
     new MutationObserver(() => wireDots()).observe(document.body, {
       childList: true,
