@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v37
+ * Validator Transparency Dashboard – app.js v38
  * Backend-only snapshot model:
  * page open -> /api/track-validator -> tracked_validators
  * CRON -> /api/collect -> Supabase -> frontend reads only
@@ -95,10 +95,28 @@ function getSampleReliability(n) {
   if (!Number.isFinite(n) || n <= 0) {
     return { level: "none", note: "No recent data yet." };
   }
-  if (n <= 4) return { level: "very_low", note: `Limited data (${n} epochs).` };
-  if (n <= 8) return { level: "low", note: `Limited: ${n} epochs.` };
-  if (n <= 15) return { level: "medium", note: `${n} epochs observed.` };
-  return { level: "higher", note: `${n} epochs observed.` };
+  if (n <= 4) {
+    return {
+      level: "very_low",
+      note: `Short sample only: ${n} epoch${n === 1 ? "" : "s"}. Treat as an early signal.`
+    };
+  }
+  if (n <= 8) {
+    return {
+      level: "low",
+      note: `Limited sample: ${n} epochs. Useful, but still early.`
+    };
+  }
+  if (n <= 15) {
+    return {
+      level: "medium",
+      note: `${n} epochs observed. Moderate short-term confidence.`
+    };
+  }
+  return {
+    level: "higher",
+    note: `${n} epochs observed. Stronger short-term sample.`
+  };
 }
 
 function simplifyTrendDelta(diff) {
@@ -418,14 +436,14 @@ function computeRecentPerformance({ live, ratings }) {
 
   const out = {
     window: { value: "—", sub: "No data yet." },
-    trend: { value: "—", sub: "Not enough data." },
-    variability: { value: "—", sub: "Not enough data." },
+    trend: { value: "—", sub: "Not enough recent epochs." },
+    variability: { value: "—", sub: "Not enough recent epochs." },
     reward: { value: jito ? "Jito ON" : "Jito OFF", sub: "—" }
   };
 
   if (n > 0) {
     out.window.value = `${n} epochs`;
-    out.window.sub = `Up to 30. ${rel.note}`;
+    out.window.sub = `Maximum window: 30. ${rel.note}`;
   }
 
   if (n >= 4 && Number.isFinite(diff)) {
@@ -434,13 +452,13 @@ function computeRecentPerformance({ live, ratings }) {
 
     if (diff >= 3) {
       out.trend.value = "Improving";
-      out.trend.sub = `${cap} improvement recently.`.trim();
+      out.trend.sub = `${cap} strengthening versus the earlier part of the same window.`.trim();
     } else if (diff <= -3) {
       out.trend.value = "Declining";
-      out.trend.sub = `${cap} decline recently.`.trim();
+      out.trend.sub = `${cap} weakening versus the earlier part of the same window.`.trim();
     } else {
       out.trend.value = "Stable";
-      out.trend.sub = "No clear recent change.";
+      out.trend.sub = "No clear short-term shift inside the current window.";
     }
 
     if (rel.level === "very_low" || rel.level === "low") {
@@ -448,20 +466,20 @@ function computeRecentPerformance({ live, ratings }) {
       out.trend.sub = rel.note;
     }
   } else if (n > 0) {
-    out.trend.value = "Limited";
+    out.trend.value = "Limited data";
     out.trend.sub = rel.note;
   }
 
   if (n >= 2 && Number.isFinite(volatility)) {
     if (volatility <= 5) {
       out.variability.value = "Low";
-      out.variability.sub = "Performance looks steady.";
+      out.variability.sub = "Recent performance looks fairly even.";
     } else if (volatility <= 12) {
       out.variability.value = "Moderate";
-      out.variability.sub = "Some fluctuation, not unstable.";
+      out.variability.sub = "Some fluctuation, but not clearly unstable.";
     } else {
       out.variability.value = "High";
-      out.variability.sub = "Uneven recent performance.";
+      out.variability.sub = "Recent performance looks uneven.";
     }
 
     if (rel.level === "very_low") {
@@ -629,13 +647,13 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
   pills.push({
     ok: uptimeOk,
     text: !Number.isFinite(nowUptime)
-      ? "Voting data unavailable"
+      ? "Recent voting data unavailable"
       : nowUptime >= 95
-        ? `Voting strong (${nowUptime.toFixed(1)}%)`
+        ? `Recent voting consistency strong (${nowUptime.toFixed(1)}%)`
         : nowUptime >= 90
-          ? `Voting good (${nowUptime.toFixed(1)}%)`
-          : `Voting needs attention (${nowUptime.toFixed(1)}%)`,
-    tip: "Current voting reliability."
+          ? `Recent voting consistency good (${nowUptime.toFixed(1)}%)`
+          : `Recent voting consistency needs attention (${nowUptime.toFixed(1)}%)`,
+    tip: "Short-term recent voting signal from vote-credit data."
   });
 
   pills.push({
@@ -659,7 +677,7 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
     trackingNote,
     pills,
     formulaLine:
-      "Score starts at 100, penalised for: delinquency, commission changes, low voting, APY disagreement, and no pool presence. " +
+      "Score starts at 100, penalised for: delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. " +
       reliabilityNote
   };
 }
