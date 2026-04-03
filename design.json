@@ -1,0 +1,408 @@
+{
+  "meta": {
+    "name": "pep_dashboard_inspired_design",
+    "version": "1.0.0",
+    "source_image": "c3c75160-ee7b-4661-ae5f-89ffc9509b90.png",
+    "description": "Approximate UI design schema inferred from the provided dashboard image."
+  },
+  "theme": {
+    "style": "modern fintech dashboard",
+    "mood": [
+      "clean",
+      "minimal",
+      "premium",
+      "futuristic"
+    ],
+    "borderRadius": {
+      "card": 24,
+      "button": 18,
+      "iconButton": 16,
+      "pill": 20
+    },
+    "shadow": {
+      "card": "0 6px 24px rgba(10, 12, 20, 0.08)",
+      "floating": "0 12px 40px rgba(10, 12, 20, 0.18)"
+    }
+  },
+  "colors": {
+    "background": {
+      "app": "#E9EDF1",
+      "panel": "#FFFFFF",
+      "panelAlt": "#EEF3EA",
+      "sidebar": "#F7F8FA"
+    },
+    "text": {
+      "primary": "#101319",
+      "secondary": "#8B93A6",
+      "muted": "#B7BFCC",
+      "inverse": "#FFFFFF"
+    },
+    "accent": {
+      "lime": "#C9FF15",
+      "limeSoft": "#DDF5C0",
+      "dark": "#060314",
+      "success": "#B8F000"
+    },
+    "stroke": {
+      "soft": "#E3E8EF",
+      "mid": "#D6DCE5"
+    },
+    "status": {
+      "warning": "#F6C343",
+      "danger": "#F36B6B",
+      "info": "#93A3FF"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "Inter, SF Pro Display, system-ui, sans-serif"
+    },
+    "scale": {
+      "display": {
+        "fontSize": 64,
+        "fontWeight": 700,
+        "lineHeight": 1.0
+      },
+      "h1": {
+        "fontSize": 48,
+        "fontWeight": 700,
+        "lineHeight": 1.05
+      },
+      "h2": {
+        "fontSize": 28,
+        "fontWeight": 700,
+        "lineHeight": 1.1
+      },
+      "h3": {
+        "fontSize": 22,
+        "fontWeight": 600,
+        "lineHeight": 1.15
+      },
+      "body": {
+        "fontSize": 16,
+        "fontWeight": 500,
+        "lineHeight": 1.4
+      },
+      "small": {
+        "fontSize": 13,
+        "fontWeight": 500,
+        "lineHeight": 1.35
+      },
+      "caption": {
+        "fontSize": 11,
+        "fontWeight": 500,
+        "lineHeight": 1.3
+      }
+    }
+  },
+  "layout": {
+    "canvas": {
+      "width": 1440,
+      "height": 900,
+      "gridColumns": 12,
+      "gutter": 20,
+      "outerPadding": 24
+    },
+    "regions": {
+      "sidebar": {
+        "x": 0,
+        "width": 84
+      },
+      "content": {
+        "x": 104,
+        "width": 1312
+      },
+      "topbar": {
+        "height": 72
+      }
+    }
+  },
+  "components": {
+    "sidebar": {
+      "width": 84,
+      "background": "#F7F8FA",
+      "items": [
+        {
+          "type": "logo",
+          "shape": "roundedSquare",
+          "size": 48,
+          "bg": "#060314",
+          "iconColor": "#C9FF15"
+        },
+        {
+          "type": "navButtonActive",
+          "size": 48,
+          "bg": "#C9FF15",
+          "iconColor": "#060314"
+        },
+        {
+          "type": "navButton",
+          "size": 48,
+          "bg": "#FFFFFF",
+          "iconColor": "#7C869A"
+        }
+      ]
+    },
+    "topbar": {
+      "height": 72,
+      "background": "transparent",
+      "navLinks": {
+        "fontSize": 14,
+        "fontWeight": 600,
+        "color": "#3A4150",
+        "gap": 36
+      },
+      "actions": [
+        {
+          "type": "supportButton",
+          "bg": "#FFFFFF",
+          "textColor": "#3A4150"
+        },
+        {
+          "type": "languageSwitcher",
+          "bg": "#FFFFFF",
+          "textColor": "#3A4150"
+        },
+        {
+          "type": "iconButton",
+          "bg": "#FFFFFF"
+        },
+        {
+          "type": "iconButtonNotification",
+          "bg": "#060314",
+          "badgeBg": "#C9FF15"
+        },
+        {
+          "type": "profileButton",
+          "bg": "#FFFFFF"
+        }
+      ]
+    },
+    "cards": {
+      "default": {
+        "background": "#FFFFFF",
+        "border": "1px solid #E3E8EF",
+        "radius": 24,
+        "padding": 20
+      },
+      "tinted": {
+        "background": "#EEF3EA",
+        "border": "1px solid #E3E8EF",
+        "radius": 24,
+        "padding": 20
+      },
+      "metric": {
+        "valueColor": "#101319",
+        "labelColor": "#8B93A6",
+        "valueWeight": 700,
+        "labelWeight": 600
+      }
+    },
+    "buttons": {
+      "primaryDark": {
+        "height": 56,
+        "background": "#060314",
+        "textColor": "#FFFFFF",
+        "radius": 18,
+        "fontWeight": 600
+      },
+      "primaryLime": {
+        "height": 56,
+        "background": "#C9FF15",
+        "textColor": "#060314",
+        "radius": 18,
+        "fontWeight": 700
+      },
+      "secondary": {
+        "height": 44,
+        "background": "#F2F5F8",
+        "textColor": "#3A4150",
+        "radius": 16,
+        "fontWeight": 600
+      }
+    },
+    "progressBar": {
+      "height": 8,
+      "trackColor": "#E8EDF2",
+      "fillColor": "#C9FF15",
+      "radius": 999
+    },
+    "statChip": {
+      "height": 36,
+      "paddingX": 14,
+      "radius": 14,
+      "bg": "#F4F6F8",
+      "textColor": "#3A4150"
+    },
+    "ringChart": {
+      "size": 116,
+      "track": "#E8EDF2",
+      "progress": "#B8F000",
+      "innerTextColor": "#101319"
+    },
+    "creditCard": {
+      "radius": 18,
+      "sizes": {
+        "large": {
+          "width": 228,
+          "height": 132
+        },
+        "small": {
+          "width": 182,
+          "height": 108
+        }
+      },
+      "variants": [
+        {
+          "name": "light",
+          "bg": "#E8F7D0",
+          "text": "#101319"
+        },
+        {
+          "name": "dark",
+          "bg": "#0A1A24",
+          "text": "#FFFFFF"
+        },
+        {
+          "name": "white",
+          "bg": "#FFFFFF",
+          "text": "#101319",
+          "border": "1px solid #E3E8EF"
+        }
+      ]
+    }
+  },
+  "pageStructure": {
+    "sections": [
+      {
+        "name": "main_balance",
+        "gridSpan": 4,
+        "cards": [
+          {
+            "type": "balanceCard",
+            "title": "На основном счету",
+            "value": "$686.08",
+            "actions": [
+              "Пополнить",
+              "Вывести"
+            ],
+            "illustration": "wallet_3d"
+          },
+          {
+            "type": "accountLevelCard",
+            "title": "Уровень аккаунта",
+            "level": "Standard",
+            "progressToNextTier": 0.38
+          }
+        ]
+      },
+      {
+        "name": "today_transactions",
+        "gridSpan": 4,
+        "cards": [
+          {
+            "type": "transactionsCard",
+            "title": "Транзакций сегодня",
+            "value": "456",
+            "subMetric": "10 открытых",
+            "illustration": "robot_hand_3d",
+            "cta": "Добавить объявление"
+          }
+        ]
+      },
+      {
+        "name": "exchange_summary",
+        "gridSpan": 4,
+        "cards": [
+          {
+            "type": "exchangeCard",
+            "title": "Сумма обменов сегодня",
+            "value": "$1118.08",
+            "supportMetrics": [
+              {
+                "label": "Отдан $",
+                "value": "$25.84"
+              },
+              {
+                "label": "Средний курс за сутки",
+                "value": "₽92.32"
+              }
+            ],
+            "illustration": "bitcoin_coin_3d"
+          }
+        ]
+      },
+      {
+        "name": "my_cards",
+        "gridSpan": 8,
+        "cards": [
+          {
+            "type": "cardsList",
+            "title": "Мои объявления",
+            "items": [
+              "Сбербанк",
+              "Т-банк",
+              "Альфа"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "side_metrics",
+        "gridSpan": 4,
+        "cards": [
+          {
+            "type": "smallMetricCard",
+            "title": "Всего транзакций",
+            "value": "12"
+          },
+          {
+            "type": "smallMetricCard",
+            "title": "Статистика обменов",
+            "value": "$155.03",
+            "period": "Сегодня"
+          },
+          {
+            "type": "smallMetricCard",
+            "title": "Отклоненных транзакций",
+            "value": "3",
+            "tinted": true
+          },
+          {
+            "type": "smallMetricCard",
+            "title": "Статистика обменов",
+            "value": "$237.12",
+            "period": "Неделя"
+          }
+        ]
+      }
+    ]
+  },
+  "imagery": {
+    "style": "soft 3D illustrations",
+    "objects": [
+      "wallet",
+      "robot hand",
+      "bitcoin coin"
+    ],
+    "material": "matte plastic with subtle metallic accents",
+    "lighting": "studio soft light"
+  },
+  "interaction": {
+    "hover": {
+      "cardLift": "translateY(-2px)",
+      "shadowIncrease": true
+    },
+    "active": {
+      "scale": 0.98
+    },
+    "transitions": {
+      "default": "180ms ease"
+    }
+  },
+  "notes": [
+    "This JSON is an interpretation of the visual language, not an exact extraction.",
+    "Text content and numeric values are sampled from the image for structural reference.",
+    "Use this as a starting point for a UI build, design token file, or Figma-to-code mapping."
+  ]
+}

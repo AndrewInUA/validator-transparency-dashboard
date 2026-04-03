@@ -12,9 +12,6 @@ const VALIDATOR = {
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 
-const HELIUS_RPC =
-  "https://mainnet.helius-rpc.com/?api-key=REDACTED";
-
 const JITO_PROXY = "/api/jito";
 const SNAPSHOTS_API = "/api/snapshots";
 const TRACK_VALIDATOR_API = "/api/track-validator";
@@ -308,7 +305,6 @@ function renderRatings(r) {
 // ── LIVE DATA ─────────────────────────────────────
 async function fetchLive(voteKey) {
   const RPCS = [
-    HELIUS_RPC,
     "https://api.mainnet-beta.solana.com",
     "https://rpc.ankr.com/solana"
   ];

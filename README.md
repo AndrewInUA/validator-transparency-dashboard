@@ -17,5 +17,3 @@ A clean, beginner-friendly Solana validator dashboard:
 - [ ] Per-epoch sharable page
 - [ ] UA/EN toggle
 - [ ] Export CSV/JSON
-
-## Test

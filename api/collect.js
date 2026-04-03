@@ -5,8 +5,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const HELIUS_RPC =
-  "https://mainnet.helius-rpc.com/?api-key=REDACTED";
+const HELIUS_RPC = process.env.HELIUS_API_KEY
+  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+  : "https://api.mainnet-beta.solana.com";
 
 function computeUptimeFromEpochCredits(epochCredits) {
   if (!Array.isArray(epochCredits) || epochCredits.length < 2) {
