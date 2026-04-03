@@ -701,8 +701,8 @@
           </div>
           <div>
             <div class="stat-label">
-              Voting reliability
-              <span class="info-dot" tabindex="0" data-tip="Derived from recent epoch-credit changes in Solana vote account data. The dashboard compares each recent epoch’s vote-credit gain with the strongest epoch in the same recent window, converts those results into relative percentages, and shows the average of the latest 5 normalised epochs. Higher means steadier recent voting. This is a directional indicator, not a guarantee.">i</span>
+              Recent voting consistency
+              <span class="info-dot" tabindex="0" data-tip="Derived from recent vote-credit changes in Solana vote account data. Each epoch’s vote-credit gain is normalized against the strongest gain observed in the recent window, producing relative percentages. The displayed value is the average of the latest 5 normalized epochs. Higher values indicate steadier recent voting behavior. This is a directional indicator, not a guarantee.">i</span>
             </div>
             <div id="uptime" class="stat-value">—%</div>
           </div>
@@ -714,8 +714,8 @@
 
       <div class="card">
         <div class="card-title">
-          Voting consistency – last 30 epochs
-          <span class="info-dot" tabindex="0" data-tip="Built from Solana vote account epoch-credit history. For each recent epoch, the dashboard measures the validator’s vote-credit gain and compares it with the strongest gain inside the same recent window, then expresses that as a percentage. This chart shows those relative percentages across up to 30 recent epochs. Source: public Solana RPC vote account data.">i</span>
+          Recent voting consistency – last 30 epochs
+          <span class="info-dot" tabindex="0" data-tip="Built from Solana vote account epoch-credit history. For each recent epoch, the dashboard measures the validator’s vote-credit gain, normalizes it against the strongest gain in the same recent window, and displays the result as a relative percentage. This chart shows those relative percentages across up to 30 recent epochs. Source: public Solana RPC vote account data.">i</span>
         </div>
         <div class="chart-header">
           <div class="chart-legend">
@@ -741,7 +741,7 @@
     <div class="card">
       <div class="card-title">
         Recent performance (up to last 30 epochs)
-        <span class="info-dot" tabindex="0" data-tip="Uses public live inputs only. If only a few epochs are available, treat the result as an early signal rather than a final conclusion.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Uses public live inputs only. These blocks describe short-term behavior and should be treated as directional signals. If only a few epochs are available, do not treat them as strong conclusions.">i</span>
       </div>
       <div class="source-row">
         <span class="source-chip">Solana RPC</span>
@@ -751,22 +751,22 @@
       </div>
       <div class="perf-grid">
         <div class="perf-item">
-          <div class="perf-label">Data window <span class="info-dot" tabindex="0" data-tip="How many recent usable epochs are available for this view. Maximum: 30.">i</span></div>
+          <div class="perf-label">Data window <span class="info-dot" tabindex="0" data-tip="How many recent usable epochs are available for this view. Maximum: 30. Smaller windows reduce confidence.">i</span></div>
           <div id="perf-window-value" class="perf-value">—</div>
           <div id="perf-window-sub" class="perf-sub">—</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting trend <span class="info-dot" tabindex="0" data-tip="Whether the latest epochs look stronger, weaker, or stable versus the earlier part of the same window.">i</span></div>
+          <div class="perf-label">Voting trend <span class="info-dot" tabindex="0" data-tip="Whether the latest epochs look stronger, weaker, or broadly similar compared with the earlier part of the same short-term window.">i</span></div>
           <div id="perf-trend-value" class="perf-value">—</div>
           <div id="perf-trend-sub" class="perf-sub">—</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting variability <span class="info-dot" tabindex="0" data-tip="How even or uneven recent performance has been inside the observed epoch window.">i</span></div>
+          <div class="perf-label">Voting variability <span class="info-dot" tabindex="0" data-tip="How even or uneven recent vote-credit performance has been within the observed window.">i</span></div>
           <div id="perf-var-value" class="perf-value">—</div>
           <div id="perf-var-sub" class="perf-sub">—</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Reward profile <span class="info-dot" tabindex="0" data-tip="Reward context from public APY inputs and current Jito status.">i</span></div>
+          <div class="perf-label">Reward profile <span class="info-dot" tabindex="0" data-tip="Reward context from public APY inputs and current Jito status. This is descriptive context, not a guarantee of future yield.">i</span></div>
           <div id="perf-reward-value" class="perf-value">—</div>
           <div id="perf-reward-sub" class="perf-sub">—</div>
         </div>
@@ -807,7 +807,7 @@
       <div class="card">
         <div class="card-title">
           Stability score (shared snapshot history)
-          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. Snapshot collection is server-side and scheduled; it does not depend on who is currently viewing the page. The resulting history is shared for the validator, not tied to one visitor or one browser.">i</span>
+          <span class="info-dot" tabindex="0" data-tip="Built from backend-collected snapshot history plus current public inputs. Snapshot collection is server-side and scheduled, so it does not depend on one viewer or one browser. This makes it more suitable for historical assessment than short-term page-level signals.">i</span>
         </div>
         <div class="card-note">
           History builds over time after a validator is first viewed.
@@ -870,7 +870,7 @@
 
   <div class="footer">
     <div><strong>Source model.</strong> Public blocks use live Solana RPC + Stakewiz + Trillium + Jito proxy. The stability block uses backend-collected snapshot history combined with current public inputs.</div>
-    <div><strong>Methodology.</strong> Voting reliability is derived from recent epoch-credit changes in vote account data. Each recent epoch is compared with the strongest recent epoch in the same window, converted into a relative percentage, and the displayed value is the average of the latest 5 such observations. Higher means steadier recent voting, not a guarantee of future performance.</div>
+    <div><strong>Methodology.</strong> Recent voting consistency is derived from vote-credit changes in recent vote account data. Each recent epoch is normalized against the strongest epoch in the same recent window, converted into a relative percentage, and the displayed headline value is the average of the latest 5 such observations. Higher means steadier recent voting, not guaranteed reliability.</div>
     <div><strong>History model.</strong> Opening a validator page can register it for backend tracking. Snapshot history is then collected server-side on a schedule and reused for all viewers of that validator page. It is not browser-local and does not depend on who is currently visiting the dashboard.</div>
     <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
@@ -1061,7 +1061,7 @@
   });
 </script>
 
-<script src="./app.js?v=37" defer></script>
+<script src="./app.js?v=38" defer></script>
 
 </body>
 </html>
