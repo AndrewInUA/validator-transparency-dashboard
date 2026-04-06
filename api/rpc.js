@@ -17,10 +17,17 @@ export default async function handler(req, res) {
   const solanaRpc = String(process.env.SOLANA_RPC || "").trim();
   const heliusKey = String(process.env.HELIUS_API_KEY || "").trim();
   const rpcList = [
-    solanaRpc || null,
-    heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : null,
-    "https://api.mainnet-beta.solana.com",
-    "https://rpc.ankr.com/solana"
+    solanaRpc
+      ? { url: solanaRpc, source: "solana_rpc_env" }
+      : null,
+    heliusKey
+      ? {
+          url: `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`,
+          source: "helius_env"
+        }
+      : null,
+    { url: "https://api.mainnet-beta.solana.com", source: "solana_public" },
+    { url: "https://rpc.ankr.com/solana", source: "ankr_public" }
   ].filter(Boolean);
 
   try {
@@ -33,9 +40,9 @@ export default async function handler(req, res) {
 
     let lastErr = null;
 
-    for (const rpcUrl of rpcList) {
+    for (const rpc of rpcList) {
       try {
-        const rpcRes = await fetch(rpcUrl, {
+        const rpcRes = await fetch(rpc.url, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body)
@@ -63,7 +70,7 @@ export default async function handler(req, res) {
           ok: !!me,
           data: me || null,
           status,
-          rpc_source: rpcUrl
+          rpc_source: rpc.source
         });
       } catch (err) {
         lastErr = err;
