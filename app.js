@@ -20,6 +20,7 @@ const JITO_PROXY = `${API_BASE}/api/jito`;
 const SNAPSHOTS_API = `${API_BASE}/api/snapshots`;
 const TRACK_VALIDATOR_API = `${API_BASE}/api/track-validator`;
 const RPC_PROXY_API = `${API_BASE}/api/rpc`;
+const ENV_CHECK_API = `${API_BASE}/api/env-check`;
 
 /**
  * Avoid touching the backend on every refresh.
@@ -369,6 +370,32 @@ async function loadSnapshotsFromDB(voteKey) {
   }
 }
 
+async function fetchSystemSignals() {
+  try {
+    const res = await fetch(ENV_CHECK_API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    return json?.signals || null;
+  } catch {
+    return null;
+  }
+}
+
+function renderSystemSignals(signals) {
+  const el = document.getElementById("system-signals");
+  if (!el) return;
+  if (!signals) {
+    el.textContent = "System signals: unavailable";
+    return;
+  }
+  const asWord = v => (v ? "ON" : "OFF");
+  el.textContent =
+    `System signals: Alpha ${asWord(signals.alpha)} · ` +
+    `Bravo ${asWord(signals.bravo)} · ` +
+    `Charlie ${asWord(signals.charlie)} · ` +
+    `Delta ${asWord(signals.delta)}`;
+}
+
 // ── RECENT PERFORMANCE ────────────────────────────
 function computeRecentPerformance({ live, ratings }) {
   const series = (live?.epochConsistencySeries || []).filter(x =>
@@ -699,6 +726,7 @@ async function main() {
   const shareLink = buildShareUrl();
   const shareInput = document.getElementById("share-url");
   if (shareInput) shareInput.value = shareLink;
+  renderSystemSignals(await fetchSystemSignals());
 
   const copyBtn = document.getElementById("copy-btn");
   const copyBtnDefault = "Copy URL";
