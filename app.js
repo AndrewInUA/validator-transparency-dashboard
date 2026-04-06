@@ -12,8 +12,6 @@ const VALIDATOR = {
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 
-const PUBLIC_SOLANA_RPC = "https://api.mainnet-beta.solana.com";
-
 const API_BASE = window.location.hostname.includes("github.io")
   ? "https://validator-transparency-dashboard.vercel.app"
   : "";
@@ -21,6 +19,7 @@ const API_BASE = window.location.hostname.includes("github.io")
 const JITO_PROXY = `${API_BASE}/api/jito`;
 const SNAPSHOTS_API = `${API_BASE}/api/snapshots`;
 const TRACK_VALIDATOR_API = `${API_BASE}/api/track-validator`;
+const RPC_PROXY_API = `${API_BASE}/api/rpc`;
 
 /**
  * Avoid touching the backend on every refresh.
@@ -291,15 +290,6 @@ function renderRatings(r) {
 
 // ── LIVE DATA ─────────────────────────────────────
 async function fetchLive(voteKey) {
-  const RPCS = [PUBLIC_SOLANA_RPC, "https://rpc.ankr.com/solana"];
-
-  const body = JSON.stringify({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getVoteAccounts",
-    params: [{ commitment: "finalized" }]
-  });
-
   const EMPTY = {
     commissionHistory: Array(10).fill(0),
     uptimeLast5EpochsPct: 0,
@@ -311,76 +301,56 @@ async function fetchLive(voteKey) {
     epochConsistencySeries: []
   };
 
-  for (const rpc of RPCS) {
+  try {
+    const res = await fetch(`${RPC_PROXY_API}?vote=${encodeURIComponent(voteKey)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+    const me = json?.data || null;
+    if (!me) return { ...EMPTY, status: "not found" };
+
+    const commission = Number(me.commission ?? 0);
+    const credits = Array.isArray(me.epochCredits) ? me.epochCredits : [];
+
+    let uptimePct = 0;
+    let epochConsistencySeries = [];
+
     try {
-      const res = await fetch(rpc, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const json = await res.json();
-      const current = json?.result?.current || [];
-      const delinquent = json?.result?.delinquent || [];
-      const me = [...current, ...delinquent].find(v => v.votePubkey === voteKey);
-
-      if (!me) return { ...EMPTY, status: "not found" };
-
-      const commission = Number(me.commission ?? 0);
-      const isDelinquent = delinquent.some(v => v.votePubkey === me.votePubkey);
-
-      let uptimePct = 0;
-      let epochConsistencySeries = [];
-
-      try {
-        const credits = Array.isArray(me.epochCredits) ? me.epochCredits : [];
-        const deltas = [];
-
-        for (let i = 1; i < credits.length; i++) {
-          deltas.push(
-            Math.max(0, (credits[i]?.[1] ?? 0) - (credits[i - 1]?.[1] ?? 0))
-          );
-        }
-
-        const recent = deltas.slice(-30);
-
-        if (recent.length) {
-          const maxD = Math.max(...recent, 1);
-          epochConsistencySeries = recent.map(
-            d => Math.round((d / maxD) * 10000) / 100
-          );
-        }
-
-        const last5 = epochConsistencySeries.slice(-5);
-        uptimePct = last5.length
-          ? Math.round(
-              (last5.reduce((s, x) => s + x, 0) / last5.length) * 100
-            ) / 100
-          : 0;
-      } catch (e) {
-        console.warn("epoch calc:", e);
+      const deltas = [];
+      for (let i = 1; i < credits.length; i++) {
+        deltas.push(Math.max(0, (credits[i]?.[1] ?? 0) - (credits[i - 1]?.[1] ?? 0)));
+      }
+      const recent = deltas.slice(-30);
+      if (recent.length) {
+        const maxD = Math.max(...recent, 1);
+        epochConsistencySeries = recent.map(d => Math.round((d / maxD) * 10000) / 100);
       }
 
-      const jito = await fetchJitoStatus(voteKey);
-
-      return {
-        commissionHistory: Array(10).fill(commission),
-        uptimeLast5EpochsPct: uptimePct,
-        jito,
-        status: isDelinquent ? "delinquent" : "healthy",
-        votePubkey: me.votePubkey,
-        nodePubkey: me.nodePubkey || null,
-        epochCreditsLen: Array.isArray(me.epochCredits) ? me.epochCredits.length : 0,
-        epochConsistencySeries
-      };
-    } catch (err) {
-      console.warn("RPC failed:", rpc, err.message);
+      const last5 = epochConsistencySeries.slice(-5);
+      uptimePct = last5.length
+        ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) / 100
+        : 0;
+    } catch (e) {
+      console.warn("epoch calc:", e);
     }
-  }
 
-  return EMPTY;
+    const jito = await fetchJitoStatus(voteKey);
+    const status = String(json?.status || "unknown");
+
+    return {
+      commissionHistory: Array(10).fill(commission),
+      uptimeLast5EpochsPct: uptimePct,
+      jito,
+      status,
+      votePubkey: me.votePubkey,
+      nodePubkey: me.nodePubkey || null,
+      epochCreditsLen: credits.length,
+      epochConsistencySeries
+    };
+  } catch (err) {
+    console.warn("RPC proxy failed:", err?.message || err);
+    return EMPTY;
+  }
 }
 
 // ── SNAPSHOTS: READ ONLY ──────────────────────────

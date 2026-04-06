@@ -105,12 +105,14 @@ export default async function handler(req, res) {
     );
 
     const secret = String(req.query.secret || "").trim();
+    const cronHeader = String(req.headers["x-vercel-cron"] || "").trim();
+    const isVercelCron = !!cronHeader;
 
     if (!process.env.CRON_SECRET) {
       return res.status(500).json({ error: "CRON_SECRET is not configured" });
     }
 
-    if (secret !== process.env.CRON_SECRET) {
+    if (!isVercelCron && secret !== process.env.CRON_SECRET) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -227,6 +229,7 @@ export default async function handler(req, res) {
       total: validators.length,
       inserted,
       failed,
+      trigger_source: isVercelCron ? "vercel_cron" : "manual_secret",
       rpc_source: rpc.source,
       helius_key_present: rpc.source === "helius",
       results
