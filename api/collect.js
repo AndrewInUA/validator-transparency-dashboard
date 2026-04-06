@@ -1,13 +1,25 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+function missingEnvVars(keys) {
+  return keys.filter(k => {
+    const v = process.env[k];
+    return !v || !String(v).trim();
+  });
+}
 
-const HELIUS_RPC = process.env.HELIUS_API_KEY
-  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-  : "https://api.mainnet-beta.solana.com";
+function buildRpcConfig() {
+  const key = String(process.env.HELIUS_API_KEY || "").trim();
+  if (key) {
+    return {
+      rpcUrl: `https://mainnet.helius-rpc.com/?api-key=${key}`,
+      source: "helius"
+    };
+  }
+  return {
+    rpcUrl: "https://api.mainnet-beta.solana.com",
+    source: "public_fallback"
+  };
+}
 
 function computeUptimeFromEpochCredits(epochCredits) {
   if (!Array.isArray(epochCredits) || epochCredits.length < 2) {
@@ -39,8 +51,8 @@ function computeUptimeFromEpochCredits(epochCredits) {
   }
 }
 
-async function fetchVoteAccounts() {
-  const rpcRes = await fetch(HELIUS_RPC, {
+async function fetchVoteAccounts(rpcUrl) {
+  const rpcRes = await fetch(rpcUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -75,6 +87,23 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
+    const missing = missingEnvVars([
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "CRON_SECRET"
+    ]);
+    if (missing.length) {
+      return res.status(500).json({
+        error: "Server environment is not configured",
+        missing_env: missing
+      });
+    }
+
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
     const secret = String(req.query.secret || "").trim();
 
     if (!process.env.CRON_SECRET) {
@@ -106,7 +135,8 @@ export default async function handler(req, res) {
       });
     }
 
-    const { current, delinquent } = await fetchVoteAccounts();
+    const rpc = buildRpcConfig();
+    const { current, delinquent } = await fetchVoteAccounts(rpc.rpcUrl);
 
     const currentMap = new Map(current.map(v => [v.votePubkey, v]));
     const delinquentMap = new Map(delinquent.map(v => [v.votePubkey, v]));
@@ -197,6 +227,8 @@ export default async function handler(req, res) {
       total: validators.length,
       inserted,
       failed,
+      rpc_source: rpc.source,
+      helius_key_present: rpc.source === "helius",
       results
     });
   } catch (e) {
