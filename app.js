@@ -12,8 +12,7 @@ const VALIDATOR = {
   voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
 };
 
-const HELIUS_RPC =
-  "https://mainnet.helius-rpc.com/?api-key=REDACTED";
+const PUBLIC_SOLANA_RPC = "https://api.mainnet-beta.solana.com";
 
 const API_BASE = window.location.hostname.includes("github.io")
   ? "https://validator-transparency-dashboard.vercel.app"
@@ -292,11 +291,7 @@ function renderRatings(r) {
 
 // ── LIVE DATA ─────────────────────────────────────
 async function fetchLive(voteKey) {
-  const RPCS = [
-    HELIUS_RPC,
-    "https://api.mainnet-beta.solana.com",
-    "https://rpc.ankr.com/solana"
-  ];
+  const RPCS = [PUBLIC_SOLANA_RPC, "https://rpc.ankr.com/solana"];
 
   const body = JSON.stringify({
     jsonrpc: "2.0",
