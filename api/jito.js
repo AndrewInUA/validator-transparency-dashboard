@@ -48,16 +48,20 @@ export default async function handler(req, res) {
       jito: runningJito,          // what your dashboard cares about
       in_set: !!found,            // is this vote key present at all
       running_jito: runningJito,  // explicit flag
+      status: "ok",
+      source: "jito_api",
       mev_commission_bps: found?.mev_commission_bps ?? null,
       priority_fee_commission_bps: found?.priority_fee_commission_bps ?? null,
       active_stake: found?.active_stake ?? null,
       count: validators.length,
     });
   } catch (e) {
-    // On any error we fall back to "unknown / off"
+    // Keep "unknown" explicit so UI does not show a false OFF state.
     return res.status(200).json({
-      jito: false,
-      matched: null,
+      jito: null,
+      in_set: null,
+      status: "unavailable",
+      source: "jito_api",
       count: 0,
       error: "proxy_error",
       message: e.message,

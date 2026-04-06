@@ -192,9 +192,20 @@ async function fetchJitoStatus(voteKey) {
     const res = await fetch(`${JITO_PROXY}?vote=${encodeURIComponent(voteKey)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    return !!json?.jito;
+    const value = typeof json?.jito === "boolean" ? json.jito : null;
+    return {
+      value,
+      source: String(json?.source || "jito_api"),
+      status: String(json?.status || "unknown"),
+      error: json?.error || null
+    };
   } catch {
-    return false;
+    return {
+      value: null,
+      source: "jito_api",
+      status: "unavailable",
+      error: "fetch_failed"
+    };
   }
 }
 
@@ -294,8 +305,12 @@ async function fetchLive(voteKey) {
   const EMPTY = {
     commissionHistory: Array(10).fill(0),
     uptimeLast5EpochsPct: 0,
-    jito: false,
+    jito: null,
+    jitoStatus: "unavailable",
+    jitoError: "rpc_unavailable",
+    jitoSource: "jito_api",
     status: "error",
+    rpcSource: null,
     votePubkey: null,
     nodePubkey: null,
     epochCreditsLen: 0,
@@ -335,14 +350,18 @@ async function fetchLive(voteKey) {
       console.warn("epoch calc:", e);
     }
 
-    const jito = await fetchJitoStatus(voteKey);
+    const jitoResult = await fetchJitoStatus(voteKey);
     const status = String(json?.status || "unknown");
 
     return {
       commissionHistory: Array(10).fill(commission),
       uptimeLast5EpochsPct: uptimePct,
-      jito,
+      jito: jitoResult.value,
+      jitoStatus: jitoResult.status,
+      jitoError: jitoResult.error,
+      jitoSource: jitoResult.source,
       status,
+      rpcSource: String(json?.rpc_source || ""),
       votePubkey: me.votePubkey,
       nodePubkey: me.nodePubkey || null,
       epochCreditsLen: credits.length,
@@ -396,6 +415,16 @@ function renderSystemSignals(signals) {
     `Delta ${asWord(signals.delta)}`;
 }
 
+function renderRuntimeSources(live) {
+  const el = document.getElementById("runtime-sources");
+  if (!el) return;
+  const rpc = live?.rpcSource ? "OK" : "Unavailable";
+  const rpcSrc = live?.rpcSource || "n/a";
+  const jitoState = live?.jito === true ? "ON" : live?.jito === false ? "OFF" : "Unknown";
+  const jitoStatus = live?.jitoStatus || "unknown";
+  el.textContent = `Runtime sources: RPC ${rpc} (${rpcSrc}) · Jito ${jitoState} (${jitoStatus})`;
+}
+
 // ── RECENT PERFORMANCE ────────────────────────────
 function computeRecentPerformance({ live, ratings }) {
   const series = (live?.epochConsistencySeries || []).filter(x =>
@@ -406,7 +435,7 @@ function computeRecentPerformance({ live, ratings }) {
   const mid = Math.floor(n / 2);
   const diff = n >= 4 ? average(series.slice(mid)) - average(series.slice(0, mid)) : null;
   const rel = getSampleReliability(n);
-  const jito = !!live?.jito;
+  const jito = live?.jito;
   const apyMedian = Number(ratings?.derived?.apy_median);
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
@@ -415,7 +444,7 @@ function computeRecentPerformance({ live, ratings }) {
     window: { value: "–", sub: "Waiting for recent epoch data from the network." },
     trend: { value: "–", sub: "Not enough epochs to compare yet." },
     variability: { value: "–", sub: "Not enough epochs to measure spread yet." },
-    reward: { value: jito ? "Jito ON" : "Jito OFF", sub: "–" }
+    reward: { value: jito === true ? "Jito ON" : jito === false ? "Jito OFF" : "Jito unknown", sub: "–" }
   };
 
   const smallSample = rel.level === "very_low" || rel.level === "low";
@@ -479,9 +508,11 @@ function computeRecentPerformance({ live, ratings }) {
 
   const rp = [];
   rp.push(
-    jito
+    jito === true
       ? "Public signals suggest Jito-style rewards may apply (check current network docs)."
-      : "No Jito-style reward flag seen in the public signals we read."
+      : jito === false
+        ? "No Jito-style reward flag seen in the public signals we read."
+        : "Jito status temporarily unavailable from proxy; check again shortly."
   );
   if (Number.isFinite(apyMedian)) {
     rp.push(`Blended APY hint (median of public feeds): ~${apyMedian.toFixed(2)}% – not a guaranteed return.`);
@@ -785,9 +816,11 @@ async function main() {
 
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
-    jitoBadge.textContent = `Jito: ${live.jito ? "ON" : "OFF"}`;
-    jitoBadge.className = `badge ${live.jito ? "info" : ""}`.trim();
+    const jitoText = live.jito === true ? "ON" : live.jito === false ? "OFF" : "Unknown";
+    jitoBadge.textContent = `Jito: ${jitoText}`;
+    jitoBadge.className = `badge ${live.jito === true ? "info" : ""}`.trim();
   }
+  renderRuntimeSources(live);
 
   const history = live.commissionHistory || [];
   const latestCom = history.length ? Number(history[history.length - 1]) : 0;
