@@ -21,6 +21,7 @@ const SNAPSHOTS_API = `${API_BASE}/api/snapshots`;
 const TRACK_VALIDATOR_API = `${API_BASE}/api/track-validator`;
 const RPC_PROXY_API = `${API_BASE}/api/rpc`;
 const ENV_CHECK_API = `${API_BASE}/api/env-check`;
+const SNAPSHOT_WINDOW = 240;
 
 /**
  * Avoid touching the backend on every refresh.
@@ -374,18 +375,31 @@ async function fetchLive(voteKey) {
 }
 
 // ── SNAPSHOTS: READ ONLY ──────────────────────────
+function fmtSnapshotDate(iso) {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "–";
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
 async function loadSnapshotsFromDB(voteKey) {
   try {
     const res = await fetch(
-      `${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&limit=120`
+      `${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&limit=${SNAPSHOT_WINDOW}`
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const json = await res.json();
-    return Array.isArray(json?.snapshots) ? json.snapshots : [];
+    const snapshots = Array.isArray(json?.snapshots) ? json.snapshots : [];
+    const meta = json?.meta && typeof json.meta === "object" ? json.meta : null;
+    return { snapshots, meta };
   } catch (err) {
     console.warn("DB load failed:", err);
-    return [];
+    return { snapshots: [], meta: null };
   }
 }
 
@@ -541,8 +555,12 @@ function renderRecentPerformance(perf) {
 }
 
 // ── STABILITY ─────────────────────────────────────
-function computeStability({ live, ratings, poolsCount, snaps }) {
+function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   const n = snaps.length;
+  const totalAll =
+    snapshotMeta && Number.isFinite(Number(snapshotMeta.total_count))
+      ? Number(snapshotMeta.total_count)
+      : null;
   const nowStatus = live?.status || "–";
   const nowUptime = Number(live?.uptimeLast5EpochsPct || 0);
   const sw = Number(ratings?.sources?.stakewiz?.total_apy);
@@ -586,7 +604,30 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
     "Risk";
 
   let trackingText = "Not enough history";
-  let trackingNote = "Waiting for backend snapshots to build history.";
+  let recentMetaLine =
+    "Waiting for backend snapshots. Collection continues in the background.";
+  let allTimeMetaLine = "";
+
+  if (totalAll !== null && totalAll === 0) {
+    allTimeMetaLine = "All-time: no snapshots stored yet.";
+  } else if (
+    totalAll !== null &&
+    totalAll > 0 &&
+    snapshotMeta?.oldest_captured_at &&
+    snapshotMeta?.newest_captured_at
+  ) {
+    const o = fmtSnapshotDate(snapshotMeta.oldest_captured_at);
+    const ne = fmtSnapshotDate(snapshotMeta.newest_captured_at);
+    if (totalAll === n && n > 0) {
+      allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (full stored history; same rows as the recent window).`;
+    } else if (n > 0) {
+      allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (full stored history). This score uses only the latest ${n}.`;
+    } else {
+      allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (full stored history).`;
+    }
+  } else if (totalAll !== null && totalAll > 0) {
+    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots stored.`;
+  }
 
   if (n >= 2) {
     const t0 = new Date(snaps[0].captured_at || Date.now()).getTime();
@@ -598,11 +639,11 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
         ? `${Math.round(days)}d`
         : `${Math.max(1, Math.round(days * 24))}h`;
 
-    trackingNote = `${n} backend snapshots over ${trackingText}. Shared history for this validator.`;
+    recentMetaLine = `Recent window: ${n.toLocaleString("en-US")} snapshots · ${trackingText} span (basis for this score).`;
   } else if (n === 1) {
     trackingText = "1 snapshot";
-    trackingNote =
-      "Backend history has started, but it is still too short for stronger conclusions.";
+    recentMetaLine =
+      "Recent window: 1 snapshot (basis for this score). More snapshots will improve confidence.";
   }
 
   const pills = [];
@@ -698,10 +739,11 @@ function computeStability({ live, ratings, poolsCount, snaps }) {
     score,
     label,
     trackingText,
-    trackingNote,
+    recentMetaLine,
+    allTimeMetaLine,
     pills,
     formulaLine:
-      "Score starts at 100, penalised for: delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. " +
+      `This score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots), starts at 100, and applies penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. ` +
       reliabilityNote
   };
 }
@@ -710,7 +752,13 @@ function renderStability(st) {
   safeSetText(document.getElementById("stability-score"), st.score);
   safeSetText(document.getElementById("stability-label"), st.label);
   safeSetText(document.getElementById("stability-tracking"), st.trackingText);
-  safeSetText(document.getElementById("stability-note"), st.trackingNote);
+  safeSetText(document.getElementById("stability-recent-meta"), st.recentMetaLine);
+  const allTimeEl = document.getElementById("stability-alltime-meta");
+  if (allTimeEl) {
+    const line = st.allTimeMetaLine || "";
+    allTimeEl.textContent = line;
+    allTimeEl.style.display = line ? "block" : "none";
+  }
   safeSetText(document.getElementById("stability-formula"), st.formulaLine);
 
   const pillsEl = document.getElementById("stability-pills");
@@ -863,8 +911,12 @@ async function main() {
     ? ratings.pools.stake_pools.length
     : null;
 
-  const snaps = await loadSnapshotsFromDB(CURRENT.voteKey);
-  renderStability(computeStability({ live, ratings, poolsCount, snaps }));
+  const { snapshots: snaps, meta: snapshotMeta } = await loadSnapshotsFromDB(
+    CURRENT.voteKey
+  );
+  renderStability(
+    computeStability({ live, ratings, poolsCount, snaps, snapshotMeta })
+  );
 }
 
 main();

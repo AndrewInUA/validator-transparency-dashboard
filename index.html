@@ -1185,10 +1185,10 @@
     <div class="card stability-card-sidebar">
       <div class="card-title">
         Stability score (shared snapshot history)
-        <span class="info-dot" tabindex="0" data-tip="A 0–100 score from saved server history plus public data (commission, pools, APIs). It is meant as a slower, history-based snapshot – not a minute-by-minute trading signal. The score gets more meaningful after this validator has been tracked for a while.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="A 0–100 score from backend snapshots plus public data (commission, pools, APIs). The headline number uses a recent window so it reflects current behaviour; all-time totals show how much history is stored overall. Not a minute-by-minute trading signal.">i</span>
       </div>
       <div class="card-note">
-        History builds over time after a validator is first viewed.
+        Recent score uses the latest snapshot window; all-time line shows everything stored for this validator.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1209,14 +1209,15 @@
           </div>
           <div id="stability-label" class="ring-label">–</div>
           <div class="ring-tracking">
-            Tracking: <span id="stability-tracking">–</span>
+            Recent span: <span id="stability-tracking">–</span>
           </div>
         </div>
         <div class="pills-col" id="stability-pills">
           <div class="pill">Loading…</div>
         </div>
       </div>
-      <div class="last-updated" id="stability-note">–</div>
+      <div class="last-updated" id="stability-recent-meta">–</div>
+      <div class="last-updated" id="stability-alltime-meta" style="margin-top:4px;opacity:0.92">–</div>
       <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
     </div>
   </div>
@@ -1610,7 +1611,7 @@
   });
 </script>
 
-<script src="./app.js?v=39" defer></script>
+<script src="./app.js?v=40" defer></script>
 
 </body>
 </html>

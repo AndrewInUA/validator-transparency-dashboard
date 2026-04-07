@@ -32,32 +32,67 @@ export default async function handler(req, res) {
     }
 
     const vote = String(req.query.vote || "").trim();
-    const limitRaw = Number(req.query.limit || 120);
+    const limitRaw = Number(req.query.limit || 240);
     const limit = Number.isFinite(limitRaw)
       ? Math.max(1, Math.min(limitRaw, 500))
-      : 120;
+      : 240;
 
     if (!vote) {
       return res.status(400).json({ error: "Missing vote parameter" });
     }
 
-    const { data, error } = await supabase
-      .from("validator_snapshots")
-      .select("id, vote_key, status, commission, uptime, sw_apy, tr_apy, pools, captured_at")
-      .eq("vote_key", vote)
-      .order("captured_at", { ascending: true })
-      .limit(limit);
+    const [
+      { count: totalCount, error: countErr },
+      { data: oldestRow, error: oldestErr },
+      { data: newestRow, error: newestErr },
+      { data: windowRows, error: windowErr }
+    ] = await Promise.all([
+      supabase
+        .from("validator_snapshots")
+        .select("id", { count: "exact", head: true })
+        .eq("vote_key", vote),
+      supabase
+        .from("validator_snapshots")
+        .select("captured_at")
+        .eq("vote_key", vote)
+        .order("captured_at", { ascending: true })
+        .limit(1),
+      supabase
+        .from("validator_snapshots")
+        .select("captured_at")
+        .eq("vote_key", vote)
+        .order("captured_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("validator_snapshots")
+        .select("id, vote_key, status, commission, uptime, sw_apy, tr_apy, pools, captured_at")
+        .eq("vote_key", vote)
+        .order("captured_at", { ascending: false })
+        .limit(limit)
+    ]);
 
-    if (error) {
-      console.error("snapshots GET error:", error);
+    if (countErr || oldestErr || newestErr || windowErr) {
+      const err = countErr || oldestErr || newestErr || windowErr;
+      console.error("snapshots GET error:", err);
       return res.status(500).json({ error: "Failed to load snapshots" });
     }
+
+    const rows = windowRows || [];
+    const snapshotsChrono = [...rows].reverse();
+
+    const oldestAt = oldestRow?.[0]?.captured_at ?? null;
+    const newestAt = newestRow?.[0]?.captured_at ?? null;
 
     return res.status(200).json({
       ok: true,
       vote,
-      count: data?.length || 0,
-      snapshots: data || []
+      count: snapshotsChrono.length,
+      meta: {
+        total_count: typeof totalCount === "number" ? totalCount : 0,
+        oldest_captured_at: oldestAt,
+        newest_captured_at: newestAt
+      },
+      snapshots: snapshotsChrono
     });
   } catch (err) {
     console.error("snapshots handler error:", err);
