@@ -128,17 +128,18 @@
     .product-brand {
       display: inline-flex;
       align-items: center;
-      gap: 14px;
+      gap: 4px;
       min-width: 0;
     }
 
     .product-logo {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       object-fit: contain;
-      border-radius: 8px;
+      border-radius: 0;
       flex-shrink: 0;
-      transform: translateY(-2px);
+      display: block;
+      transform: none;
       filter: drop-shadow(0 0 12px rgba(185, 240, 0, 0.35));
     }
 
@@ -149,6 +150,7 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text2);
+      margin: 0;
       margin-bottom: 0;
       min-width: 0;
       line-height: 1;
