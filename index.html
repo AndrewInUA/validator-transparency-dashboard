@@ -125,14 +125,32 @@
       padding: calc(var(--layout-gap) * 2) 24px calc(var(--layout-gap) * 2);
     }
 
+    .product-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .product-logo {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      border-radius: 8px;
+      flex-shrink: 0;
+      transform: translateY(-1px);
+      filter: drop-shadow(0 0 12px rgba(185, 240, 0, 0.35));
+    }
+
     .product-name {
       font-family: var(--font);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text2);
-      margin-bottom: 18px;
+      margin-bottom: 0;
+      min-width: 0;
     }
 
     .top-bar {
@@ -144,7 +162,7 @@
       flex-wrap: wrap;
     }
 
-    .top-bar .product-name {
+    .top-bar .product-brand {
       margin-bottom: 0;
       flex: 1;
       min-width: 0;
@@ -1095,7 +1113,10 @@
 <div class="wrap">
 
   <div class="top-bar">
-    <div class="product-name">Validator Transparency Dashboard</div>
+    <div class="product-brand">
+      <img src="./assets/logo-transparent.png" alt="Validator Transparency logo" class="product-logo" />
+      <div class="product-name">Validator Transparency Dashboard</div>
+    </div>
     <div class="header-actions">
       <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" title="Theme">
         <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
