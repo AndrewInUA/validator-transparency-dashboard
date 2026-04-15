@@ -841,6 +841,7 @@ function pushUnique(list, text) {
 function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stability }) {
   const positives = [];
   const cautions = [];
+  let commissionCriticalRisk = false;
 
   const commissionHistory = Array.isArray(live?.commissionHistory)
     ? live.commissionHistory
@@ -869,6 +870,25 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
       pushUnique(
         positives,
         `Low validator commission (${latestCommission.toFixed(0)}%) supports net yield.`
+      );
+    } else if (latestCommission >= 100) {
+      signalPoints -= 6;
+      commissionCriticalRisk = true;
+      pushUnique(
+        cautions,
+        "Validator commission is 100%: direct delegators typically receive near-zero net staking rewards."
+      );
+    } else if (latestCommission >= 50) {
+      signalPoints -= 3;
+      pushUnique(
+        cautions,
+        `Very high validator commission (${latestCommission.toFixed(0)}%) heavily reduces delegator net rewards.`
+      );
+    } else if (latestCommission > 10) {
+      signalPoints -= 2;
+      pushUnique(
+        cautions,
+        `High validator commission (${latestCommission.toFixed(0)}%) reduces delegator net rewards.`
       );
     } else {
       signalPoints -= 1;
@@ -966,8 +986,9 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
     pushUnique(cautions, "No current stake pool presence was detected.");
   }
 
-  const verdict =
-    signalPoints >= 6
+  const verdict = commissionCriticalRisk
+    ? { label: "Caution", className: "warn" }
+    : signalPoints >= 6
       ? { label: "Attractive", className: "ok" }
       : signalPoints >= 2
         ? { label: "Balanced", className: "ok" }
@@ -981,7 +1002,9 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
         : "Low";
 
   const summary =
-    verdict.label === "Attractive"
+    commissionCriticalRisk
+      ? "Commission is critically high for direct delegation, so this validator is currently a caution case despite other positive signals."
+      : verdict.label === "Attractive"
       ? "Most displayed signals currently support this validator for delegator consideration."
       : verdict.label === "Balanced"
         ? "Signals are mixed to positive; reasonable option, but review the watch list before delegating."
@@ -1110,7 +1133,12 @@ async function main() {
     }
 
     setOpenFeedback("Opening validator…");
-    window.location.assign(buildValidatorUrl(vote, name));
+    const targetUrl = buildValidatorUrl(vote, name);
+    const opened = window.open(targetUrl, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      setOpenFeedback("Popup blocked by browser; opening in current tab instead.");
+      window.location.assign(targetUrl);
+    }
   };
 
   if (openBtn) openBtn.onclick = openValidatorFromInputs;
