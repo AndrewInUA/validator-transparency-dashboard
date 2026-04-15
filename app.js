@@ -1061,6 +1061,31 @@ function renderDelegatorAssessment(assessment) {
   }
 }
 
+function renderCommissionCriticalAlert(commissionPct) {
+  const el = document.getElementById("commission-critical-alert");
+  if (!el) return;
+
+  if (Number.isFinite(commissionPct) && commissionPct >= 100) {
+    el.style.display = "block";
+    el.innerHTML =
+      "<strong>Critical delegator warning:</strong> this validator currently has 100% commission. " +
+      "For direct delegation, this usually means near-zero net staking rewards for delegators. " +
+      "Proceed only if you intentionally accept this setup.";
+    return;
+  }
+
+  if (Number.isFinite(commissionPct) && commissionPct >= 50) {
+    el.style.display = "block";
+    el.innerHTML =
+      `<strong>High commission warning:</strong> current validator commission is ${commissionPct.toFixed(0)}%. ` +
+      "This can significantly reduce delegator net rewards.";
+    return;
+  }
+
+  el.style.display = "none";
+  el.textContent = "";
+}
+
 // ── MAIN ─────────────────────────────────────────
 async function main() {
   const validatorName =
@@ -1206,6 +1231,7 @@ async function main() {
     document.getElementById("commission"),
     `${Number.isFinite(latestCom) ? latestCom.toFixed(0) : 0}%`
   );
+  renderCommissionCriticalAlert(latestCom);
 
   const uptimeNum = Number(live.uptimeLast5EpochsPct);
   safeSetText(

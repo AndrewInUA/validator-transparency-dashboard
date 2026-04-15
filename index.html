@@ -171,6 +171,24 @@
       min-width: 0;
     }
 
+    .critical-commission-alert {
+      display: none;
+      margin-bottom: var(--layout-gap-tight);
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(243, 107, 107, 0.5);
+      background: rgba(243, 107, 107, 0.12);
+      color: #ffd8d8;
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: 0 8px 24px rgba(243, 107, 107, 0.12);
+    }
+
+    .critical-commission-alert strong {
+      color: #ffeaea;
+    }
+
     .row-hero {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
@@ -1190,6 +1208,8 @@
     </div>
   </div>
 
+  <div id="commission-critical-alert" class="critical-commission-alert"></div>
+
   <div class="row-hero">
     <div class="hero-col-left">
       <div class="card identity-card">
@@ -1703,7 +1723,7 @@
   });
 </script>
 
-<script src="./app.js?v=46" defer></script>
+<script src="./app.js?v=47" defer></script>
 
 </body>
 </html>
