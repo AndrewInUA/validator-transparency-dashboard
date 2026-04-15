@@ -277,6 +277,9 @@
 
     .trust-card-hero .stat-label {
       margin-bottom: 6px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text3);
     }
 
     .trust-card-hero .stat-hint {
@@ -524,6 +527,14 @@
       align-items: stretch;
     }
 
+    .secondary-section-note {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: -2px;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
     .row-epoch-metrics > .card {
       min-width: 0;
     }
@@ -556,6 +567,31 @@
       height: var(--chart-area-height);
     }
 
+    .delegator-assessment-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--layout-gap);
+      margin-top: 10px;
+    }
+
+    .delegator-summary-note {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.55;
+    }
+
+    .delegator-assessment-card .status-big {
+      display: inline-flex;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 860px) {
+      .delegator-assessment-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -580,11 +616,11 @@
 
     .card-title {
       font-family: var(--font);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--text2);
+      color: var(--text);
       margin-bottom: var(--layout-gap-tight);
       min-height: 1.35em;
       display: flex;
@@ -596,6 +632,7 @@
       content: '';
       flex: 1; height: 1px;
       background: var(--border);
+      opacity: 0.55;
     }
 
     .card-note {
@@ -1008,6 +1045,27 @@
     .copy-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-card); }
     .copy-btn:active { transform: scale(0.98); }
 
+    .open-validator-row {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      margin-top: 10px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .open-validator-row .share-input {
+      flex: 1 1 280px;
+      width: auto;
+    }
+
+    .open-validator-help {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.45;
+    }
+
     .source-row {
       display: flex;
       flex-wrap: wrap;
@@ -1155,26 +1213,26 @@
             <div class="trust-stat-col">
               <div class="stat-label">
                 Commission
-                <span class="info-dot" tabindex="0" data-tip="The fee this validator charges on staking rewards, as reported on-chain. 0% means none of that commission is taken from delegator rewards via this setting (other costs or pool rules may still apply).">i</span>
+                <span class="info-dot" tabindex="0" data-tip="Delegator profit view: this is the validator fee deducted from staking rewards. Lower commission usually means higher net rewards for delegators (all else equal). 0% is profit-friendly because no validator-level fee is taken via this setting; pool or protocol fees can still reduce final payout.">i</span>
               </div>
               <div id="commission" class="stat-value green">–%</div>
-              <p class="stat-hint">On-chain staking commission for this validator. 0% here means no commission is taken through this on-chain setting (liquid-staking or pool rules can still apply).</p>
+              <p class="stat-hint">Profit view: lower commission usually lets delegators keep more staking rewards. 0% here is generally best for net yield, though pool/program fees may still apply.</p>
               <div class="trust-status-block">
                 <div class="stat-label">
                   Status
-                  <span class="info-dot" tabindex="0" data-tip="A simple health label from live RPC checks (for example whether the vote account looks active). It can change quickly and is not a full security audit.">i</span>
+                  <span class="info-dot" tabindex="0" data-tip="Delegator view: this is a live activity signal from network RPC (for example active vs delinquent). Healthy is generally preferable for reliability. It can change quickly and is not a full safety or security audit.">i</span>
                 </div>
                 <div id="status" class="status-big ok">–</div>
-                <p class="stat-hint">What the network reports for this vote account right now (for example active vs delinquent). It updates often and is not a security review.</p>
+                <p class="stat-hint">Delegator view: shows whether the validator looks active right now. Useful for quick checks, but not a full risk assessment by itself.</p>
               </div>
             </div>
             <div class="trust-stat-col">
               <div class="stat-label">
                 Recent voting consistency
-                <span class="info-dot" tabindex="0" data-tip="We compare vote-credit growth in recent epochs to the strongest epoch in the same short window. The headline value is the average of the last five epochs. Higher usually means steadier participation – not a promise about the future.">i</span>
+                <span class="info-dot" tabindex="0" data-tip="Delegator view: this estimates how steady voting participation has been recently. Higher usually means steadier validator activity, which is generally better for reliability. It is still a short-term signal, not a guaranteed future reward outcome.">i</span>
               </div>
               <div id="uptime" class="stat-value">–%</div>
-              <p class="stat-hint">How steady this validator’s voting activity has been across recent epochs, next to the best epoch in the same period. The large number is the average of the last five – higher tends to mean more even participation, not a grade of “good validator.”</p>
+              <p class="stat-hint">Delegator view: higher means this validator has voted more consistently in recent epochs. Treat it as a reliability signal, not a promise of specific rewards.</p>
             </div>
           </div>
         </div>
@@ -1185,7 +1243,7 @@
     <div class="card stability-card-sidebar">
       <div class="card-title">
         Stability score (shared snapshot history)
-        <span class="info-dot" tabindex="0" data-tip="A 0–100 score from backend snapshots plus public data (commission, pools, APIs). The headline number uses a recent window so it reflects current behaviour; all-time totals show how much history is stored overall. Not a minute-by-minute trading signal.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Delegator view: one combined 0–100 stability score. Higher usually means fewer warning signs in validator behavior (delinquency, sudden commission changes, weaker recent voting consistency, API disagreement). Use it as a decision aid, not as financial advice or a guarantee of returns.">i</span>
       </div>
       <div class="card-note">
         Recent score uses the latest snapshot window; all-time line shows everything stored for this validator.
@@ -1227,7 +1285,7 @@
     <div class="card profitability-card">
       <div class="card-title">
         Profitability (APY) &amp; Pool presence
-        <span class="info-dot" tabindex="0" data-tip="APY figures are estimates from public websites (Stakewiz and Trillium), not live on-chain payouts. Pool presence shows how many staking-pool programs delegate to this validator in public data – useful context, not a quality score. APIs can be down or rate-limited; dashes mean data was not available. APY is not a guide to how much SOL a potential delegator or staker might earn.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Delegator view: APY values are third-party estimates, not guaranteed payouts. Use them for rough comparison only. Pool presence shows adoption by staking pools, which is context, not a quality score. Missing values can happen when public APIs fail or rate-limit.">i</span>
       </div>
       <div class="source-row">
         <span class="source-chip">Stakewiz API</span>
@@ -1235,19 +1293,19 @@
       </div>
       <div class="apy-row">
         <div class="apy-block">
-          <div class="apy-label">APY (median) <span class="info-dot" tabindex="0" data-tip="When both Stakewiz and Trillium give a number, this is the value in the middle between them – one simple line to scan. It is not an official quote from the chain.">i</span></div>
+          <div class="apy-label">APY (median) <span class="info-dot" tabindex="0" data-tip="Delegator view: quick blended APY estimate from two public sources. Good for rough comparison, but not an official payout quote and not guaranteed future return.">i</span></div>
           <div id="apy-median" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Stakewiz APY <span class="info-dot" tabindex="0" data-tip="Yield-style estimate from Stakewiz, a third-party staking analytics site. Methodology and timing can differ from other dashboards.">i</span></div>
+          <div class="apy-label">Stakewiz APY <span class="info-dot" tabindex="0" data-tip="Delegator view: APY estimate from Stakewiz. Useful as one external reference; methodology and timing may differ from other sources.">i</span></div>
           <div id="apy-stakewiz" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="Yield-style estimate from Trillium’s public API (staking data provider; unrelated to Tulip). Compare with Stakewiz rather than treating either as exact future returns.">i</span></div>
+          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="Delegator view: APY estimate from Trillium public data. Compare with Stakewiz; treat both as estimates rather than exact future return.">i</span></div>
           <div id="apy-trillium" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="Count of liquid-staking / pool programs that delegate to this validator in public pool data. More pools means broader program participation – not automatically better or worse for delegators.">i</span></div>
+          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="Delegator view: how many staking pools currently delegate here. More pools can mean broader ecosystem usage, but it does not automatically mean better rewards or lower risk for an individual delegator.">i</span></div>
           <div id="pools-count" class="apy-value blue">–</div>
         </div>
       </div>
@@ -1256,12 +1314,16 @@
       <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: –</div>
     </div>
 
+    <div class="secondary-section-note">
+      Live network signals (supplementary): this section uses the short Solana RPC window and can contain only a few epochs.
+    </div>
     <div class="row-epoch-metrics">
     <div class="card chart-card chart-card-wide">
       <div class="card-title">
-        Recent voting consistency – last 30 epochs
-        <span class="info-dot" tabindex="0" data-tip="Each point is one epoch: this validator’s vote-credit growth that epoch, compared with the strongest growth in the same ~30-epoch window, shown as a percentage. The line shows whether recent participation looks steady or bumpy. Source: public Solana RPC.">i</span>
+        Live voting signal (RPC short window)
+        <span class="info-dot" tabindex="0" data-tip="Delegator view: this is a live network signal from Solana RPC, based on a short epoch window. It helps spot immediate behavior changes, but do not use it alone for delegation decisions. Pair it with the stability/history blocks above.">i</span>
       </div>
+      <div class="card-note">Quick live read from RPC. For stronger assessment, use the Stability score and snapshot history above.</div>
       <div class="chart-header">
         <div class="chart-legend">
           <div class="legend-item">
@@ -1283,33 +1345,33 @@
 
     <div class="card epoch-perf-card">
       <div class="card-title">
-        Recent performance (up to last 30 epochs)
-        <span class="info-dot" tabindex="0" data-tip="Each tile looks at the same recent epochs (as many as 30, sometimes fewer). Data window = how many we got. Voting trend = newer epochs vs older ones in that slice. Variability = how jumpy the numbers are. Reward profile = public Jito + APY hints. Not financial advice – just a readable summary.">i</span>
+        Live RPC summary (same short window)
+        <span class="info-dot" tabindex="0" data-tip="Delegator view: these quick indicators explain the same short RPC window. Use them as supporting context only. Main delegation signal should come from longer snapshot history and stability score.">i</span>
       </div>
       <div class="source-row">
-        <span class="source-chip">Solana RPC</span>
+        <span class="source-chip">Solana RPC (short window)</span>
         <span class="source-chip">Stakewiz</span>
         <span class="source-chip">Trillium</span>
         <span class="source-chip">Jito</span>
       </div>
       <div class="perf-grid">
         <div class="perf-item">
-          <div class="perf-label">Data window <span class="info-dot" tabindex="0" data-tip="How many recent epochs are in this summary (max 30). Fewer epochs = a thinner picture of behavior.">i</span></div>
+          <div class="perf-label">Available RPC epochs <span class="info-dot" tabindex="0" data-tip="Delegator view: more available epochs means this short-window read is less noisy. Very small counts should be treated carefully.">i</span></div>
           <div id="perf-window-value" class="perf-value">–</div>
           <div id="perf-window-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting trend <span class="info-dot" tabindex="0" data-tip="Splits the available epochs into a newer half and an older half and asks: is voting activity picking up, fading, or about flat? Needs enough epochs to be meaningful.">i</span></div>
+          <div class="perf-label">Direction (newer vs older) <span class="info-dot" tabindex="0" data-tip="Delegator view: shows whether recent voting activity is improving, flat, or weakening inside this short window. Useful as an early hint, not proof of long-term trend.">i</span></div>
           <div id="perf-trend-value" class="perf-value">–</div>
           <div id="perf-trend-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Voting variability <span class="info-dot" tabindex="0" data-tip="Measures how much the epoch scores bounce up and down. Low = steadier line; high = choppier. A tiny window can mislead – more epochs make this clearer.">i</span></div>
+          <div class="perf-label">Point-to-point stability <span class="info-dot" tabindex="0" data-tip="Delegator view: smoother points usually mean steadier short-term behavior; choppy points mean more volatility in this short sample.">i</span></div>
           <div id="perf-var-value" class="perf-value">–</div>
           <div id="perf-var-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Reward profile <span class="info-dot" tabindex="0" data-tip="Combines what public sites say about APY with whether Jito shows up in signals. Context only – not what any delegator will actually receive.">i</span></div>
+          <div class="perf-label">Reward context (public APIs) <span class="info-dot" tabindex="0" data-tip="Delegator profit view: combines APY estimates with Jito signal status. Jito ON can indicate potential upside vs baseline staking rewards; APY estimates show rough yield range. Still context only, not guaranteed realized profit.">i</span></div>
           <div id="perf-reward-value" class="perf-value">–</div>
           <div id="perf-reward-sub" class="perf-sub">–</div>
         </div>
@@ -1317,11 +1379,41 @@
     </div>
     </div>
 
+    <div class="card delegator-assessment-card">
+      <div class="card-title">
+        Delegator takeaway (auto-assessment)
+        <span class="info-dot" tabindex="0" data-tip="This summary is calculated from the same displayed metrics: commission, live status, recent voting consistency, stability score, snapshot depth, APY/Jito context, and pool presence.">i</span>
+      </div>
+      <p id="delegator-summary" class="delegator-summary-note">Loading assessment…</p>
+      <div id="delegator-verdict" class="status-big">–</div>
+      <div class="delegator-assessment-grid">
+        <div>
+          <div class="stat-label">What looks good</div>
+          <div id="delegator-good" class="pills-col">
+            <span class="pill">Loading…</span>
+          </div>
+        </div>
+        <div>
+          <div class="stat-label">What to watch</div>
+          <div id="delegator-watch" class="pills-col">
+            <span class="pill">Loading…</span>
+          </div>
+        </div>
+      </div>
+      <div id="delegator-confidence" class="last-updated">Confidence: –</div>
+    </div>
+
     <div class="card">
         <div class="card-title">Open another validator</div>
         <p class="open-validator-blurb">
           Put any mainnet vote account after <code class="inline-code">?vote=</code> in the address bar to load that validator. Optional <code class="inline-code">&amp;name=</code> sets the title. The field below is this page – copy or edit the vote segment to switch.
         </p>
+        <div class="open-validator-row">
+          <input id="open-validator-input" class="share-input" type="text" value="" placeholder="Paste vote account or dashboard URL" aria-label="Vote account or dashboard URL" />
+          <input id="open-validator-name" class="share-input" type="text" value="" placeholder="Optional display name" aria-label="Optional validator display name" />
+          <button type="button" id="open-validator-btn" class="copy-btn">Open validator</button>
+        </div>
+        <div id="open-validator-feedback" class="open-validator-help">Tip: you can paste either a raw vote account or a full dashboard link.</div>
         <div class="share-row">
           <input id="share-url" class="share-input" type="text" readonly value="Loading…" aria-label="URL for this validator view" />
           <button type="button" id="copy-btn" class="copy-btn">Copy URL</button>
@@ -1611,7 +1703,7 @@
   });
 </script>
 
-<script src="./app.js?v=40" defer></script>
+<script src="./app.js?v=46" defer></script>
 
 </body>
 </html>

@@ -91,6 +91,16 @@ function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
 }
 
+function epochEarnedCredits(row) {
+  if (!Array.isArray(row)) return null;
+  const credits = Number(row[1]);
+  const prevCredits = Number(row[2]);
+  if (Number.isFinite(credits) && Number.isFinite(prevCredits)) {
+    return Math.max(0, credits - prevCredits);
+  }
+  return Number.isFinite(credits) ? Math.max(0, credits) : null;
+}
+
 function safeSetText(el, text) {
   if (el) el.textContent = text;
 }
@@ -113,14 +123,49 @@ function simplifyTrendDelta(diff) {
 }
 
 function buildShareUrl() {
+  return buildValidatorUrl(CURRENT.voteKey, CURRENT.nameFromUrl || "");
+}
+
+function buildValidatorUrl(voteKey, name) {
   const base = `${window.location.origin}${window.location.pathname}`;
   const isGHP = window.location.hostname.includes("github.io");
   const params = new URLSearchParams();
 
-  params.set("vote", CURRENT.voteKey);
-  if (CURRENT.nameFromUrl) params.set("name", CURRENT.nameFromUrl);
+  params.set("vote", voteKey);
+  if (name) params.set("name", name);
 
   return isGHP ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
+}
+
+function extractVoteAndNameFromInput(rawInput) {
+  const raw = String(rawInput || "").trim();
+  if (!raw) return { vote: "", name: "" };
+
+  if (isProbablyVoteKey(raw)) return { vote: raw, name: "" };
+
+  try {
+    const u = new URL(raw);
+    const q = new URLSearchParams(u.search);
+    const hash = u.hash.startsWith("#") ? u.hash.slice(1) : u.hash;
+    const h = new URLSearchParams(hash);
+    return {
+      vote: String(q.get("vote") || h.get("vote") || "").trim(),
+      name: String(q.get("name") || h.get("name") || "").trim()
+    };
+  } catch {
+    // not a full URL
+  }
+
+  const maybeParams = raw.startsWith("#")
+    ? raw.slice(1)
+    : raw.startsWith("?")
+      ? raw.slice(1)
+      : raw;
+  const p = new URLSearchParams(maybeParams);
+  return {
+    vote: String(p.get("vote") || "").trim(),
+    name: String(p.get("name") || "").trim()
+  };
 }
 
 function isProbablyVoteKey(value) {
@@ -333,10 +378,12 @@ async function fetchLive(voteKey) {
     let epochConsistencySeries = [];
 
     try {
-      const deltas = [];
-      for (let i = 1; i < credits.length; i++) {
-        deltas.push(Math.max(0, (credits[i]?.[1] ?? 0) - (credits[i - 1]?.[1] ?? 0)));
-      }
+      // Each epochCredits row already carries (credits, previous_credits) for that epoch.
+      // Use that directly so one row maps to one chart point.
+      const deltas = credits
+        .map(epochEarnedCredits)
+        .filter(v => Number.isFinite(v));
+
       const recent = deltas.slice(-30);
       if (recent.length) {
         const maxD = Math.max(...recent, 1);
@@ -458,7 +505,15 @@ function computeRecentPerformance({ live, ratings }) {
     window: { value: "–", sub: "Waiting for recent epoch data from the network." },
     trend: { value: "–", sub: "Not enough epochs to compare yet." },
     variability: { value: "–", sub: "Not enough epochs to measure spread yet." },
-    reward: { value: jito === true ? "Jito ON" : jito === false ? "Jito OFF" : "Jito unknown", sub: "–" }
+    reward: {
+      value:
+        jito === true
+          ? "Jito signal: ON (potential upside)"
+          : jito === false
+            ? "Jito signal: OFF (baseline rewards)"
+            : "Jito signal: unknown",
+      sub: "–"
+    }
   };
 
   const smallSample = rel.level === "very_low" || rel.level === "low";
@@ -466,13 +521,13 @@ function computeRecentPerformance({ live, ratings }) {
   if (n > 0) {
     out.window.value = `${n} epoch${n === 1 ? "" : "s"}`;
     if (rel.level === "very_low") {
-      out.window.sub = `This block can use up to 30 recent epochs; only ${n} ${n === 1 ? "is" : "are"} available. Use it as a quick peek, not a full story.`;
+      out.window.sub = `Only ${n} ${n === 1 ? "epoch is" : "epochs are"} available from RPC. This is a quick live signal, not a full history view.`;
     } else if (rel.level === "low") {
-      out.window.sub = `Up to 30 epochs are considered; ${n} are in view, enough for a rough read, not a long track record.`;
+      out.window.sub = `${n} epochs are available from RPC. Useful for a quick read, but still a short sample.`;
     } else if (rel.level === "medium") {
-      out.window.sub = `${n} epochs in view – a reasonable slice for short-term context.`;
+      out.window.sub = `${n} epochs in view: a reasonable short-term slice.`;
     } else {
-      out.window.sub = `${n} epochs in view – good coverage for this summary.`;
+      out.window.sub = `${n} epochs in view: good coverage for this live summary.`;
     }
   }
 
@@ -497,7 +552,7 @@ function computeRecentPerformance({ live, ratings }) {
     out.trend.value = "Limited data";
     out.trend.sub =
       n < 4
-        ? "Need at least four epochs before we can split the window into “newer” vs “older” fairly."
+        ? "Need at least 4 epochs before we can compare newer vs older fairly."
         : "Not enough signal to describe a trend.";
   }
 
@@ -523,20 +578,22 @@ function computeRecentPerformance({ live, ratings }) {
   const rp = [];
   rp.push(
     jito === true
-      ? "Public signals suggest Jito-style rewards may apply (check current network docs)."
+      ? "Jito signal is ON: delegators may receive extra MEV-related reward upside on top of baseline staking rewards, depending on validator setup and network conditions."
       : jito === false
-        ? "No Jito-style reward flag seen in the public signals we read."
-        : "Jito status temporarily unavailable from proxy; check again shortly."
+        ? "Jito signal is OFF in public data: expect baseline staking rewards without Jito-related uplift from this indicator."
+        : "Jito signal is temporarily unavailable from the proxy, so this part of reward context is unknown right now."
   );
   if (Number.isFinite(apyMedian)) {
-    rp.push(`Blended APY hint (median of public feeds): ~${apyMedian.toFixed(2)}% – not a guaranteed return.`);
+    rp.push(
+      `Blended APY estimate from public sources: ~${apyMedian.toFixed(2)}%. Use as planning context only, not guaranteed delegator return.`
+    );
   }
   rp.push(
     Number.isFinite(sw) && Number.isFinite(tr)
       ? Math.abs(sw - tr) <= 1
-        ? "Stakewiz and Trillium are close on APY right now."
-        : "Stakewiz and Trillium disagree on APY – treat estimates as rough."
-      : "One or both APY feeds missing – yield context is thin."
+        ? "Stakewiz and Trillium are close on APY now, which lowers estimate uncertainty."
+        : "Stakewiz and Trillium disagree on APY, so estimated yield confidence is lower."
+      : "One or both APY feeds are missing, so reward estimate confidence is limited."
   );
 
   out.reward.sub = rp.join(" ");
@@ -655,13 +712,13 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
         delinquentCount === 0
           ? "No delinquency in snapshot history"
           : `Delinquency seen (${delinquentCount}/${n})`,
-      tip: "Based on backend-collected snapshots."
+      tip: "Delegator view: fewer delinquent snapshots usually means steadier validator participation."
     });
   } else {
     pills.push({
       ok: nowStatus === "healthy",
       text: nowStatus === "healthy" ? "Healthy right now" : `Status: ${nowStatus}`,
-      tip: "Current live status."
+      tip: "Delegator view: live status only; confirm with longer history."
     });
   }
 
@@ -672,13 +729,13 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
         commissionChanges === 0
           ? "Commission stable"
           : `Commission changed ${commissionChanges}x`,
-      tip: "Based on backend-collected snapshots."
+      tip: "Delegator view: frequent commission changes reduce fee predictability."
     });
   } else {
     pills.push({
       ok: true,
       text: "Commission history building",
-      tip: "Needs more backend snapshots."
+      tip: "Delegator view: wait for more snapshots before judging commission stability."
     });
   }
 
@@ -686,25 +743,25 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     pills.push({
       ok: false,
       text: "APY comparison unavailable",
-      tip: "Needs both APY sources."
+      tip: "Delegator view: with missing APY sources, yield estimate confidence is lower."
     });
   } else if (apyDiff <= 0.75) {
     pills.push({
       ok: true,
       text: `APY sources consistent (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "APY inputs closely aligned."
+      tip: "Delegator view: source agreement increases confidence in rough APY estimates."
     });
   } else if (apyDiff <= 1.5) {
     pills.push({
       ok: true,
       text: `APY fairly close (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Moderate APY difference."
+      tip: "Delegator view: estimates are usable, but with moderate uncertainty."
     });
   } else {
     pills.push({
       ok: false,
       text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Large APY difference."
+      tip: "Delegator view: large source gap means low confidence in estimated yield."
     });
   }
 
@@ -718,7 +775,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
         : nowUptime >= 90
           ? `Recent voting consistency good (${nowUptime.toFixed(1)}%)`
           : `Recent voting consistency needs attention (${nowUptime.toFixed(1)}%)`,
-    tip: "Short-term recent voting signal from vote-credit data."
+    tip: "Delegator view: stronger recent voting consistency usually supports steadier rewards."
   });
 
   pills.push({
@@ -727,7 +784,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
       Number.isFinite(poolsCount) && poolsCount > 0
         ? `${poolsCount} stake pools delegating`
         : "No stake pool presence",
-    tip: "Current pool input."
+    tip: "Delegator view: pool presence is adoption context, not guaranteed quality or yield."
   });
 
   let reliabilityNote = "Confidence low – short history.";
@@ -743,7 +800,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     allTimeMetaLine,
     pills,
     formulaLine:
-      `This score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots), starts at 100, and applies penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. ` +
+      `Delegator view: this score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots), starts at 100, and applies penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. It helps compare stability, not predict exact returns. ` +
       reliabilityNote
   };
 }
@@ -774,6 +831,211 @@ function renderStability(st) {
   }
 
   if (window.animateRing) window.animateRing(st.score);
+}
+
+function pushUnique(list, text) {
+  if (!text) return;
+  if (!list.includes(text)) list.push(text);
+}
+
+function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stability }) {
+  const positives = [];
+  const cautions = [];
+
+  const commissionHistory = Array.isArray(live?.commissionHistory)
+    ? live.commissionHistory
+    : [];
+  const latestCommission = commissionHistory.length
+    ? Number(commissionHistory[commissionHistory.length - 1])
+    : null;
+  const uptime = Number(live?.uptimeLast5EpochsPct);
+  const status = String(live?.status || "unknown");
+  const jito = live?.jito;
+  const apyMedian = Number(ratings?.derived?.apy_median);
+  const snapCount = Array.isArray(snaps) ? snaps.length : 0;
+  const stabilityScore = Number(stability?.score);
+
+  let signalPoints = 0;
+
+  if (Number.isFinite(latestCommission)) {
+    if (latestCommission === 0) {
+      signalPoints += 2;
+      pushUnique(
+        positives,
+        "0% validator commission: delegators keep more baseline staking rewards."
+      );
+    } else if (latestCommission <= 5) {
+      signalPoints += 1;
+      pushUnique(
+        positives,
+        `Low validator commission (${latestCommission.toFixed(0)}%) supports net yield.`
+      );
+    } else {
+      signalPoints -= 1;
+      pushUnique(
+        cautions,
+        `Higher validator commission (${latestCommission.toFixed(0)}%) reduces net delegator rewards.`
+      );
+    }
+  }
+
+  if (status === "healthy") {
+    signalPoints += 2;
+    pushUnique(positives, "Live status is healthy right now.");
+  } else if (status === "delinquent") {
+    signalPoints -= 3;
+    pushUnique(cautions, "Live status is delinquent right now.");
+  } else if (status !== "unknown") {
+    signalPoints -= 1;
+    pushUnique(cautions, `Live status is ${status}.`);
+  }
+
+  if (Number.isFinite(uptime)) {
+    if (uptime >= 95) {
+      signalPoints += 2;
+      pushUnique(positives, `Recent voting consistency is strong (${uptime.toFixed(1)}%).`);
+    } else if (uptime >= 90) {
+      signalPoints += 1;
+      pushUnique(positives, `Recent voting consistency is solid (${uptime.toFixed(1)}%).`);
+    } else {
+      signalPoints -= 2;
+      pushUnique(cautions, `Recent voting consistency is weaker (${uptime.toFixed(1)}%).`);
+    }
+  }
+
+  if (Number.isFinite(stabilityScore)) {
+    if (stabilityScore >= 85) {
+      signalPoints += 2;
+      pushUnique(positives, `Stability score is strong (${stabilityScore}/100).`);
+    } else if (stabilityScore >= 70) {
+      signalPoints += 1;
+      pushUnique(positives, `Stability score is good (${stabilityScore}/100).`);
+    } else if (stabilityScore < 50) {
+      signalPoints -= 2;
+      pushUnique(cautions, `Stability score is low (${stabilityScore}/100).`);
+    } else {
+      signalPoints -= 1;
+      pushUnique(cautions, `Stability score is mixed (${stabilityScore}/100).`);
+    }
+  }
+
+  if (snapCount >= 24) {
+    signalPoints += 1;
+    pushUnique(
+      positives,
+      `History depth is meaningful (${snapCount} recent snapshots in this assessment window).`
+    );
+  } else if (snapCount < 8) {
+    signalPoints -= 1;
+    pushUnique(
+      cautions,
+      `History is still short (${snapCount} recent snapshots), so confidence is lower.`
+    );
+  }
+
+  if (jito === true) {
+    signalPoints += 1;
+    pushUnique(
+      positives,
+      "Jito signal is ON, so additional reward upside may be possible."
+    );
+  } else if (jito === false) {
+    pushUnique(
+      cautions,
+      "Jito signal is OFF, so rewards are likely closer to baseline staking yield."
+    );
+  }
+
+  if (Number.isFinite(apyMedian)) {
+    pushUnique(
+      positives,
+      `Estimated APY context is available (~${apyMedian.toFixed(2)}%).`
+    );
+  } else {
+    pushUnique(cautions, "APY estimate is unavailable right now.");
+  }
+
+  if (Number.isFinite(poolsCount) && poolsCount > 0) {
+    signalPoints += 1;
+    pushUnique(
+      positives,
+      `${poolsCount} stake pools delegate here, showing broader ecosystem usage.`
+    );
+  } else {
+    signalPoints -= 1;
+    pushUnique(cautions, "No current stake pool presence was detected.");
+  }
+
+  const verdict =
+    signalPoints >= 6
+      ? { label: "Attractive", className: "ok" }
+      : signalPoints >= 2
+        ? { label: "Balanced", className: "ok" }
+        : { label: "Caution", className: "warn" };
+
+  const confidence =
+    snapCount >= 48
+      ? "High"
+      : snapCount >= 12
+        ? "Medium"
+        : "Low";
+
+  const summary =
+    verdict.label === "Attractive"
+      ? "Most displayed signals currently support this validator for delegator consideration."
+      : verdict.label === "Balanced"
+        ? "Signals are mixed to positive; reasonable option, but review the watch list before delegating."
+        : "Several warning signals are active; review carefully before delegating.";
+
+  return {
+    verdict,
+    summary,
+    confidence,
+    positives: positives.slice(0, 4),
+    cautions: cautions.slice(0, 4)
+  };
+}
+
+function renderDelegatorAssessment(assessment) {
+  safeSetText(document.getElementById("delegator-summary"), assessment.summary);
+  safeSetText(
+    document.getElementById("delegator-confidence"),
+    `Confidence: ${assessment.confidence} (based on current snapshot depth and signal coverage).`
+  );
+
+  const verdictEl = document.getElementById("delegator-verdict");
+  if (verdictEl) {
+    verdictEl.textContent = assessment.verdict.label;
+    verdictEl.className = `status-big ${assessment.verdict.className}`;
+  }
+
+  const goodEl = document.getElementById("delegator-good");
+  if (goodEl) {
+    goodEl.innerHTML = "";
+    const items = assessment.positives.length
+      ? assessment.positives
+      : ["No strong positive signals yet."];
+    for (const text of items) {
+      const pill = document.createElement("span");
+      pill.className = "pill pill-ok";
+      pill.textContent = text;
+      goodEl.appendChild(pill);
+    }
+  }
+
+  const watchEl = document.getElementById("delegator-watch");
+  if (watchEl) {
+    watchEl.innerHTML = "";
+    const items = assessment.cautions.length
+      ? assessment.cautions
+      : ["No major warning signals right now."];
+    for (const text of items) {
+      const pill = document.createElement("span");
+      pill.className = assessment.cautions.length ? "pill pill-warn" : "pill pill-ok";
+      pill.textContent = text;
+      watchEl.appendChild(pill);
+    }
+  }
 }
 
 // ── MAIN ─────────────────────────────────────────
@@ -821,6 +1083,46 @@ async function main() {
         copyBtn.textContent = copyBtnDefault;
       }, 1500);
     };
+  }
+
+  const openInput = document.getElementById("open-validator-input");
+  const openNameInput = document.getElementById("open-validator-name");
+  const openBtn = document.getElementById("open-validator-btn");
+  const openFeedback = document.getElementById("open-validator-feedback");
+
+  const setOpenFeedback = (text, isError = false) => {
+    if (!openFeedback) return;
+    openFeedback.textContent = text;
+    openFeedback.style.color = isError ? "var(--warn)" : "var(--text2)";
+  };
+
+  const openValidatorFromInputs = () => {
+    const parsed = extractVoteAndNameFromInput(openInput?.value || "");
+    const vote = parsed.vote;
+    const name = String(openNameInput?.value || parsed.name || "").trim();
+
+    if (!isProbablyVoteKey(vote)) {
+      setOpenFeedback(
+        "Enter a valid vote account, or paste a dashboard link that includes ?vote=.",
+        true
+      );
+      return;
+    }
+
+    setOpenFeedback("Opening validator…");
+    window.location.assign(buildValidatorUrl(vote, name));
+  };
+
+  if (openBtn) openBtn.onclick = openValidatorFromInputs;
+  if (openInput) {
+    openInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") openValidatorFromInputs();
+    });
+  }
+  if (openNameInput) {
+    openNameInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") openValidatorFromInputs();
+    });
   }
 
   registerValidatorForTracking(CURRENT.voteKey).catch(err => {
@@ -914,8 +1216,10 @@ async function main() {
   const { snapshots: snaps, meta: snapshotMeta } = await loadSnapshotsFromDB(
     CURRENT.voteKey
   );
-  renderStability(
-    computeStability({ live, ratings, poolsCount, snaps, snapshotMeta })
+  const stability = computeStability({ live, ratings, poolsCount, snaps, snapshotMeta });
+  renderStability(stability);
+  renderDelegatorAssessment(
+    computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stability })
   );
 }
 
