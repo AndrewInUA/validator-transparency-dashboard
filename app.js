@@ -1180,8 +1180,11 @@ async function main() {
     const targetUrl = buildValidatorUrl(vote, name);
     const opened = window.open(targetUrl, "_blank", "noopener,noreferrer");
     if (!opened) {
-      setOpenFeedback("Popup blocked by browser; opening in current tab instead.");
-      window.location.assign(targetUrl);
+      setOpenFeedback(
+        "Popup blocked by browser. Allow popups for this site to open validator in a new tab.",
+        true
+      );
+      return;
     }
   };
 
