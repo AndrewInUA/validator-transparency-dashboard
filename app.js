@@ -654,11 +654,24 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
 
   score = clamp(Math.round(score), 0, 100);
 
-  const label =
+  let label =
     score >= 85 ? "Strong" :
     score >= 70 ? "Good" :
     score >= 50 ? "Watch" :
     "Risk";
+
+  // Keep score math stable, but mark early-history results as provisional.
+  let isProvisional = false;
+  if (n === 0) {
+    label = "Insufficient data";
+    isProvisional = true;
+  } else if (n < 4) {
+    label = "Early data";
+    isProvisional = true;
+  } else if (n < 8) {
+    if (label === "Strong") label = "Provisional";
+    isProvisional = true;
+  }
 
   let trackingText = "Not enough history";
   let recentMetaLine =
@@ -791,10 +804,12 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   if (n >= 48) reliabilityNote = "Confidence strong – extensive history.";
   else if (n >= 24) reliabilityNote = "Confidence moderate – meaningful history.";
   else if (n >= 8) reliabilityNote = "Confidence improving – limited history.";
+  else reliabilityNote += " Treat this score as provisional until more snapshots arrive.";
 
   return {
     score,
     label,
+    isProvisional,
     trackingText,
     recentMetaLine,
     allTimeMetaLine,
@@ -806,8 +821,12 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
 }
 
 function renderStability(st) {
-  safeSetText(document.getElementById("stability-score"), st.score);
-  safeSetText(document.getElementById("stability-label"), st.label);
+  const scoreEl = document.getElementById("stability-score");
+  const labelEl = document.getElementById("stability-label");
+  safeSetText(scoreEl, st.score);
+  safeSetText(labelEl, st.label);
+  if (scoreEl) scoreEl.className = `ring-num ${st.isProvisional ? "ring-uncertain" : ""}`.trim();
+  if (labelEl) labelEl.className = `ring-label ${st.isProvisional ? "ring-uncertain" : ""}`.trim();
   safeSetText(document.getElementById("stability-tracking"), st.trackingText);
   safeSetText(document.getElementById("stability-recent-meta"), st.recentMetaLine);
   const allTimeEl = document.getElementById("stability-alltime-meta");
@@ -1231,6 +1250,13 @@ async function main() {
     document.getElementById("commission"),
     `${Number.isFinite(latestCom) ? latestCom.toFixed(0) : 0}%`
   );
+  const commissionEl = document.getElementById("commission");
+  if (commissionEl) {
+    const cls = ["stat-value"];
+    if (Number.isFinite(latestCom) && latestCom >= 50) cls.push("red");
+    else if (Number.isFinite(latestCom) && latestCom <= 5) cls.push("green");
+    commissionEl.className = cls.join(" ");
+  }
   renderCommissionCriticalAlert(latestCom);
 
   const uptimeNum = Number(live.uptimeLast5EpochsPct);
