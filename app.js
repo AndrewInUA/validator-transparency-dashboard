@@ -687,11 +687,11 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
 
   let trackingText = "No history yet";
   let recentMetaLine =
-    "Recent window: waiting for backend snapshots. Collection continues in the background.";
+    "Recent loaded: waiting for snapshots.";
   let allTimeMetaLine = "";
 
   if (totalAll !== null && totalAll === 0) {
-    allTimeMetaLine = "All-time: no snapshots stored yet.";
+    allTimeMetaLine = "All-time: no snapshots yet.";
   } else if (
     totalAll !== null &&
     totalAll > 0 &&
@@ -700,15 +700,9 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   ) {
     const o = fmtSnapshotDate(snapshotMeta.oldest_captured_at);
     const ne = fmtSnapshotDate(snapshotMeta.newest_captured_at);
-    if (totalAll === n && n > 0) {
-      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (same rows as current recent window).`;
-    } else if (n > 0) {
-      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne}.`;
-    } else {
-      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne}.`;
-    }
+    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots (${o} - ${ne}).`;
   } else if (totalAll !== null && totalAll > 0) {
-    allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots stored.`;
+    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots.`;
   }
 
   if (n >= 2) {
@@ -721,11 +715,10 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
         ? `${Math.round(days)}d`
         : `${Math.max(1, Math.round(days * 24))}h`;
 
-    recentMetaLine = `Recent snapshot window loaded: latest ${n.toLocaleString("en-US")} snapshots over ${trackingText}.`;
+    recentMetaLine = `Recent loaded: ${n.toLocaleString("en-US")} snapshots (${trackingText}).`;
   } else if (n === 1) {
     trackingText = "1 snapshot (early)";
-    recentMetaLine =
-      "Recent snapshot window loaded: 1 snapshot only.";
+    recentMetaLine = "Recent loaded: 1 snapshot.";
   }
 
   const pills = [];
@@ -840,11 +833,6 @@ function renderStability(st) {
     allTimeEl.textContent = line;
     allTimeEl.style.display = line ? "block" : "none";
   }
-  safeSetText(
-    document.getElementById("stability-formula"),
-    `${st.allTimeDriversLine} ${st.formulaLine}`
-  );
-
   const pillsEl = document.getElementById("stability-pills");
   if (pillsEl) {
     pillsEl.innerHTML = "";
