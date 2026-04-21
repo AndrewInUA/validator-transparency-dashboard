@@ -852,11 +852,21 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
 function renderStability(st) {
   const scoreEl = document.getElementById("stability-score");
   const labelEl = document.getElementById("stability-label");
-  safeSetText(scoreEl, st.score);
-  safeSetText(labelEl, st.label);
-  if (scoreEl) scoreEl.className = `ring-num ${st.isProvisional ? "ring-uncertain" : ""}`.trim();
-  if (labelEl) labelEl.className = `ring-label ${st.isProvisional ? "ring-uncertain" : ""}`.trim();
-  safeSetText(document.getElementById("stability-tracking"), st.trackingText);
+  const hasAllTimePrimary = Number.isFinite(st.allTimeScore);
+  const primaryScore = hasAllTimePrimary ? st.allTimeScore : st.score;
+  const primaryLabel = hasAllTimePrimary ? st.allTimeLabel : st.label;
+  safeSetText(scoreEl, primaryScore);
+  safeSetText(labelEl, primaryLabel);
+  if (scoreEl) {
+    scoreEl.className = `ring-num ${!hasAllTimePrimary && st.isProvisional ? "ring-uncertain" : ""}`.trim();
+  }
+  if (labelEl) {
+    labelEl.className = `ring-label ${!hasAllTimePrimary && st.isProvisional ? "ring-uncertain" : ""}`.trim();
+  }
+  safeSetText(
+    document.getElementById("stability-tracking"),
+    hasAllTimePrimary ? "all stored history" : st.trackingText
+  );
   safeSetText(document.getElementById("stability-recent-meta"), st.recentMetaLine);
   const allTimeEl = document.getElementById("stability-alltime-meta");
   if (allTimeEl) {
@@ -866,9 +876,9 @@ function renderStability(st) {
   }
   const allTimeScoreEl = document.getElementById("stability-alltime-score");
   if (allTimeScoreEl) {
-    const txt = Number.isFinite(st.allTimeScore)
-      ? `All-time score: ${st.allTimeScore}/100 (${st.allTimeLabel})`
-      : "All-time score: not enough data";
+    const txt = Number.isFinite(st.score)
+      ? `RECENT WINDOW SCORE: ${st.score}/100 (${st.label})`
+      : "RECENT WINDOW SCORE: not enough data yet";
     allTimeScoreEl.textContent = txt;
   }
   safeSetText(document.getElementById("stability-formula"), st.formulaLine);

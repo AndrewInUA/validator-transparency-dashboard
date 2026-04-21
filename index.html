@@ -995,6 +995,20 @@
       color: var(--text3);
     }
 
+    .stability-score-highlight {
+      margin-top: 8px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(147, 163, 255, 0.5);
+      background: rgba(147, 163, 255, 0.12);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
     .pills-col {
       display: flex;
       flex-direction: column;
@@ -1276,7 +1290,7 @@
         <span class="info-dot" tabindex="0" data-tip="How to read this block: score uses the recent snapshot window and updates as history grows. Higher usually means fewer warning signs (delinquency, commission changes, weaker recent voting consistency, APY disagreement, no pool presence). All-time line shows total stored history for context.">i</span>
       </div>
       <div class="card-note">
-        Score uses recent snapshots for current behavior. All-time line shows full stored history for context.
+        Primary score uses full stored history. Recent-window score is shown below for short-term context.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1304,8 +1318,8 @@
           <div class="pill">Loading…</div>
         </div>
       </div>
+      <div id="stability-alltime-score" class="stability-score-highlight">RECENT WINDOW SCORE: –</div>
       <div class="last-updated" id="stability-recent-meta">–</div>
-      <div class="last-updated" id="stability-alltime-score" style="margin-top:4px;opacity:0.95">All-time score: –</div>
       <div class="last-updated" id="stability-alltime-meta" style="margin-top:4px;opacity:0.92">–</div>
       <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
     </div>
@@ -1734,7 +1748,7 @@
   });
 </script>
 
-<script src="./app.js?v=51" defer></script>
+<script src="./app.js?v=53" defer></script>
 
 </body>
 </html>
