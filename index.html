@@ -1022,6 +1022,35 @@
       color: var(--text3);
     }
 
+    .stability-usage-note {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface2);
+    }
+
+    .stability-usage-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin: 0 0 6px;
+    }
+
+    .stability-usage-list {
+      margin: 0;
+      padding-left: 16px;
+      color: var(--text3);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .stability-usage-list li + li {
+      margin-top: 4px;
+    }
+
     .pills-col {
       display: flex;
       flex-direction: column;
@@ -1335,6 +1364,14 @@
         </div>
       </div>
       <div class="last-updated" id="stability-alltime-meta" style="margin-top:4px;opacity:0.92">–</div>
+      <div class="stability-usage-note">
+        <p class="stability-usage-title">How to use</p>
+        <ul class="stability-usage-list">
+          <li>This score reflects all stored history, not just recent days.</li>
+          <li>Higher is better for consistency (fewer delinquency events and fee changes).</li>
+          <li>Use this as the main consistency signal; then check APY and pool context.</li>
+        </ul>
+      </div>
     </div>
   </div>
 
