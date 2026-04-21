@@ -640,7 +640,8 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     }
   }
 
-  function scoreFromSignals(sampleCount, delinquent, commissionShift) {
+  function scoreFromRecentSignals(sampleCount, delinquent, commissionShift) {
+    // Recent score: hybrid signal (history window + current/live context).
     let s = 100;
     if (nowStatus === "delinquent") s -= 40;
     s -= (sampleCount ? (delinquent / sampleCount) * 40 : 0);
@@ -655,7 +656,15 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     return clamp(Math.round(s), 0, 100);
   }
 
-  let score = scoreFromSignals(n, delinquentCount, commissionChanges);
+  function scoreFromAllTimeSnapshots(sampleCount, delinquent, commissionShift) {
+    // All-time score: snapshot-history only (no live/API side inputs).
+    let s = 100;
+    s -= (sampleCount ? (delinquent / sampleCount) * 40 : 0);
+    s -= clamp(commissionShift * 5, 0, 20);
+    return clamp(Math.round(s), 0, 100);
+  }
+
+  let score = scoreFromRecentSignals(n, delinquentCount, commissionChanges);
 
   let label =
     score >= 85 ? "Strong" :
@@ -821,7 +830,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     Number.isFinite(allTimeDelinquent) &&
     Number.isFinite(allTimeCommissionChanges)
   ) {
-    allTimeScore = scoreFromSignals(
+    allTimeScore = scoreFromAllTimeSnapshots(
       allTimeSample,
       allTimeDelinquent,
       allTimeCommissionChanges
@@ -844,7 +853,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     allTimeMetaLine,
     pills,
     formulaLine:
-      `How score is built: the primary ring score uses all stored snapshots; the highlighted secondary score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots). Both start at 100, then apply penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. Use for comparison, not exact return prediction. ` +
+      `How score is built: the primary ring score is all-time and snapshot-only (penalises delinquency share and commission changes across full history). The highlighted secondary score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots) plus current context (recent voting consistency, APY agreement, pool presence). Use for comparison, not exact return prediction. ` +
       reliabilityNote
   };
 }
@@ -865,7 +874,7 @@ function renderStability(st) {
   }
   safeSetText(
     document.getElementById("stability-tracking"),
-    hasAllTimePrimary ? "all stored history" : st.trackingText
+    hasAllTimePrimary ? "all stored snapshot history only" : st.trackingText
   );
   safeSetText(document.getElementById("stability-recent-meta"), st.recentMetaLine);
   const allTimeEl = document.getElementById("stability-alltime-meta");
@@ -877,8 +886,8 @@ function renderStability(st) {
   const allTimeScoreEl = document.getElementById("stability-alltime-score");
   if (allTimeScoreEl) {
     const txt = Number.isFinite(st.score)
-      ? `RECENT WINDOW SCORE: ${st.score}/100 (${st.label})`
-      : "RECENT WINDOW SCORE: not enough data yet";
+      ? `RECENT CONTEXT SCORE (LIVE + SNAPSHOT WINDOW): ${st.score}/100 (${st.label})`
+      : "RECENT CONTEXT SCORE (LIVE + SNAPSHOT WINDOW): not enough data yet";
     allTimeScoreEl.textContent = txt;
   }
   safeSetText(document.getElementById("stability-formula"), st.formulaLine);
@@ -895,7 +904,7 @@ function renderStability(st) {
     }
   }
 
-  if (window.animateRing) window.animateRing(st.score);
+  if (window.animateRing) window.animateRing(primaryScore);
 }
 
 function pushUnique(list, text) {

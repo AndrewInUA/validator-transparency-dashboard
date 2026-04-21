@@ -1316,11 +1316,11 @@
 
     <div class="card stability-card-sidebar">
       <div class="card-title">
-        Stability score (snapshot-based)
-        <span class="info-dot" tabindex="0" data-tip="How to read this block: main ring score uses all stored snapshot history. Highlighted score below uses only the recent window. Higher means fewer warning signs (delinquency, fee changes, weaker voting consistency, APY disagreement, no pool presence).">i</span>
+        Stability score (all-time snapshot history)
+        <span class="info-dot" tabindex="0" data-tip="How to read this block: main ring score is snapshot-history only (all-time delinquency share + commission-change history). Highlighted score below is recent context (latest window + live indicators).">i</span>
       </div>
       <div class="card-note">
-        Primary score uses full stored history. Recent-window score is shown below for short-term context.
+        Primary ring is all-time snapshot-history only. Recent context score is shown below for short-term signal shifts.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1341,7 +1341,7 @@
           </div>
           <div id="stability-label" class="ring-label">–</div>
           <div class="ring-tracking">
-            Scoring span: <span id="stability-tracking">–</span>
+            Primary scoring span: <span id="stability-tracking">–</span>
           </div>
         </div>
         <div class="pills-col" id="stability-pills">
