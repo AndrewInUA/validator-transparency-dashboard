@@ -665,6 +665,17 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   }
 
   let score = scoreFromRecentSignals(n, delinquentCount, commissionChanges);
+  const recentStatusPenalty = nowStatus === "delinquent" ? 40 : 0;
+  const recentDelinquencyPenalty = n ? (delinquentCount / n) * 40 : 0;
+  const recentCommissionPenalty = clamp(commissionChanges * 5, 0, 20);
+  const recentUptimePenalty =
+    Number.isFinite(nowUptime) && nowUptime < 95
+      ? clamp((95 - nowUptime) * 1.5, 0, 20)
+      : 0;
+  const recentApyPenalty =
+    apyDiff !== null && apyDiff > 1 ? clamp((apyDiff - 1) * 5, 0, 15) : 0;
+  const recentPoolPenalty =
+    !Number.isFinite(poolsCount) || poolsCount <= 0 ? 10 : 0;
 
   let label =
     score >= 85 ? "Strong" :
@@ -824,17 +835,27 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
 
   let allTimeScore = null;
   let allTimeLabel = "Not enough data";
+  let allTimeDriversLine = "All-time drivers: waiting for snapshot history.";
+  let recentDriversLine =
+    `Recent-only drivers: status -${Math.round(recentStatusPenalty)}, uptime -${Math.round(recentUptimePenalty)}, ` +
+    `APY agreement -${Math.round(recentApyPenalty)}, pools -${Math.round(recentPoolPenalty)}.`;
   if (
     Number.isFinite(allTimeSample) &&
     allTimeSample > 0 &&
     Number.isFinite(allTimeDelinquent) &&
     Number.isFinite(allTimeCommissionChanges)
   ) {
+    const allTimeDelinquencyPenalty =
+      allTimeSample ? (allTimeDelinquent / allTimeSample) * 40 : 0;
+    const allTimeCommissionPenalty = clamp(allTimeCommissionChanges * 5, 0, 20);
     allTimeScore = scoreFromAllTimeSnapshots(
       allTimeSample,
       allTimeDelinquent,
       allTimeCommissionChanges
     );
+    allTimeDriversLine =
+      `All-time drivers (snapshot only): delinquency -${Math.round(allTimeDelinquencyPenalty)}, ` +
+      `commission-change history -${Math.round(allTimeCommissionPenalty)}.`;
     allTimeLabel =
       allTimeScore >= 85 ? "Strong" :
       allTimeScore >= 70 ? "Good" :
@@ -851,6 +872,8 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     trackingText,
     recentMetaLine,
     allTimeMetaLine,
+    allTimeDriversLine,
+    recentDriversLine,
     pills,
     formulaLine:
       `How score is built: the primary ring score is all-time and snapshot-only (penalises delinquency share and commission changes across full history). The highlighted secondary score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots) plus current context (recent voting consistency, APY agreement, pool presence). Use for comparison, not exact return prediction. ` +
@@ -890,7 +913,10 @@ function renderStability(st) {
       : "RECENT CONTEXT SCORE (LIVE + SNAPSHOT WINDOW): not enough data yet";
     allTimeScoreEl.textContent = txt;
   }
-  safeSetText(document.getElementById("stability-formula"), st.formulaLine);
+  safeSetText(
+    document.getElementById("stability-formula"),
+    `${st.allTimeDriversLine} ${st.recentDriversLine} ${st.formulaLine}`
+  );
 
   const pillsEl = document.getElementById("stability-pills");
   if (pillsEl) {
