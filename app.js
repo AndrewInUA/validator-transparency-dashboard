@@ -1157,7 +1157,6 @@ function renderUpsideSignals({ live, latestCom, uptimeNum, poolsCount, apyMedian
   if (!wrap || !row) return;
 
   const chips = [];
-  if (live?.jito === true) chips.push("Jito ON: potential upside");
   if (Number.isFinite(latestCom) && latestCom <= 5) chips.push(`Low fee (${latestCom.toFixed(0)}%)`);
   if (Number.isFinite(uptimeNum) && uptimeNum >= 95) chips.push(`Strong consistency (${uptimeNum.toFixed(1)}%)`);
   if (Number.isFinite(poolsCount) && poolsCount > 0) chips.push(`${poolsCount} pools delegating`);
@@ -1312,7 +1311,7 @@ async function main() {
   const jitoBadge = document.getElementById("jito-badge");
   if (jitoBadge) {
     const jitoText = live.jito === true ? "ON" : live.jito === false ? "OFF" : "Unknown";
-    jitoBadge.textContent = `Jito: ${jitoText}`;
+    jitoBadge.textContent = `Jito ${jitoText}`;
     const mode = live.jito === true ? "upside" : live.jito === false ? "warn" : "info";
     jitoBadge.className = `badge ${mode}`.trim();
   }
