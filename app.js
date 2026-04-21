@@ -436,7 +436,7 @@ function fmtSnapshotDate(iso) {
 async function loadSnapshotsFromDB(voteKey) {
   try {
     const res = await fetch(
-      `${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&limit=${SNAPSHOT_WINDOW}`
+      `${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&limit=${SNAPSHOT_WINDOW}&include_all_stats=1`
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -640,19 +640,22 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     }
   }
 
-  let score = 100;
-  if (nowStatus === "delinquent") score -= 40;
-  score -= (n ? (delinquentCount / n) * 40 : 0);
-  score -= clamp(commissionChanges * 5, 0, 20);
-  if (Number.isFinite(nowUptime) && nowUptime < 95) {
-    score -= clamp((95 - nowUptime) * 1.5, 0, 20);
+  function scoreFromSignals(sampleCount, delinquent, commissionShift) {
+    let s = 100;
+    if (nowStatus === "delinquent") s -= 40;
+    s -= (sampleCount ? (delinquent / sampleCount) * 40 : 0);
+    s -= clamp(commissionShift * 5, 0, 20);
+    if (Number.isFinite(nowUptime) && nowUptime < 95) {
+      s -= clamp((95 - nowUptime) * 1.5, 0, 20);
+    }
+    if (apyDiff !== null && apyDiff > 1) {
+      s -= clamp((apyDiff - 1) * 5, 0, 15);
+    }
+    if (!Number.isFinite(poolsCount) || poolsCount <= 0) s -= 10;
+    return clamp(Math.round(s), 0, 100);
   }
-  if (apyDiff !== null && apyDiff > 1) {
-    score -= clamp((apyDiff - 1) * 5, 0, 15);
-  }
-  if (!Number.isFinite(poolsCount) || poolsCount <= 0) score -= 10;
 
-  score = clamp(Math.round(score), 0, 100);
+  let score = scoreFromSignals(n, delinquentCount, commissionChanges);
 
   let label =
     score >= 85 ? "Strong" :
@@ -673,9 +676,9 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     isProvisional = true;
   }
 
-  let trackingText = "Not enough history";
+  let trackingText = "No history yet";
   let recentMetaLine =
-    "Waiting for backend snapshots. Collection continues in the background.";
+    "Recent window: waiting for backend snapshots. Collection continues in the background.";
   let allTimeMetaLine = "";
 
   if (totalAll !== null && totalAll === 0) {
@@ -709,11 +712,11 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
         ? `${Math.round(days)}d`
         : `${Math.max(1, Math.round(days * 24))}h`;
 
-    recentMetaLine = `Recent window: ${n.toLocaleString("en-US")} snapshots · ${trackingText} span (basis for this score).`;
+    recentMetaLine = `Recent window used for scoring: latest ${n.toLocaleString("en-US")} snapshots over ${trackingText}.`;
   } else if (n === 1) {
-    trackingText = "1 snapshot";
+    trackingText = "1 snapshot (early)";
     recentMetaLine =
-      "Recent window: 1 snapshot (basis for this score). More snapshots will improve confidence.";
+      "Recent window used for scoring: 1 snapshot only. This score is early and low-confidence.";
   }
 
   const pills = [];
@@ -804,18 +807,44 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   if (n >= 48) reliabilityNote = "Confidence strong – extensive history.";
   else if (n >= 24) reliabilityNote = "Confidence moderate – meaningful history.";
   else if (n >= 8) reliabilityNote = "Confidence improving – limited history.";
-  else reliabilityNote += " Treat this score as provisional until more snapshots arrive.";
+  else reliabilityNote += " Early stage: treat this score as provisional until more snapshots arrive.";
+
+  const allTimeSample = Number(snapshotMeta?.all_time?.sample_count);
+  const allTimeDelinquent = Number(snapshotMeta?.all_time?.delinquent_count);
+  const allTimeCommissionChanges = Number(snapshotMeta?.all_time?.commission_changes);
+
+  let allTimeScore = null;
+  let allTimeLabel = "Not enough data";
+  if (
+    Number.isFinite(allTimeSample) &&
+    allTimeSample > 0 &&
+    Number.isFinite(allTimeDelinquent) &&
+    Number.isFinite(allTimeCommissionChanges)
+  ) {
+    allTimeScore = scoreFromSignals(
+      allTimeSample,
+      allTimeDelinquent,
+      allTimeCommissionChanges
+    );
+    allTimeLabel =
+      allTimeScore >= 85 ? "Strong" :
+      allTimeScore >= 70 ? "Good" :
+      allTimeScore >= 50 ? "Watch" :
+      "Risk";
+  }
 
   return {
     score,
     label,
     isProvisional,
+    allTimeScore,
+    allTimeLabel,
     trackingText,
     recentMetaLine,
     allTimeMetaLine,
     pills,
     formulaLine:
-      `Delegator view: this score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots), starts at 100, and applies penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. It helps compare stability, not predict exact returns. ` +
+      `How score is built: uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots), starts at 100, then applies penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. Use for comparison, not exact return prediction. ` +
       reliabilityNote
   };
 }
@@ -834,6 +863,13 @@ function renderStability(st) {
     const line = st.allTimeMetaLine || "";
     allTimeEl.textContent = line;
     allTimeEl.style.display = line ? "block" : "none";
+  }
+  const allTimeScoreEl = document.getElementById("stability-alltime-score");
+  if (allTimeScoreEl) {
+    const txt = Number.isFinite(st.allTimeScore)
+      ? `All-time score: ${st.allTimeScore}/100 (${st.allTimeLabel})`
+      : "All-time score: not enough data";
+    allTimeScoreEl.textContent = txt;
   }
   safeSetText(document.getElementById("stability-formula"), st.formulaLine);
 

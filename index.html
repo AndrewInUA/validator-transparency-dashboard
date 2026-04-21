@@ -1272,11 +1272,11 @@
 
     <div class="card stability-card-sidebar">
       <div class="card-title">
-        Stability score (shared snapshot history)
-        <span class="info-dot" tabindex="0" data-tip="Delegator view: one combined 0–100 stability score. Higher usually means fewer warning signs in validator behavior (delinquency, sudden commission changes, weaker recent voting consistency, API disagreement). Use it as a decision aid, not as financial advice or a guarantee of returns.">i</span>
+        Stability score (snapshot-based)
+        <span class="info-dot" tabindex="0" data-tip="How to read this block: score uses the recent snapshot window and updates as history grows. Higher usually means fewer warning signs (delinquency, commission changes, weaker recent voting consistency, APY disagreement, no pool presence). All-time line shows total stored history for context.">i</span>
       </div>
       <div class="card-note">
-        Recent score uses the latest snapshot window; all-time line shows everything stored for this validator.
+        Score uses recent snapshots for current behavior. All-time line shows full stored history for context.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1297,7 +1297,7 @@
           </div>
           <div id="stability-label" class="ring-label">–</div>
           <div class="ring-tracking">
-            Recent span: <span id="stability-tracking">–</span>
+            Scoring span: <span id="stability-tracking">–</span>
           </div>
         </div>
         <div class="pills-col" id="stability-pills">
@@ -1305,6 +1305,7 @@
         </div>
       </div>
       <div class="last-updated" id="stability-recent-meta">–</div>
+      <div class="last-updated" id="stability-alltime-score" style="margin-top:4px;opacity:0.95">All-time score: –</div>
       <div class="last-updated" id="stability-alltime-meta" style="margin-top:4px;opacity:0.92">–</div>
       <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
     </div>
@@ -1733,7 +1734,7 @@
   });
 </script>
 
-<script src="./app.js?v=49" defer></script>
+<script src="./app.js?v=51" defer></script>
 
 </body>
 </html>

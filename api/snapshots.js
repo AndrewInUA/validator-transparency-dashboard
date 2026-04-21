@@ -32,6 +32,8 @@ export default async function handler(req, res) {
     }
 
     const vote = String(req.query.vote || "").trim();
+    const includeAllStats =
+      String(req.query.include_all_stats || "").trim().toLowerCase() === "1";
     const limitRaw = Number(req.query.limit || 240);
     const limit = Number.isFinite(limitRaw)
       ? Math.max(1, Math.min(limitRaw, 500))
@@ -83,6 +85,50 @@ export default async function handler(req, res) {
     const oldestAt = oldestRow?.[0]?.captured_at ?? null;
     const newestAt = newestRow?.[0]?.captured_at ?? null;
 
+    let allTimeStats = null;
+    if (includeAllStats && typeof totalCount === "number" && totalCount > 0) {
+      const batchSize = 1000;
+      let offset = 0;
+      let delinquentCount = 0;
+      let commissionChanges = 0;
+      let prevCommission = null;
+      let hasPrev = false;
+
+      while (offset < totalCount) {
+        const end = Math.min(offset + batchSize - 1, totalCount - 1);
+        const { data: chunk, error: chunkErr } = await supabase
+          .from("validator_snapshots")
+          .select("status, commission")
+          .eq("vote_key", vote)
+          .order("captured_at", { ascending: true })
+          .range(offset, end);
+
+        if (chunkErr) {
+          console.error("snapshots all-time stats error:", chunkErr);
+          return res.status(500).json({ error: "Failed to load all-time snapshot stats" });
+        }
+
+        for (const row of chunk || []) {
+          if (row?.status && row.status !== "healthy") delinquentCount++;
+
+          const c = Number(row?.commission);
+          if (Number.isFinite(c)) {
+            if (hasPrev && prevCommission !== c) commissionChanges++;
+            prevCommission = c;
+            hasPrev = true;
+          }
+        }
+
+        offset += batchSize;
+      }
+
+      allTimeStats = {
+        sample_count: totalCount,
+        delinquent_count: delinquentCount,
+        commission_changes: commissionChanges
+      };
+    }
+
     return res.status(200).json({
       ok: true,
       vote,
@@ -90,7 +136,8 @@ export default async function handler(req, res) {
       meta: {
         total_count: typeof totalCount === "number" ? totalCount : 0,
         oldest_captured_at: oldestAt,
-        newest_captured_at: newestAt
+        newest_captured_at: newestAt,
+        all_time: allTimeStats
       },
       snapshots: snapshotsChrono
     });
