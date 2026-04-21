@@ -1151,6 +1151,30 @@ function renderCommissionCriticalAlert(commissionPct) {
   el.textContent = "";
 }
 
+function renderUpsideSignals({ live, latestCom, uptimeNum, poolsCount, apyMedian }) {
+  const wrap = document.getElementById("upside-signals-wrap");
+  const row = document.getElementById("upside-signals");
+  if (!wrap || !row) return;
+
+  const chips = [];
+  if (live?.jito === true) chips.push("Jito ON: potential upside");
+  if (Number.isFinite(latestCom) && latestCom <= 5) chips.push(`Low fee (${latestCom.toFixed(0)}%)`);
+  if (Number.isFinite(uptimeNum) && uptimeNum >= 95) chips.push(`Strong consistency (${uptimeNum.toFixed(1)}%)`);
+  if (Number.isFinite(poolsCount) && poolsCount > 0) chips.push(`${poolsCount} pools delegating`);
+  if (Number.isFinite(apyMedian)) chips.push(`APY estimate available (~${apyMedian.toFixed(2)}%)`);
+
+  row.innerHTML = "";
+  const shown = chips.slice(0, 3);
+  for (const text of shown) {
+    const chip = document.createElement("span");
+    chip.className = "badge upside";
+    chip.textContent = text;
+    row.appendChild(chip);
+  }
+
+  wrap.style.display = shown.length ? "block" : "none";
+}
+
 // ── MAIN ─────────────────────────────────────────
 async function main() {
   const validatorName =
@@ -1289,7 +1313,8 @@ async function main() {
   if (jitoBadge) {
     const jitoText = live.jito === true ? "ON" : live.jito === false ? "OFF" : "Unknown";
     jitoBadge.textContent = `Jito: ${jitoText}`;
-    jitoBadge.className = `badge ${live.jito === true ? "info" : ""}`.trim();
+    const mode = live.jito === true ? "upside" : live.jito === false ? "warn" : "info";
+    jitoBadge.className = `badge ${mode}`.trim();
   }
   renderRuntimeSources(live);
 
@@ -1341,6 +1366,9 @@ async function main() {
   const poolsCount = Array.isArray(ratings?.pools?.stake_pools)
     ? ratings.pools.stake_pools.length
     : null;
+  const apyMedian = Number(ratings?.derived?.apy_median);
+
+  renderUpsideSignals({ live, latestCom, uptimeNum, poolsCount, apyMedian });
 
   const { snapshots: snaps, meta: snapshotMeta } = await loadSnapshotsFromDB(
     CURRENT.voteKey

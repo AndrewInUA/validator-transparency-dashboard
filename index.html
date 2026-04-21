@@ -685,6 +685,31 @@
     .badge.ok  { border-color:rgba(185,240,0,.4);  background:rgba(185,240,0,.1);  color:var(--pill-ok-fg); }
     .badge.warn{ border-color:rgba(243,107,107,.3); background:rgba(243,107,107,.08); color:var(--warn); }
     .badge.info{ border-color:rgba(147,163,255,.35); background:rgba(147,163,255,.1); color:var(--badge-info-fg); }
+    .badge.upside {
+      border-color: rgba(185, 240, 0, 0.5);
+      background: rgba(185, 240, 0, 0.15);
+      color: var(--pill-ok-fg);
+      box-shadow: 0 0 0 1px rgba(185, 240, 0, 0.1), 0 0 16px rgba(185, 240, 0, 0.18);
+    }
+
+    .upside-signals-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: -6px;
+      margin-bottom: 8px;
+    }
+
+    .upside-signals-label {
+      font-family: var(--font);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--pill-ok-fg);
+      margin-bottom: 6px;
+      opacity: 0.92;
+    }
 
     .stat-2col {
       display: grid;
@@ -1244,6 +1269,10 @@
           <span id="validator-name-badge" class="badge info">–</span>
           <span id="jito-badge" class="badge">Jito: –</span>
         </div>
+        <div id="upside-signals-wrap" style="display:none">
+          <div class="upside-signals-label">Delegator upside signals</div>
+          <div id="upside-signals" class="upside-signals-row"></div>
+        </div>
         <div id="current-context" class="header-context">Loading context…</div>
         <div class="header-note identity-note">
           Data on this page follows the vote account in the URL.
@@ -1748,7 +1777,7 @@
   });
 </script>
 
-<script src="./app.js?v=56" defer></script>
+<script src="./app.js?v=57" defer></script>
 
 </body>
 </html>
