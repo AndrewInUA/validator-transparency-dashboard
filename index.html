@@ -1306,7 +1306,7 @@
         <span class="info-dot" tabindex="0" data-tip="How to read this block: this score is snapshot-only. It uses stored snapshot history (all-time delinquency share + commission-change history) with no live/API context mixed into the ring value.">i</span>
       </div>
       <div class="card-note">
-        Snapshot-only block: the ring is based on stored history only.
+        Snapshot-only block. 100 means no delinquency and no commission changes in stored history.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1334,7 +1334,6 @@
           <div class="pill">Loading…</div>
         </div>
       </div>
-      <div class="last-updated" id="stability-recent-meta">–</div>
       <div class="last-updated" id="stability-alltime-meta" style="margin-top:4px;opacity:0.92">–</div>
     </div>
   </div>
@@ -1762,7 +1761,7 @@
   });
 </script>
 
-<script src="./app.js?v=60" defer></script>
+<script src="./app.js?v=61" defer></script>
 
 </body>
 </html>

@@ -686,8 +686,6 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   }
 
   let trackingText = "No history yet";
-  let recentMetaLine =
-    "Recent loaded: waiting for snapshots.";
   let allTimeMetaLine = "";
 
   if (totalAll !== null && totalAll === 0) {
@@ -714,33 +712,45 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
       days >= 1
         ? `${Math.round(days)}d`
         : `${Math.max(1, Math.round(days * 24))}h`;
-
-    recentMetaLine = `Recent loaded: ${n.toLocaleString("en-US")} snapshots (${trackingText}).`;
   } else if (n === 1) {
     trackingText = "1 snapshot (early)";
-    recentMetaLine = "Recent loaded: 1 snapshot.";
   }
+
+  const allTimeSample = Number(snapshotMeta?.all_time?.sample_count);
+  const allTimeDelinquent = Number(snapshotMeta?.all_time?.delinquent_count);
+  const allTimeCommissionChanges = Number(snapshotMeta?.all_time?.commission_changes);
+  const hasAllTimeSignals =
+    Number.isFinite(allTimeSample) &&
+    allTimeSample > 0 &&
+    Number.isFinite(allTimeDelinquent) &&
+    Number.isFinite(allTimeCommissionChanges);
+  const signalScope = hasAllTimeSignals ? "all-time history" : "loaded snapshots";
+  const signalSample = hasAllTimeSignals ? allTimeSample : n;
+  const signalDelinquent = hasAllTimeSignals ? allTimeDelinquent : delinquentCount;
+  const signalCommissionChanges = hasAllTimeSignals
+    ? allTimeCommissionChanges
+    : commissionChanges;
 
   const pills = [];
 
   pills.push({
-    ok: n >= 2 ? delinquentCount === 0 : false,
+    ok: signalSample >= 2 ? signalDelinquent === 0 : false,
     text:
-      n >= 2
-        ? delinquentCount === 0
-          ? "No delinquency in recent snapshot window"
-          : `Recent-window delinquency (${delinquentCount}/${n})`
+      signalSample >= 2
+        ? signalDelinquent === 0
+          ? `No delinquency in ${signalScope}`
+          : `Delinquency in ${signalScope} (${signalDelinquent}/${signalSample})`
         : "Delinquency signal waiting for more snapshots",
-    tip: "Snapshot-only signal from stored rows in this dashboard."
+    tip: "Snapshot-only signal from stored history."
   });
 
   pills.push({
-    ok: n >= 2 ? commissionChanges === 0 : false,
+    ok: signalSample >= 2 ? signalCommissionChanges === 0 : false,
     text:
-      n >= 2
-        ? commissionChanges === 0
-          ? "Commission stable in recent snapshots"
-          : `Recent-window commission changes: ${commissionChanges}`
+      signalSample >= 2
+        ? signalCommissionChanges === 0
+          ? `Commission stable in ${signalScope}`
+          : `Commission changes in ${signalScope}: ${signalCommissionChanges}`
         : "Commission-change signal waiting for more snapshots",
     tip: "Snapshot-only signal from stored commission history."
   });
@@ -754,36 +764,14 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     tip: "Snapshot-only confidence signal: more stored history usually means more stable scoring."
   });
 
-  let reliabilityNote = "Confidence low – short history.";
-  if (n >= 48) reliabilityNote = "Confidence strong – extensive history.";
-  else if (n >= 24) reliabilityNote = "Confidence moderate – meaningful history.";
-  else if (n >= 8) reliabilityNote = "Confidence improving – limited history.";
-  else reliabilityNote += " Early stage: treat recent-window score as provisional until more snapshots arrive.";
-
-  const allTimeSample = Number(snapshotMeta?.all_time?.sample_count);
-  const allTimeDelinquent = Number(snapshotMeta?.all_time?.delinquent_count);
-  const allTimeCommissionChanges = Number(snapshotMeta?.all_time?.commission_changes);
-
   let allTimeScore = null;
   let allTimeLabel = "Not enough data";
-  let allTimeDriversLine = "All-time drivers: waiting for snapshot history.";
-  if (
-    Number.isFinite(allTimeSample) &&
-    allTimeSample > 0 &&
-    Number.isFinite(allTimeDelinquent) &&
-    Number.isFinite(allTimeCommissionChanges)
-  ) {
-    const allTimeDelinquencyPenalty =
-      allTimeSample ? (allTimeDelinquent / allTimeSample) * 40 : 0;
-    const allTimeCommissionPenalty = clamp(allTimeCommissionChanges * 5, 0, 20);
+  if (hasAllTimeSignals) {
     allTimeScore = scoreFromAllTimeSnapshots(
       allTimeSample,
       allTimeDelinquent,
       allTimeCommissionChanges
     );
-    allTimeDriversLine =
-      `All-time drivers (snapshot only): delinquency -${Math.round(allTimeDelinquencyPenalty)}, ` +
-      `commission-change history -${Math.round(allTimeCommissionPenalty)}.`;
     allTimeLabel =
       allTimeScore >= 85 ? "Strong" :
       allTimeScore >= 70 ? "Good" :
@@ -798,13 +786,8 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     allTimeScore,
     allTimeLabel,
     trackingText,
-    recentMetaLine,
     allTimeMetaLine,
-    allTimeDriversLine,
-    pills,
-    formulaLine:
-      `How score is built: this block is snapshot-only. The primary ring uses all stored snapshot history and applies penalties only for delinquency share and commission-change history. ` +
-      reliabilityNote
+    pills
   };
 }
 
@@ -826,7 +809,6 @@ function renderStability(st) {
     document.getElementById("stability-tracking"),
     hasAllTimePrimary ? "all stored snapshot history only" : st.trackingText
   );
-  safeSetText(document.getElementById("stability-recent-meta"), st.recentMetaLine);
   const allTimeEl = document.getElementById("stability-alltime-meta");
   if (allTimeEl) {
     const line = st.allTimeMetaLine || "";
