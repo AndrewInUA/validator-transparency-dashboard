@@ -1257,14 +1257,14 @@
             <div class="trust-stat-col">
               <div class="stat-label">
                 Commission
-                <span class="info-dot" tabindex="0" data-tip="Delegator profit view: this is the validator fee deducted from staking rewards. Lower commission usually means higher net rewards for delegators (all else equal). 0% is profit-friendly because no validator-level fee is taken via this setting; pool or protocol fees can still reduce final payout.">i</span>
+                <span class="info-dot" tabindex="0" data-tip="Delegator meaning: this is the validator fee on rewards. Lower is usually better for net yield. 0% means no validator-level fee here, but pool/protocol fees may still apply.">i</span>
               </div>
               <div id="commission" class="stat-value green">–%</div>
               <p class="stat-hint">Profit view: lower commission usually lets delegators keep more staking rewards. 0% here is generally best for net yield, though pool/program fees may still apply.</p>
               <div class="trust-status-block">
                 <div class="stat-label">
                   Status
-                  <span class="info-dot" tabindex="0" data-tip="Delegator view: this is a live activity signal from network RPC (for example active vs delinquent). Healthy is generally preferable for reliability. It can change quickly and is not a full safety or security audit.">i</span>
+                  <span class="info-dot" tabindex="0" data-tip="Delegator meaning: live RPC activity signal (for example healthy vs delinquent). Useful for quick checks, but not a full safety audit.">i</span>
                 </div>
                 <div id="status" class="status-big ok">–</div>
                 <p class="stat-hint">Delegator view: shows whether the validator looks active right now. Useful for quick checks, but not a full risk assessment by itself.</p>
@@ -1273,7 +1273,7 @@
             <div class="trust-stat-col">
               <div class="stat-label">
                 Recent voting consistency
-                <span class="info-dot" tabindex="0" data-tip="Delegator view: this estimates how steady voting participation has been recently. Higher usually means steadier validator activity, which is generally better for reliability. It is still a short-term signal, not a guaranteed future reward outcome.">i</span>
+                <span class="info-dot" tabindex="0" data-tip="Delegator meaning: recent voting steadiness. Higher usually means more reliable short-term participation, not guaranteed future return.">i</span>
               </div>
               <div id="uptime" class="stat-value">–%</div>
               <p class="stat-hint">Delegator view: higher means this validator has voted more consistently in recent epochs. Treat it as a reliability signal, not a promise of specific rewards.</p>
@@ -1287,7 +1287,7 @@
     <div class="card stability-card-sidebar">
       <div class="card-title">
         Stability score (snapshot-based)
-        <span class="info-dot" tabindex="0" data-tip="How to read this block: score uses the recent snapshot window and updates as history grows. Higher usually means fewer warning signs (delinquency, commission changes, weaker recent voting consistency, APY disagreement, no pool presence). All-time line shows total stored history for context.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="How to read this block: main ring score uses all stored snapshot history. Highlighted score below uses only the recent window. Higher means fewer warning signs (delinquency, fee changes, weaker voting consistency, APY disagreement, no pool presence).">i</span>
       </div>
       <div class="card-note">
         Primary score uses full stored history. Recent-window score is shown below for short-term context.
@@ -1330,7 +1330,7 @@
     <div class="card profitability-card">
       <div class="card-title">
         Profitability (APY) &amp; Pool presence
-        <span class="info-dot" tabindex="0" data-tip="Delegator view: APY values are third-party estimates, not guaranteed payouts. Use them for rough comparison only. Pool presence shows adoption by staking pools, which is context, not a quality score. Missing values can happen when public APIs fail or rate-limit.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Delegator meaning: APY values are third-party estimates, not guaranteed payouts. Use for rough comparison. Pool presence is context, not proof of quality.">i</span>
       </div>
       <div class="source-row">
         <span class="source-chip">Stakewiz API</span>
@@ -1338,19 +1338,19 @@
       </div>
       <div class="apy-row">
         <div class="apy-block">
-          <div class="apy-label">APY (median) <span class="info-dot" tabindex="0" data-tip="Delegator view: quick blended APY estimate from two public sources. Good for rough comparison, but not an official payout quote and not guaranteed future return.">i</span></div>
+          <div class="apy-label">APY (median) <span class="info-dot" tabindex="0" data-tip="Blended APY estimate from public sources. Good for quick comparison, not a guaranteed payout quote.">i</span></div>
           <div id="apy-median" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Stakewiz APY <span class="info-dot" tabindex="0" data-tip="Delegator view: APY estimate from Stakewiz. Useful as one external reference; methodology and timing may differ from other sources.">i</span></div>
+          <div class="apy-label">Stakewiz APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Stakewiz. Use as one reference point.">i</span></div>
           <div id="apy-stakewiz" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="Delegator view: APY estimate from Trillium public data. Compare with Stakewiz; treat both as estimates rather than exact future return.">i</span></div>
+          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Trillium. Compare with Stakewiz; both are estimates.">i</span></div>
           <div id="apy-trillium" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="Delegator view: how many staking pools currently delegate here. More pools can mean broader ecosystem usage, but it does not automatically mean better rewards or lower risk for an individual delegator.">i</span></div>
+          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="How many staking pools currently delegate here. Useful context, not automatic proof of better rewards or lower risk.">i</span></div>
           <div id="pools-count" class="apy-value blue">–</div>
         </div>
       </div>
@@ -1366,7 +1366,7 @@
     <div class="card chart-card chart-card-wide">
       <div class="card-title">
         Live voting signal (RPC short window)
-        <span class="info-dot" tabindex="0" data-tip="Delegator view: this is a live network signal from Solana RPC, based on a short epoch window. It helps spot immediate behavior changes, but do not use it alone for delegation decisions. Pair it with the stability/history blocks above.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Live short-window RPC signal. Good for quick change detection, but read together with snapshot-based stability.">i</span>
       </div>
       <div class="card-note">Quick live read from RPC. For stronger assessment, use the Stability score and snapshot history above.</div>
       <div class="chart-header">
@@ -1391,7 +1391,7 @@
     <div class="card epoch-perf-card">
       <div class="card-title">
         Live RPC summary (same short window)
-        <span class="info-dot" tabindex="0" data-tip="Delegator view: these quick indicators explain the same short RPC window. Use them as supporting context only. Main delegation signal should come from longer snapshot history and stability score.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Quick supporting indicators from the same short RPC window. Secondary context; primary decision signal is snapshot-based stability.">i</span>
       </div>
       <div class="source-row">
         <span class="source-chip">Solana RPC (short window)</span>
@@ -1401,22 +1401,22 @@
       </div>
       <div class="perf-grid">
         <div class="perf-item">
-          <div class="perf-label">Available RPC epochs <span class="info-dot" tabindex="0" data-tip="Delegator view: more available epochs means this short-window read is less noisy. Very small counts should be treated carefully.">i</span></div>
+          <div class="perf-label">Available RPC epochs <span class="info-dot" tabindex="0" data-tip="More available epochs usually means less noise in this short-window read. Very small counts need caution.">i</span></div>
           <div id="perf-window-value" class="perf-value">–</div>
           <div id="perf-window-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Direction (newer vs older) <span class="info-dot" tabindex="0" data-tip="Delegator view: shows whether recent voting activity is improving, flat, or weakening inside this short window. Useful as an early hint, not proof of long-term trend.">i</span></div>
+          <div class="perf-label">Direction (newer vs older) <span class="info-dot" tabindex="0" data-tip="Shows whether recent voting activity is improving, flat, or weakening in this short window. Early hint, not long-term proof.">i</span></div>
           <div id="perf-trend-value" class="perf-value">–</div>
           <div id="perf-trend-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Point-to-point stability <span class="info-dot" tabindex="0" data-tip="Delegator view: smoother points usually mean steadier short-term behavior; choppy points mean more volatility in this short sample.">i</span></div>
+          <div class="perf-label">Point-to-point stability <span class="info-dot" tabindex="0" data-tip="Smoother points usually mean steadier short-term behavior; choppy points mean more short-window volatility.">i</span></div>
           <div id="perf-var-value" class="perf-value">–</div>
           <div id="perf-var-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Reward context (public APIs) <span class="info-dot" tabindex="0" data-tip="Delegator profit view: combines APY estimates with Jito signal status. Jito ON can indicate potential upside vs baseline staking rewards; APY estimates show rough yield range. Still context only, not guaranteed realized profit.">i</span></div>
+          <div class="perf-label">Reward context (public APIs) <span class="info-dot" tabindex="0" data-tip="Combines APY estimates with Jito signal status. Helpful context, not guaranteed realized profit.">i</span></div>
           <div id="perf-reward-value" class="perf-value">–</div>
           <div id="perf-reward-sub" class="perf-sub">–</div>
         </div>
@@ -1427,7 +1427,7 @@
     <div class="card delegator-assessment-card">
       <div class="card-title">
         Delegator takeaway (auto-assessment)
-        <span class="info-dot" tabindex="0" data-tip="This summary is calculated from the same displayed metrics: commission, live status, recent voting consistency, stability score, snapshot depth, APY/Jito context, and pool presence.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Auto-summary from current displayed metrics: commission, status, voting consistency, stability scores, snapshot depth, APY/Jito context, and pool presence.">i</span>
       </div>
       <p id="delegator-summary" class="delegator-summary-note">Loading assessment…</p>
       <div id="delegator-verdict" class="status-big">–</div>
@@ -1479,9 +1479,9 @@
   </div>
 
   <div class="footer">
-    <div><strong>Source model.</strong> Public blocks use live Solana RPC + Stakewiz + Trillium + Jito proxy. The stability block uses backend-collected snapshot history combined with current public inputs.</div>
-    <div><strong>Methodology.</strong> Recent voting consistency is derived from vote-credit changes in recent vote account data. Each recent epoch is normalized against the strongest epoch in the same recent window, converted into a relative percentage, and the displayed headline value is the average of the latest 5 such observations. Higher means steadier recent voting, not guaranteed reliability.</div>
-    <div><strong>History model.</strong> Opening a validator page can register it for backend tracking. Snapshot history is then collected server-side on a schedule and reused for all viewers of that validator page. It is not browser-local and does not depend on who is currently visiting the dashboard.</div>
+    <div><strong>Source model.</strong> Live inputs come from Solana RPC + Stakewiz + Trillium + Jito proxy. Stability uses backend snapshot history plus current public inputs.</div>
+    <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context.</div>
+    <div><strong>History model.</strong> Opening a validator can register it for backend tracking. Snapshots are collected server-side on a schedule and shared for all viewers (not browser-local).</div>
     <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
     </div>
@@ -1748,7 +1748,7 @@
   });
 </script>
 
-<script src="./app.js?v=53" defer></script>
+<script src="./app.js?v=56" defer></script>
 
 </body>
 </html>

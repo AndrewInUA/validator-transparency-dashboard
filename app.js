@@ -692,14 +692,14 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     const o = fmtSnapshotDate(snapshotMeta.oldest_captured_at);
     const ne = fmtSnapshotDate(snapshotMeta.newest_captured_at);
     if (totalAll === n && n > 0) {
-      allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (full stored history; same rows as the recent window).`;
+      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (same rows as current recent window).`;
     } else if (n > 0) {
-      allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (full stored history). This score uses only the latest ${n}.`;
+      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne}. Secondary recent score uses latest ${n}.`;
     } else {
-      allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (full stored history).`;
+      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne}.`;
     }
   } else if (totalAll !== null && totalAll > 0) {
-    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots stored.`;
+    allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots stored.`;
   }
 
   if (n >= 2) {
@@ -807,7 +807,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   if (n >= 48) reliabilityNote = "Confidence strong – extensive history.";
   else if (n >= 24) reliabilityNote = "Confidence moderate – meaningful history.";
   else if (n >= 8) reliabilityNote = "Confidence improving – limited history.";
-  else reliabilityNote += " Early stage: treat this score as provisional until more snapshots arrive.";
+  else reliabilityNote += " Early stage: treat recent-window score as provisional until more snapshots arrive.";
 
   const allTimeSample = Number(snapshotMeta?.all_time?.sample_count);
   const allTimeDelinquent = Number(snapshotMeta?.all_time?.delinquent_count);
@@ -844,7 +844,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     allTimeMetaLine,
     pills,
     formulaLine:
-      `How score is built: uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots), starts at 100, then applies penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. Use for comparison, not exact return prediction. ` +
+      `How score is built: the primary ring score uses all stored snapshots; the highlighted secondary score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots). Both start at 100, then apply penalties for delinquency, commission changes, weaker recent voting consistency, APY disagreement, and no pool presence. Use for comparison, not exact return prediction. ` +
       reliabilityNote
   };
 }
