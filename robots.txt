@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://validator-transparency-dashboard.vercel.app/sitemap.xml
