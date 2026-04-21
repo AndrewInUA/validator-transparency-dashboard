@@ -665,17 +665,6 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   }
 
   let score = scoreFromRecentSignals(n, delinquentCount, commissionChanges);
-  const recentStatusPenalty = nowStatus === "delinquent" ? 40 : 0;
-  const recentDelinquencyPenalty = n ? (delinquentCount / n) * 40 : 0;
-  const recentCommissionPenalty = clamp(commissionChanges * 5, 0, 20);
-  const recentUptimePenalty =
-    Number.isFinite(nowUptime) && nowUptime < 95
-      ? clamp((95 - nowUptime) * 1.5, 0, 20)
-      : 0;
-  const recentApyPenalty =
-    apyDiff !== null && apyDiff > 1 ? clamp((apyDiff - 1) * 5, 0, 15) : 0;
-  const recentPoolPenalty =
-    !Number.isFinite(poolsCount) || poolsCount <= 0 ? 10 : 0;
 
   let label =
     score >= 85 ? "Strong" :
@@ -714,7 +703,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     if (totalAll === n && n > 0) {
       allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne} (same rows as current recent window).`;
     } else if (n > 0) {
-      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne}. Secondary recent score uses latest ${n}.`;
+      allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne}.`;
     } else {
       allTimeMetaLine = `All-time history: ${totalAll.toLocaleString("en-US")} snapshots · ${o} – ${ne}.`;
     }
@@ -732,95 +721,44 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
         ? `${Math.round(days)}d`
         : `${Math.max(1, Math.round(days * 24))}h`;
 
-    recentMetaLine = `Recent window used for scoring: latest ${n.toLocaleString("en-US")} snapshots over ${trackingText}.`;
+    recentMetaLine = `Recent snapshot window loaded: latest ${n.toLocaleString("en-US")} snapshots over ${trackingText}.`;
   } else if (n === 1) {
     trackingText = "1 snapshot (early)";
     recentMetaLine =
-      "Recent window used for scoring: 1 snapshot only. This score is early and low-confidence.";
+      "Recent snapshot window loaded: 1 snapshot only.";
   }
 
   const pills = [];
 
-  if (n >= 2) {
-    pills.push({
-      ok: delinquentCount === 0,
-      text:
-        delinquentCount === 0
-          ? "No delinquency in snapshot history"
-          : `Delinquency seen (${delinquentCount}/${n})`,
-      tip: "Delegator view: fewer delinquent snapshots usually means steadier validator participation."
-    });
-  } else {
-    pills.push({
-      ok: nowStatus === "healthy",
-      text: nowStatus === "healthy" ? "Healthy right now" : `Status: ${nowStatus}`,
-      tip: "Delegator view: live status only; confirm with longer history."
-    });
-  }
-
-  if (n >= 2) {
-    pills.push({
-      ok: commissionChanges === 0,
-      text:
-        commissionChanges === 0
-          ? "Commission stable"
-          : `Commission changed ${commissionChanges}x`,
-      tip: "Delegator view: frequent commission changes reduce fee predictability."
-    });
-  } else {
-    pills.push({
-      ok: true,
-      text: "Commission history building",
-      tip: "Delegator view: wait for more snapshots before judging commission stability."
-    });
-  }
-
-  if (apyDiff === null) {
-    pills.push({
-      ok: false,
-      text: "APY comparison unavailable",
-      tip: "Delegator view: with missing APY sources, yield estimate confidence is lower."
-    });
-  } else if (apyDiff <= 0.75) {
-    pills.push({
-      ok: true,
-      text: `APY sources consistent (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Delegator view: source agreement increases confidence in rough APY estimates."
-    });
-  } else if (apyDiff <= 1.5) {
-    pills.push({
-      ok: true,
-      text: `APY fairly close (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Delegator view: estimates are usable, but with moderate uncertainty."
-    });
-  } else {
-    pills.push({
-      ok: false,
-      text: `APY disagreement (Δ ${apyDiff.toFixed(2)}%)`,
-      tip: "Delegator view: large source gap means low confidence in estimated yield."
-    });
-  }
-
-  const uptimeOk = Number.isFinite(nowUptime) && nowUptime >= 90;
   pills.push({
-    ok: uptimeOk,
-    text: !Number.isFinite(nowUptime)
-      ? "Recent voting data unavailable"
-      : nowUptime >= 95
-        ? `Recent voting consistency strong (${nowUptime.toFixed(1)}%)`
-        : nowUptime >= 90
-          ? `Recent voting consistency good (${nowUptime.toFixed(1)}%)`
-          : `Recent voting consistency needs attention (${nowUptime.toFixed(1)}%)`,
-    tip: "Delegator view: stronger recent voting consistency usually supports steadier rewards."
+    ok: n >= 2 ? delinquentCount === 0 : false,
+    text:
+      n >= 2
+        ? delinquentCount === 0
+          ? "No delinquency in recent snapshot window"
+          : `Recent-window delinquency (${delinquentCount}/${n})`
+        : "Delinquency signal waiting for more snapshots",
+    tip: "Snapshot-only signal from stored rows in this dashboard."
   });
 
   pills.push({
-    ok: Number.isFinite(poolsCount) && poolsCount > 0,
+    ok: n >= 2 ? commissionChanges === 0 : false,
     text:
-      Number.isFinite(poolsCount) && poolsCount > 0
-        ? `${poolsCount} stake pools delegating`
-        : "No stake pool presence",
-    tip: "Delegator view: pool presence is adoption context, not guaranteed quality or yield."
+      n >= 2
+        ? commissionChanges === 0
+          ? "Commission stable in recent snapshots"
+          : `Recent-window commission changes: ${commissionChanges}`
+        : "Commission-change signal waiting for more snapshots",
+    tip: "Snapshot-only signal from stored commission history."
+  });
+
+  pills.push({
+    ok: Number.isFinite(totalAll) && totalAll >= 24,
+    text:
+      Number.isFinite(totalAll) && totalAll > 0
+        ? `Snapshot depth stored: ${totalAll.toLocaleString("en-US")}`
+        : "Snapshot depth is still building",
+    tip: "Snapshot-only confidence signal: more stored history usually means more stable scoring."
   });
 
   let reliabilityNote = "Confidence low – short history.";
@@ -836,9 +774,6 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   let allTimeScore = null;
   let allTimeLabel = "Not enough data";
   let allTimeDriversLine = "All-time drivers: waiting for snapshot history.";
-  let recentDriversLine =
-    `Accessory recent-context drivers: status -${Math.round(recentStatusPenalty)}, uptime -${Math.round(recentUptimePenalty)}, ` +
-    `APY agreement -${Math.round(recentApyPenalty)}, pools -${Math.round(recentPoolPenalty)}.`;
   if (
     Number.isFinite(allTimeSample) &&
     allTimeSample > 0 &&
@@ -873,10 +808,9 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     recentMetaLine,
     allTimeMetaLine,
     allTimeDriversLine,
-    recentDriversLine,
     pills,
     formulaLine:
-      `How score is built: the primary ring score is all-time and snapshot-only (penalises delinquency share and commission changes across full history). The accessory recent-context readout uses the latest window (up to ${SNAPSHOT_WINDOW} latest snapshots) plus live context (recent voting consistency, APY agreement, pool presence). Use for quick context, not as a second primary verdict. ` +
+      `How score is built: this block is snapshot-only. The primary ring uses all stored snapshot history and applies penalties only for delinquency share and commission-change history. ` +
       reliabilityNote
   };
 }
@@ -906,23 +840,9 @@ function renderStability(st) {
     allTimeEl.textContent = line;
     allTimeEl.style.display = line ? "block" : "none";
   }
-  const allTimeScoreEl = document.getElementById("stability-alltime-score");
-  if (allTimeScoreEl) {
-    const alignsWithPrimary =
-      hasAllTimePrimary &&
-      Number.isFinite(st.score) &&
-      st.score === st.allTimeScore &&
-      st.label === st.allTimeLabel;
-    const txt = Number.isFinite(st.score)
-      ? alignsWithPrimary
-        ? `ACCESSORY RECENT CONTEXT: aligns with primary (${st.score}/100, ${st.label})`
-        : `ACCESSORY RECENT CONTEXT (LIVE + SNAPSHOT WINDOW): ${st.score}/100 (${st.label})`
-      : "ACCESSORY RECENT CONTEXT (LIVE + SNAPSHOT WINDOW): not enough data yet";
-    allTimeScoreEl.textContent = txt;
-  }
   safeSetText(
     document.getElementById("stability-formula"),
-    `${st.allTimeDriversLine} ${st.recentDriversLine} ${st.formulaLine}`
+    `${st.allTimeDriversLine} ${st.formulaLine}`
   );
 
   const pillsEl = document.getElementById("stability-pills");

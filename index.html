@@ -1022,20 +1022,6 @@
       color: var(--text3);
     }
 
-    .stability-score-highlight {
-      margin-top: 8px;
-      padding: 9px 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(147, 163, 255, 0.5);
-      background: rgba(147, 163, 255, 0.12);
-      font-family: var(--font);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      color: var(--text);
-      line-height: 1.4;
-    }
-
     .pills-col {
       display: flex;
       flex-direction: column;
@@ -1317,10 +1303,10 @@
     <div class="card stability-card-sidebar">
       <div class="card-title">
         Stability score (all-time snapshot history)
-        <span class="info-dot" tabindex="0" data-tip="How to read this block: main ring score is snapshot-history only (all-time delinquency share + commission-change history). Accessory line below is just short-term context (latest window + live indicators), and can match the primary score.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="How to read this block: this score is snapshot-only. It uses stored snapshot history (all-time delinquency share + commission-change history) with no live/API context mixed into the ring value.">i</span>
       </div>
       <div class="card-note">
-        Primary ring is the main verdict (all-time snapshot history only). The line below is accessory short-term context.
+        Snapshot-only block: the ring is based on stored history only.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1348,7 +1334,6 @@
           <div class="pill">Loading…</div>
         </div>
       </div>
-      <div id="stability-alltime-score" class="stability-score-highlight">ACCESSORY RECENT CONTEXT (LIVE + SNAPSHOT WINDOW): –</div>
       <div class="last-updated" id="stability-recent-meta">–</div>
       <div class="last-updated" id="stability-alltime-meta" style="margin-top:4px;opacity:0.92">–</div>
       <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
@@ -1778,7 +1763,7 @@
   });
 </script>
 
-<script src="./app.js?v=59" defer></script>
+<script src="./app.js?v=60" defer></script>
 
 </body>
 </html>
