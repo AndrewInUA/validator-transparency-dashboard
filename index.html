@@ -1317,10 +1317,10 @@
     <div class="card stability-card-sidebar">
       <div class="card-title">
         Stability score (all-time snapshot history)
-        <span class="info-dot" tabindex="0" data-tip="How to read this block: main ring score is snapshot-history only (all-time delinquency share + commission-change history). Highlighted score below is recent context (latest window + live indicators).">i</span>
+        <span class="info-dot" tabindex="0" data-tip="How to read this block: main ring score is snapshot-history only (all-time delinquency share + commission-change history). Accessory line below is just short-term context (latest window + live indicators), and can match the primary score.">i</span>
       </div>
       <div class="card-note">
-        Primary ring is all-time snapshot-history only. Recent context score is shown below for short-term signal shifts.
+        Primary ring is the main verdict (all-time snapshot history only). The line below is accessory short-term context.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1348,7 +1348,7 @@
           <div class="pill">Loading…</div>
         </div>
       </div>
-      <div id="stability-alltime-score" class="stability-score-highlight">RECENT CONTEXT SCORE (LIVE + SNAPSHOT WINDOW): –</div>
+      <div id="stability-alltime-score" class="stability-score-highlight">ACCESSORY RECENT CONTEXT (LIVE + SNAPSHOT WINDOW): –</div>
       <div class="last-updated" id="stability-recent-meta">–</div>
       <div class="last-updated" id="stability-alltime-meta" style="margin-top:4px;opacity:0.92">–</div>
       <div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6" id="stability-formula"></div>
@@ -1778,7 +1778,7 @@
   });
 </script>
 
-<script src="./app.js?v=58" defer></script>
+<script src="./app.js?v=59" defer></script>
 
 </body>
 </html>

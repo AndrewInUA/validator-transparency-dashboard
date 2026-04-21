@@ -837,7 +837,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   let allTimeLabel = "Not enough data";
   let allTimeDriversLine = "All-time drivers: waiting for snapshot history.";
   let recentDriversLine =
-    `Recent-only drivers: status -${Math.round(recentStatusPenalty)}, uptime -${Math.round(recentUptimePenalty)}, ` +
+    `Accessory recent-context drivers: status -${Math.round(recentStatusPenalty)}, uptime -${Math.round(recentUptimePenalty)}, ` +
     `APY agreement -${Math.round(recentApyPenalty)}, pools -${Math.round(recentPoolPenalty)}.`;
   if (
     Number.isFinite(allTimeSample) &&
@@ -876,7 +876,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     recentDriversLine,
     pills,
     formulaLine:
-      `How score is built: the primary ring score is all-time and snapshot-only (penalises delinquency share and commission changes across full history). The highlighted secondary score uses the recent window (up to ${SNAPSHOT_WINDOW} latest snapshots) plus current context (recent voting consistency, APY agreement, pool presence). Use for comparison, not exact return prediction. ` +
+      `How score is built: the primary ring score is all-time and snapshot-only (penalises delinquency share and commission changes across full history). The accessory recent-context readout uses the latest window (up to ${SNAPSHOT_WINDOW} latest snapshots) plus live context (recent voting consistency, APY agreement, pool presence). Use for quick context, not as a second primary verdict. ` +
       reliabilityNote
   };
 }
@@ -908,9 +908,16 @@ function renderStability(st) {
   }
   const allTimeScoreEl = document.getElementById("stability-alltime-score");
   if (allTimeScoreEl) {
+    const alignsWithPrimary =
+      hasAllTimePrimary &&
+      Number.isFinite(st.score) &&
+      st.score === st.allTimeScore &&
+      st.label === st.allTimeLabel;
     const txt = Number.isFinite(st.score)
-      ? `RECENT CONTEXT SCORE (LIVE + SNAPSHOT WINDOW): ${st.score}/100 (${st.label})`
-      : "RECENT CONTEXT SCORE (LIVE + SNAPSHOT WINDOW): not enough data yet";
+      ? alignsWithPrimary
+        ? `ACCESSORY RECENT CONTEXT: aligns with primary (${st.score}/100, ${st.label})`
+        : `ACCESSORY RECENT CONTEXT (LIVE + SNAPSHOT WINDOW): ${st.score}/100 (${st.label})`
+      : "ACCESSORY RECENT CONTEXT (LIVE + SNAPSHOT WINDOW): not enough data yet";
     allTimeScoreEl.textContent = txt;
   }
   safeSetText(
