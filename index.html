@@ -553,6 +553,18 @@
       gap: var(--layout-gap);
     }
 
+    .interpretation-strip {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(147, 163, 255, 0.35);
+      background: rgba(147, 163, 255, 0.08);
+      color: var(--text2);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: -2px;
+      margin-bottom: 8px;
+    }
+
     .row-epoch-metrics {
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -1374,7 +1386,7 @@
       <div class="stability-usage-note">
         <p class="stability-usage-title">How to use</p>
         <ul class="stability-usage-list">
-          <li>This score reflects all stored history, not just recent days.</li>
+          <li>This score reflects full stored history.</li>
           <li>Higher is better for consistency (fewer delinquency events and fee changes).</li>
           <li>Use this as the main consistency signal; then check APY and pool context.</li>
         </ul>
@@ -1383,6 +1395,10 @@
   </div>
 
   <div class="main-grid">
+
+    <div class="interpretation-strip">
+      <strong>Interpretation:</strong> prioritize all-time Stability as the primary signal, use Commission and Live status as risk checks, then use APY and pool presence for reward context.
+    </div>
 
     <div class="card profitability-card">
       <div class="card-title">
@@ -1417,7 +1433,7 @@
     </div>
 
     <div class="secondary-section-note">
-      Live network signals (supplementary): this section uses the short Solana RPC window and can contain only a few epochs.
+      Live network signals (supporting view): this section uses a short Solana RPC window, so treat it as a quick trend check alongside the all-time stability block.
     </div>
     <div class="row-epoch-metrics">
     <div class="card chart-card chart-card-wide">
@@ -1425,7 +1441,7 @@
         Live voting signal (RPC short window)
         <span class="info-dot" tabindex="0" data-tip="Live short-window RPC signal. Good for quick change detection, but read together with snapshot-based stability.">i</span>
       </div>
-      <div class="card-note">Quick live read from RPC. For stronger assessment, use the Stability score and snapshot history above.</div>
+      <div class="card-note">Quick live read from RPC. Helpful for change detection, but your main decision should start with the all-time Stability score above.</div>
       <div class="chart-header">
         <div class="chart-legend">
           <div class="legend-item">
