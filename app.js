@@ -1330,12 +1330,12 @@ async function main() {
   let compareState = null;
   let currentBaseMetrics = null;
   const getShareLink = () =>
-    compareState?.voteKey
+    compareState?.voteA && compareState?.voteB
       ? buildCompareUrl(
-          CURRENT.voteKey,
-          CURRENT.nameFromUrl || "",
-          compareState.voteKey,
-          compareState.name || ""
+          compareState.voteA,
+          compareState.nameA || "",
+          compareState.voteB,
+          compareState.nameB || ""
         )
       : buildShareUrl();
   const refreshShareUrl = () => {
@@ -1424,16 +1424,16 @@ async function main() {
 
   const validatorNameForCompare = validatorName;
 
-  const runComparison = async (voteValue, explicitName) => {
-    if (!isProbablyVoteKey(voteValue)) {
+  const runComparison = async (voteAValue, voteBValue) => {
+    if (!isProbablyVoteKey(voteAValue) || !isProbablyVoteKey(voteBValue)) {
       setCompareFeedback(
-        "Enter a valid second vote account (or paste a dashboard URL with vote=).",
+        "Enter two valid vote accounts (or dashboard URLs that include vote=).",
         true
       );
       return;
     }
-    if (voteValue === CURRENT.voteKey) {
-      setCompareFeedback("Second validator must be different from the current one.", true);
+    if (voteAValue === voteBValue) {
+      setCompareFeedback("Use two different vote accounts for comparison.", true);
       return;
     }
 
@@ -1442,9 +1442,16 @@ async function main() {
     if (clearCompareBtn) clearCompareBtn.disabled = true;
 
     try {
-      registerValidatorForTracking(voteValue).catch(() => {});
-      const compareMetrics = await loadComparisonMetrics(voteValue);
-      const baseMetrics = currentBaseMetrics || {
+      registerValidatorForTracking(voteAValue).catch(() => {});
+      registerValidatorForTracking(voteBValue).catch(() => {});
+
+      const [baseMetrics, compareMetrics] = await Promise.all([
+        voteAValue === CURRENT.voteKey && currentBaseMetrics
+          ? Promise.resolve(currentBaseMetrics)
+          : loadComparisonMetrics(voteAValue),
+        loadComparisonMetrics(voteBValue)
+      ]);
+      const safeBaseMetrics = baseMetrics || {
         stabilityScore: null,
         stabilityLabel: "–",
         commission: null,
@@ -1456,24 +1463,25 @@ async function main() {
       };
 
       compareState = {
-        voteKey: voteValue,
-        name: explicitName || "",
-        metrics: compareMetrics
+        voteA: voteAValue,
+        voteB: voteBValue,
+        nameA: voteAValue === CURRENT.voteKey ? (CURRENT.nameFromUrl || validatorNameForCompare) : "",
+        nameB: ""
       };
       refreshShareUrl();
 
       const url = buildCompareUrl(
-        CURRENT.voteKey,
-        CURRENT.nameFromUrl || "",
-        voteValue,
-        explicitName || ""
+        voteAValue,
+        compareState.nameA || "",
+        voteBValue,
+        ""
       );
       window.history.replaceState({}, "", url);
 
       renderComparePanel({
-        baseName: validatorNameForCompare,
-        compareName: explicitName || shortKey(voteValue),
-        baseMetrics: baseMetrics,
+        baseName: voteAValue === CURRENT.voteKey ? validatorNameForCompare : shortKey(voteAValue),
+        compareName: shortKey(voteBValue),
+        baseMetrics: safeBaseMetrics,
         compareMetrics
       });
 
@@ -1489,27 +1497,26 @@ async function main() {
 
   if (compareBtn) {
     compareBtn.onclick = async () => {
-      const parsed = extractVoteAndNameFromInput(compareInput?.value || "");
-      const vote = parsed.vote;
-      const name = String(compareNameInput?.value || parsed.name || "").trim();
-      await runComparison(vote, name);
+      const parsedA = extractVoteAndNameFromInput(compareInput?.value || "");
+      const parsedB = extractVoteAndNameFromInput(compareNameInput?.value || "");
+      await runComparison(parsedA.vote, parsedB.vote);
     };
   }
   if (compareInput) {
     compareInput.addEventListener("keydown", async e => {
       if (e.key === "Enter") {
-        const parsed = extractVoteAndNameFromInput(compareInput.value || "");
-        const name = String(compareNameInput?.value || parsed.name || "").trim();
-        await runComparison(parsed.vote, name);
+        const parsedA = extractVoteAndNameFromInput(compareInput.value || "");
+        const parsedB = extractVoteAndNameFromInput(compareNameInput?.value || "");
+        await runComparison(parsedA.vote, parsedB.vote);
       }
     });
   }
   if (compareNameInput) {
     compareNameInput.addEventListener("keydown", async e => {
       if (e.key === "Enter") {
-        const parsed = extractVoteAndNameFromInput(compareInput?.value || "");
-        const name = String(compareNameInput.value || parsed.name || "").trim();
-        await runComparison(parsed.vote, name);
+        const parsedA = extractVoteAndNameFromInput(compareInput?.value || "");
+        const parsedB = extractVoteAndNameFromInput(compareNameInput.value || "");
+        await runComparison(parsedA.vote, parsedB.vote);
       }
     });
   }
@@ -1649,17 +1656,19 @@ async function main() {
   currentBaseMetrics = baseMetrics;
 
   if (COMPARE_FROM_URL.voteKey && isProbablyVoteKey(COMPARE_FROM_URL.voteKey)) {
-    if (compareInput) compareInput.value = COMPARE_FROM_URL.voteKey;
-    if (compareNameInput && COMPARE_FROM_URL.name) compareNameInput.value = COMPARE_FROM_URL.name;
+    if (compareInput) compareInput.value = CURRENT.voteKey;
+    if (compareNameInput) compareNameInput.value = COMPARE_FROM_URL.voteKey;
     setCompareFeedback("Loading comparison from URL…");
     if (compareBtn) compareBtn.disabled = true;
     try {
+      registerValidatorForTracking(CURRENT.voteKey).catch(() => {});
       registerValidatorForTracking(COMPARE_FROM_URL.voteKey).catch(() => {});
       const compareMetrics = await loadComparisonMetrics(COMPARE_FROM_URL.voteKey);
       compareState = {
-        voteKey: COMPARE_FROM_URL.voteKey,
-        name: COMPARE_FROM_URL.name,
-        metrics: compareMetrics
+        voteA: CURRENT.voteKey,
+        voteB: COMPARE_FROM_URL.voteKey,
+        nameA: CURRENT.nameFromUrl || validatorNameForCompare,
+        nameB: COMPARE_FROM_URL.name || ""
       };
       renderComparePanel({
         baseName: validatorNameForCompare,
