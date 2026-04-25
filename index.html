@@ -1245,6 +1245,13 @@
       line-height: 1.45;
     }
 
+    .compare-rules {
+      margin: 0 12px 10px;
+      font-size: 11px;
+      color: var(--text3);
+      line-height: 1.45;
+    }
+
     @media (max-width: 820px) {
       .compare-head {
         display: none;
@@ -1638,15 +1645,16 @@
             <button type="button" id="compare-validator-btn" class="copy-btn">Compare</button>
             <button type="button" id="clear-compare-btn" class="copy-btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Clear</button>
           </div>
-          <div id="compare-feedback" class="open-validator-help">Tip: paste two vote accounts to compare them directly on this page.</div>
+          <div id="compare-feedback" class="open-validator-help">Tip: field A defaults to My validator; paste any two vote accounts to compare directly on this page.</div>
           <div id="compare-panel" class="compare-panel" style="display:none">
             <div class="compare-head">
               <div>Metric</div>
-              <div id="compare-name-a">Current</div>
-              <div id="compare-name-b">Compared</div>
-              <div>Better</div>
+              <div id="compare-name-a">Validator A</div>
+              <div id="compare-name-b">Validator B</div>
+              <div>Edge</div>
             </div>
             <div id="compare-rows" class="compare-rows"></div>
+            <div id="compare-rules" class="compare-rules"></div>
             <div id="compare-summary" class="compare-summary"></div>
           </div>
         </div>
@@ -1939,7 +1947,7 @@
   });
 </script>
 
-<script src="./app.js?v=63" defer></script>
+<script src="./app.js?v=65" defer></script>
 
 </body>
 </html>

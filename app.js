@@ -1135,20 +1135,29 @@ function formatScoreText(score, label) {
   return Number.isFinite(score) ? `${score}/100 (${label || "–"})` : "–";
 }
 
+function displayCompareName(voteKey, preferredName) {
+  const short = shortKey(voteKey);
+  const name = String(preferredName || "").trim();
+  if (!name) return short;
+  if (name === short) return short;
+  return `${name} (${short})`;
+}
+
 function compareBetter(a, b, mode) {
   const an = Number(a);
   const bn = Number(b);
-  if (!Number.isFinite(an) || !Number.isFinite(bn)) return "–";
+  if (!Number.isFinite(an) || !Number.isFinite(bn)) return "na";
   const eps = mode === "status" ? 0 : 0.05;
-  if (Math.abs(an - bn) <= eps) return "Similar";
-  if (mode === "lower") return an < bn ? "Current" : "Compared";
-  return an > bn ? "Current" : "Compared";
+  if (Math.abs(an - bn) <= eps) return "tie";
+  if (mode === "lower") return an < bn ? "left" : "right";
+  return an > bn ? "left" : "right";
 }
 
 function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics }) {
   const panel = document.getElementById("compare-panel");
   const rowsEl = document.getElementById("compare-rows");
   const summaryEl = document.getElementById("compare-summary");
+  const rulesEl = document.getElementById("compare-rules");
   const nameAEl = document.getElementById("compare-name-a");
   const nameBEl = document.getElementById("compare-name-b");
   if (!panel || !rowsEl || !summaryEl) return;
@@ -1208,12 +1217,13 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
   ];
 
   rowsEl.innerHTML = "";
-  const wins = { current: 0, compared: 0 };
+  const wins = { left: 0, right: 0, tie: 0 };
 
   for (const r of rows) {
     const better = compareBetter(r.currentValue, r.compareValue, r.mode);
-    if (better === "Current") wins.current += 1;
-    if (better === "Compared") wins.compared += 1;
+    if (better === "left") wins.left += 1;
+    else if (better === "right") wins.right += 1;
+    else wins.tie += 1;
 
     const row = document.createElement("div");
     row.className = "compare-row";
@@ -1232,22 +1242,31 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
     row.appendChild(compared);
 
     const betterEl = document.createElement("div");
-    betterEl.className = `compare-row-better ${better === "Compared" ? "warn" : ""}`.trim();
-    betterEl.textContent = better;
+    betterEl.className = `compare-row-better ${better === "right" ? "warn" : ""}`.trim();
+    betterEl.textContent =
+      better === "left"
+        ? "A"
+        : better === "right"
+          ? "B"
+          : better === "tie"
+            ? "Tie"
+            : "N/A";
     row.appendChild(betterEl);
 
     rowsEl.appendChild(row);
   }
 
-  if (wins.current === wins.compared) {
-    summaryEl.textContent =
-      "Interpretation: both validators look broadly comparable on the visible metrics; use stability + fee policy as final tie-breakers.";
-  } else if (wins.current > wins.compared) {
-    summaryEl.textContent =
-      `Interpretation: ${baseName || "Current"} leads on more visible metrics in this snapshot.`;
+  if (rulesEl) {
+    rulesEl.textContent =
+      "Edge rules: higher is better for Stability, Consistency, APY, and Pools. Lower is better for Commission. Status ranking: Healthy > Unknown > Delinquent.";
+  }
+
+  if (wins.left === wins.right) {
+    summaryEl.textContent = `Edge count: A ${wins.left} • B ${wins.right} • Tie/N/A ${wins.tie}.`;
+  } else if (wins.left > wins.right) {
+    summaryEl.textContent = `Edge count: A ${wins.left} • B ${wins.right} • Tie/N/A ${wins.tie}. A is ahead on more listed metrics.`;
   } else {
-    summaryEl.textContent =
-      `Interpretation: ${compareName || "Compared"} leads on more visible metrics in this snapshot.`;
+    summaryEl.textContent = `Edge count: A ${wins.left} • B ${wins.right} • Tie/N/A ${wins.tie}. B is ahead on more listed metrics.`;
   }
 
   panel.style.display = "block";
@@ -1465,7 +1484,7 @@ async function main() {
       compareState = {
         voteA: voteAValue,
         voteB: voteBValue,
-        nameA: voteAValue === CURRENT.voteKey ? (CURRENT.nameFromUrl || validatorNameForCompare) : "",
+        nameA: voteAValue === VALIDATOR.voteKey ? "My validator" : "",
         nameB: ""
       };
       refreshShareUrl();
@@ -1479,8 +1498,11 @@ async function main() {
       window.history.replaceState({}, "", url);
 
       renderComparePanel({
-        baseName: voteAValue === CURRENT.voteKey ? validatorNameForCompare : shortKey(voteAValue),
-        compareName: shortKey(voteBValue),
+        baseName: displayCompareName(
+          voteAValue,
+          voteAValue === VALIDATOR.voteKey ? "My validator" : ""
+        ),
+        compareName: displayCompareName(voteBValue, ""),
         baseMetrics: safeBaseMetrics,
         compareMetrics
       });
@@ -1667,12 +1689,15 @@ async function main() {
       compareState = {
         voteA: CURRENT.voteKey,
         voteB: COMPARE_FROM_URL.voteKey,
-        nameA: CURRENT.nameFromUrl || validatorNameForCompare,
+        nameA: CURRENT.voteKey === VALIDATOR.voteKey ? "My validator" : (CURRENT.nameFromUrl || validatorNameForCompare),
         nameB: COMPARE_FROM_URL.name || ""
       };
       renderComparePanel({
-        baseName: validatorNameForCompare,
-        compareName: COMPARE_FROM_URL.name || shortKey(COMPARE_FROM_URL.voteKey),
+        baseName: displayCompareName(
+          CURRENT.voteKey,
+          CURRENT.voteKey === VALIDATOR.voteKey ? "My validator" : validatorNameForCompare
+        ),
+        compareName: displayCompareName(COMPARE_FROM_URL.voteKey, COMPARE_FROM_URL.name || ""),
         baseMetrics,
         compareMetrics
       });
@@ -1684,6 +1709,10 @@ async function main() {
     } finally {
       if (compareBtn) compareBtn.disabled = false;
     }
+  } else {
+    if (compareInput) compareInput.value = VALIDATOR.voteKey;
+    if (compareNameInput && !compareNameInput.value) compareNameInput.value = "";
+    setCompareFeedback("Default A is My validator. Paste any second vote account to compare.");
   }
 }
 
