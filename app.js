@@ -1241,12 +1241,12 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
     betterEl.className = `compare-row-better ${better === "right" ? "warn" : ""}`.trim();
     betterEl.textContent =
       better === "left"
-        ? "A"
+        ? "Validator A"
         : better === "right"
-          ? "B"
+          ? "Validator B"
           : better === "tie"
-            ? "Tie"
-            : "N/A";
+            ? "About the same"
+            : "Not enough data";
     row.appendChild(betterEl);
 
     rowsEl.appendChild(row);
@@ -1254,15 +1254,15 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
 
   if (rulesEl) {
     rulesEl.textContent =
-      "Edge rules: higher is better for Stability, Consistency, APY, and Pools. Lower is better for Commission. Status ranking: Healthy > Unknown > Delinquent.";
+      "How this works: higher is better for Stability, Voting consistency, APY, and Pools delegating. Lower is better for Commission. For live status: Healthy is best.";
   }
 
   if (wins.left === wins.right) {
-    summaryEl.textContent = `Edge count: A ${wins.left} • B ${wins.right} • Tie/N/A ${wins.tie}.`;
+    summaryEl.textContent = "Overall: both validators look similar on these visible metrics.";
   } else if (wins.left > wins.right) {
-    summaryEl.textContent = `Edge count: A ${wins.left} • B ${wins.right} • Tie/N/A ${wins.tie}. A is ahead on more listed metrics.`;
+    summaryEl.textContent = "Overall: Validator A looks stronger on more visible metrics in this quick comparison.";
   } else {
-    summaryEl.textContent = `Edge count: A ${wins.left} • B ${wins.right} • Tie/N/A ${wins.tie}. B is ahead on more listed metrics.`;
+    summaryEl.textContent = "Overall: Validator B looks stronger on more visible metrics in this quick comparison.";
   }
 
   panel.style.display = "block";
