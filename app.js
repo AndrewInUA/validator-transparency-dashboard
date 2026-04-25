@@ -1135,12 +1135,8 @@ function formatScoreText(score, label) {
   return Number.isFinite(score) ? `${score}/100 (${label || "–"})` : "–";
 }
 
-function displayCompareName(voteKey, preferredName) {
-  const short = shortKey(voteKey);
-  const name = String(preferredName || "").trim();
-  if (!name) return short;
-  if (name === short) return short;
-  return `${name} (${short})`;
+function displayCompareName(voteKey) {
+  return shortKey(voteKey);
 }
 
 function compareBetter(a, b, mode) {
@@ -1484,7 +1480,7 @@ async function main() {
       compareState = {
         voteA: voteAValue,
         voteB: voteBValue,
-        nameA: voteAValue === VALIDATOR.voteKey ? "My validator" : "",
+        nameA: "",
         nameB: ""
       };
       refreshShareUrl();
@@ -1498,11 +1494,8 @@ async function main() {
       window.history.replaceState({}, "", url);
 
       renderComparePanel({
-        baseName: displayCompareName(
-          voteAValue,
-          voteAValue === VALIDATOR.voteKey ? "My validator" : ""
-        ),
-        compareName: displayCompareName(voteBValue, ""),
+        baseName: displayCompareName(voteAValue),
+        compareName: displayCompareName(voteBValue),
         baseMetrics: safeBaseMetrics,
         compareMetrics
       });
@@ -1689,15 +1682,12 @@ async function main() {
       compareState = {
         voteA: CURRENT.voteKey,
         voteB: COMPARE_FROM_URL.voteKey,
-        nameA: CURRENT.voteKey === VALIDATOR.voteKey ? "My validator" : (CURRENT.nameFromUrl || validatorNameForCompare),
+        nameA: "",
         nameB: COMPARE_FROM_URL.name || ""
       };
       renderComparePanel({
-        baseName: displayCompareName(
-          CURRENT.voteKey,
-          CURRENT.voteKey === VALIDATOR.voteKey ? "My validator" : validatorNameForCompare
-        ),
-        compareName: displayCompareName(COMPARE_FROM_URL.voteKey, COMPARE_FROM_URL.name || ""),
+        baseName: displayCompareName(CURRENT.voteKey),
+        compareName: displayCompareName(COMPARE_FROM_URL.voteKey),
         baseMetrics,
         compareMetrics
       });
@@ -1710,9 +1700,9 @@ async function main() {
       if (compareBtn) compareBtn.disabled = false;
     }
   } else {
-    if (compareInput) compareInput.value = VALIDATOR.voteKey;
+    if (compareInput && !compareInput.value) compareInput.value = VALIDATOR.voteKey;
     if (compareNameInput && !compareNameInput.value) compareNameInput.value = "";
-    setCompareFeedback("Default A is My validator. Paste any second vote account to compare.");
+    setCompareFeedback("A and B are fully editable. You can compare any two vote accounts.");
   }
 }
 
