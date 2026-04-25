@@ -56,6 +56,10 @@ function computeCurrentValidator() {
 }
 
 const CURRENT = computeCurrentValidator();
+const COMPARE_FROM_URL = {
+  voteKey: (getParam("vote2") || "").trim(),
+  name: (getParam("name2") || "").trim()
+};
 
 function shortKey(k) {
   if (!k) return "–";
@@ -124,6 +128,19 @@ function simplifyTrendDelta(diff) {
 
 function buildShareUrl() {
   return buildValidatorUrl(CURRENT.voteKey, CURRENT.nameFromUrl || "");
+}
+
+function buildCompareUrl(baseVote, baseName, compareVote, compareName) {
+  const base = `${window.location.origin}${window.location.pathname}`;
+  const isGHP = window.location.hostname.includes("github.io");
+  const params = new URLSearchParams();
+
+  params.set("vote", baseVote);
+  if (baseName) params.set("name", baseName);
+  if (compareVote) params.set("vote2", compareVote);
+  if (compareName) params.set("name2", compareName);
+
+  return isGHP ? `${base}#${params.toString()}` : `${base}?${params.toString()}`;
 }
 
 function buildValidatorUrl(voteKey, name) {
@@ -1106,6 +1123,184 @@ function renderUpsideSignals({ live, latestCom, uptimeNum, poolsCount, apyMedian
   wrap.style.display = shown.length ? "block" : "none";
 }
 
+function normalizeStatusForCompare(status) {
+  const raw = String(status || "").toLowerCase();
+  if (raw === "healthy") return { rank: 2, label: "Healthy" };
+  if (raw === "delinquent") return { rank: 0, label: "Delinquent" };
+  if (!raw || raw === "unknown") return { rank: 1, label: "Unknown" };
+  return { rank: 1, label: raw.charAt(0).toUpperCase() + raw.slice(1) };
+}
+
+function formatScoreText(score, label) {
+  return Number.isFinite(score) ? `${score}/100 (${label || "–"})` : "–";
+}
+
+function compareBetter(a, b, mode) {
+  const an = Number(a);
+  const bn = Number(b);
+  if (!Number.isFinite(an) || !Number.isFinite(bn)) return "–";
+  const eps = mode === "status" ? 0 : 0.05;
+  if (Math.abs(an - bn) <= eps) return "Similar";
+  if (mode === "lower") return an < bn ? "Current" : "Compared";
+  return an > bn ? "Current" : "Compared";
+}
+
+function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics }) {
+  const panel = document.getElementById("compare-panel");
+  const rowsEl = document.getElementById("compare-rows");
+  const summaryEl = document.getElementById("compare-summary");
+  const nameAEl = document.getElementById("compare-name-a");
+  const nameBEl = document.getElementById("compare-name-b");
+  if (!panel || !rowsEl || !summaryEl) return;
+
+  if (nameAEl) nameAEl.textContent = baseName || "Current";
+  if (nameBEl) nameBEl.textContent = compareName || "Compared";
+
+  const rows = [
+    {
+      metric: "Stability score",
+      currentText: formatScoreText(baseMetrics.stabilityScore, baseMetrics.stabilityLabel),
+      compareText: formatScoreText(compareMetrics.stabilityScore, compareMetrics.stabilityLabel),
+      currentValue: baseMetrics.stabilityScore,
+      compareValue: compareMetrics.stabilityScore,
+      mode: "higher"
+    },
+    {
+      metric: "Commission",
+      currentText: Number.isFinite(baseMetrics.commission) ? `${baseMetrics.commission.toFixed(0)}%` : "–",
+      compareText: Number.isFinite(compareMetrics.commission) ? `${compareMetrics.commission.toFixed(0)}%` : "–",
+      currentValue: baseMetrics.commission,
+      compareValue: compareMetrics.commission,
+      mode: "lower"
+    },
+    {
+      metric: "Recent voting consistency",
+      currentText: Number.isFinite(baseMetrics.uptime) ? `${baseMetrics.uptime.toFixed(1)}%` : "–",
+      compareText: Number.isFinite(compareMetrics.uptime) ? `${compareMetrics.uptime.toFixed(1)}%` : "–",
+      currentValue: baseMetrics.uptime,
+      compareValue: compareMetrics.uptime,
+      mode: "higher"
+    },
+    {
+      metric: "Live status",
+      currentText: baseMetrics.statusLabel,
+      compareText: compareMetrics.statusLabel,
+      currentValue: baseMetrics.statusRank,
+      compareValue: compareMetrics.statusRank,
+      mode: "status"
+    },
+    {
+      metric: "APY (median)",
+      currentText: Number.isFinite(baseMetrics.apyMedian) ? `${baseMetrics.apyMedian.toFixed(2)}%` : "–",
+      compareText: Number.isFinite(compareMetrics.apyMedian) ? `${compareMetrics.apyMedian.toFixed(2)}%` : "–",
+      currentValue: baseMetrics.apyMedian,
+      compareValue: compareMetrics.apyMedian,
+      mode: "higher"
+    },
+    {
+      metric: "Pools delegating",
+      currentText: Number.isFinite(baseMetrics.poolsCount) ? String(baseMetrics.poolsCount) : "–",
+      compareText: Number.isFinite(compareMetrics.poolsCount) ? String(compareMetrics.poolsCount) : "–",
+      currentValue: baseMetrics.poolsCount,
+      compareValue: compareMetrics.poolsCount,
+      mode: "higher"
+    }
+  ];
+
+  rowsEl.innerHTML = "";
+  const wins = { current: 0, compared: 0 };
+
+  for (const r of rows) {
+    const better = compareBetter(r.currentValue, r.compareValue, r.mode);
+    if (better === "Current") wins.current += 1;
+    if (better === "Compared") wins.compared += 1;
+
+    const row = document.createElement("div");
+    row.className = "compare-row";
+
+    const metric = document.createElement("div");
+    metric.className = "compare-row-metric";
+    metric.textContent = r.metric;
+    row.appendChild(metric);
+
+    const current = document.createElement("div");
+    current.textContent = r.currentText;
+    row.appendChild(current);
+
+    const compared = document.createElement("div");
+    compared.textContent = r.compareText;
+    row.appendChild(compared);
+
+    const betterEl = document.createElement("div");
+    betterEl.className = `compare-row-better ${better === "Compared" ? "warn" : ""}`.trim();
+    betterEl.textContent = better;
+    row.appendChild(betterEl);
+
+    rowsEl.appendChild(row);
+  }
+
+  if (wins.current === wins.compared) {
+    summaryEl.textContent =
+      "Interpretation: both validators look broadly comparable on the visible metrics; use stability + fee policy as final tie-breakers.";
+  } else if (wins.current > wins.compared) {
+    summaryEl.textContent =
+      `Interpretation: ${baseName || "Current"} leads on more visible metrics in this snapshot.`;
+  } else {
+    summaryEl.textContent =
+      `Interpretation: ${compareName || "Compared"} leads on more visible metrics in this snapshot.`;
+  }
+
+  panel.style.display = "block";
+}
+
+async function loadComparisonMetrics(voteKey) {
+  const [live, ratings, snapshotPack] = await Promise.all([
+    fetchLive(voteKey),
+    fetchRatings(voteKey).catch(() => null),
+    loadSnapshotsFromDB(voteKey)
+  ]);
+
+  const poolsCount = Array.isArray(ratings?.pools?.stake_pools)
+    ? ratings.pools.stake_pools.length
+    : null;
+  const stability = computeStability({
+    live,
+    ratings,
+    poolsCount,
+    snaps: snapshotPack.snapshots,
+    snapshotMeta: snapshotPack.meta
+  });
+  const primaryStability = Number.isFinite(stability.allTimeScore)
+    ? stability.allTimeScore
+    : stability.score;
+  const primaryLabel = Number.isFinite(stability.allTimeScore)
+    ? stability.allTimeLabel
+    : stability.label;
+  const status = normalizeStatusForCompare(live?.status);
+
+  const commissionHistory = Array.isArray(live?.commissionHistory)
+    ? live.commissionHistory
+    : [];
+  const latestCommission = commissionHistory.length
+    ? Number(commissionHistory[commissionHistory.length - 1])
+    : null;
+
+  return {
+    stabilityScore: Number.isFinite(primaryStability) ? primaryStability : null,
+    stabilityLabel: primaryLabel || "–",
+    commission: Number.isFinite(latestCommission) ? latestCommission : null,
+    uptime: Number.isFinite(Number(live?.uptimeLast5EpochsPct))
+      ? Number(live.uptimeLast5EpochsPct)
+      : null,
+    statusRank: status.rank,
+    statusLabel: status.label,
+    apyMedian: Number.isFinite(Number(ratings?.derived?.apy_median))
+      ? Number(ratings.derived.apy_median)
+      : null,
+    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null
+  };
+}
+
 // ── MAIN ─────────────────────────────────────────
 async function main() {
   const validatorName =
@@ -1132,9 +1327,23 @@ async function main() {
       : "Custom validator loaded from the URL.";
   }
 
-  const shareLink = buildShareUrl();
+  let compareState = null;
+  let currentBaseMetrics = null;
+  const getShareLink = () =>
+    compareState?.voteKey
+      ? buildCompareUrl(
+          CURRENT.voteKey,
+          CURRENT.nameFromUrl || "",
+          compareState.voteKey,
+          compareState.name || ""
+        )
+      : buildShareUrl();
+  const refreshShareUrl = () => {
+    const shareInput = document.getElementById("share-url");
+    if (shareInput) shareInput.value = getShareLink();
+  };
   const shareInput = document.getElementById("share-url");
-  if (shareInput) shareInput.value = shareLink;
+  if (shareInput) shareInput.value = getShareLink();
   renderSystemSignals(await fetchSystemSignals());
 
   const copyBtn = document.getElementById("copy-btn");
@@ -1142,7 +1351,7 @@ async function main() {
   if (copyBtn) {
     copyBtn.onclick = async () => {
       try {
-        await navigator.clipboard.writeText(shareLink);
+        await navigator.clipboard.writeText(getShareLink());
         copyBtn.textContent = "Copied!";
       } catch {
         copyBtn.textContent = "Error";
@@ -1157,6 +1366,12 @@ async function main() {
   const openNameInput = document.getElementById("open-validator-name");
   const openBtn = document.getElementById("open-validator-btn");
   const openFeedback = document.getElementById("open-validator-feedback");
+  const compareInput = document.getElementById("compare-validator-input");
+  const compareNameInput = document.getElementById("compare-validator-name");
+  const compareBtn = document.getElementById("compare-validator-btn");
+  const clearCompareBtn = document.getElementById("clear-compare-btn");
+  const compareFeedback = document.getElementById("compare-feedback");
+  const comparePanel = document.getElementById("compare-panel");
 
   const setOpenFeedback = (text, isError = false) => {
     if (!openFeedback) return;
@@ -1189,6 +1404,12 @@ async function main() {
     }
   };
 
+  const setCompareFeedback = (text, isError = false) => {
+    if (!compareFeedback) return;
+    compareFeedback.textContent = text;
+    compareFeedback.style.color = isError ? "var(--warn)" : "var(--text2)";
+  };
+
   if (openBtn) openBtn.onclick = openValidatorFromInputs;
   if (openInput) {
     openInput.addEventListener("keydown", e => {
@@ -1199,6 +1420,110 @@ async function main() {
     openNameInput.addEventListener("keydown", e => {
       if (e.key === "Enter") openValidatorFromInputs();
     });
+  }
+
+  const validatorNameForCompare = validatorName;
+
+  const runComparison = async (voteValue, explicitName) => {
+    if (!isProbablyVoteKey(voteValue)) {
+      setCompareFeedback(
+        "Enter a valid second vote account (or paste a dashboard URL with vote=).",
+        true
+      );
+      return;
+    }
+    if (voteValue === CURRENT.voteKey) {
+      setCompareFeedback("Second validator must be different from the current one.", true);
+      return;
+    }
+
+    setCompareFeedback("Loading comparison…");
+    if (compareBtn) compareBtn.disabled = true;
+    if (clearCompareBtn) clearCompareBtn.disabled = true;
+
+    try {
+      registerValidatorForTracking(voteValue).catch(() => {});
+      const compareMetrics = await loadComparisonMetrics(voteValue);
+      const baseMetrics = currentBaseMetrics || {
+        stabilityScore: null,
+        stabilityLabel: "–",
+        commission: null,
+        uptime: null,
+        statusRank: 1,
+        statusLabel: "Unknown",
+        apyMedian: null,
+        poolsCount: null
+      };
+
+      compareState = {
+        voteKey: voteValue,
+        name: explicitName || "",
+        metrics: compareMetrics
+      };
+      refreshShareUrl();
+
+      const url = buildCompareUrl(
+        CURRENT.voteKey,
+        CURRENT.nameFromUrl || "",
+        voteValue,
+        explicitName || ""
+      );
+      window.history.replaceState({}, "", url);
+
+      renderComparePanel({
+        baseName: validatorNameForCompare,
+        compareName: explicitName || shortKey(voteValue),
+        baseMetrics: baseMetrics,
+        compareMetrics
+      });
+
+      setCompareFeedback("Comparison ready. Metrics shown side-by-side on this page.");
+    } catch (err) {
+      console.warn("comparison failed:", err);
+      setCompareFeedback("Could not load comparison data right now.", true);
+    } finally {
+      if (compareBtn) compareBtn.disabled = false;
+      if (clearCompareBtn) clearCompareBtn.disabled = false;
+    }
+  };
+
+  if (compareBtn) {
+    compareBtn.onclick = async () => {
+      const parsed = extractVoteAndNameFromInput(compareInput?.value || "");
+      const vote = parsed.vote;
+      const name = String(compareNameInput?.value || parsed.name || "").trim();
+      await runComparison(vote, name);
+    };
+  }
+  if (compareInput) {
+    compareInput.addEventListener("keydown", async e => {
+      if (e.key === "Enter") {
+        const parsed = extractVoteAndNameFromInput(compareInput.value || "");
+        const name = String(compareNameInput?.value || parsed.name || "").trim();
+        await runComparison(parsed.vote, name);
+      }
+    });
+  }
+  if (compareNameInput) {
+    compareNameInput.addEventListener("keydown", async e => {
+      if (e.key === "Enter") {
+        const parsed = extractVoteAndNameFromInput(compareInput?.value || "");
+        const name = String(compareNameInput.value || parsed.name || "").trim();
+        await runComparison(parsed.vote, name);
+      }
+    });
+  }
+  if (clearCompareBtn) {
+    clearCompareBtn.onclick = () => {
+      compareState = null;
+      if (comparePanel) comparePanel.style.display = "none";
+      if (compareInput) compareInput.value = "";
+      if (compareNameInput) compareNameInput.value = "";
+      setCompareFeedback("Comparison cleared.");
+      refreshShareUrl();
+      const url = buildValidatorUrl(CURRENT.voteKey, CURRENT.nameFromUrl || "");
+      window.history.replaceState({}, "", url);
+    };
   }
 
   registerValidatorForTracking(CURRENT.voteKey).catch(err => {
@@ -1309,6 +1634,48 @@ async function main() {
   renderDelegatorAssessment(
     computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stability })
   );
+
+  const baseStatus = normalizeStatusForCompare(live?.status);
+  const baseMetrics = {
+    stabilityScore: Number.isFinite(stability.allTimeScore) ? stability.allTimeScore : stability.score,
+    stabilityLabel: Number.isFinite(stability.allTimeScore) ? stability.allTimeLabel : stability.label,
+    commission: Number.isFinite(latestCom) ? latestCom : null,
+    uptime: Number.isFinite(uptimeNum) ? uptimeNum : null,
+    statusRank: baseStatus.rank,
+    statusLabel: baseStatus.label,
+    apyMedian: Number.isFinite(apyMedian) ? apyMedian : null,
+    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null
+  };
+  currentBaseMetrics = baseMetrics;
+
+  if (COMPARE_FROM_URL.voteKey && isProbablyVoteKey(COMPARE_FROM_URL.voteKey)) {
+    if (compareInput) compareInput.value = COMPARE_FROM_URL.voteKey;
+    if (compareNameInput && COMPARE_FROM_URL.name) compareNameInput.value = COMPARE_FROM_URL.name;
+    setCompareFeedback("Loading comparison from URL…");
+    if (compareBtn) compareBtn.disabled = true;
+    try {
+      registerValidatorForTracking(COMPARE_FROM_URL.voteKey).catch(() => {});
+      const compareMetrics = await loadComparisonMetrics(COMPARE_FROM_URL.voteKey);
+      compareState = {
+        voteKey: COMPARE_FROM_URL.voteKey,
+        name: COMPARE_FROM_URL.name,
+        metrics: compareMetrics
+      };
+      renderComparePanel({
+        baseName: validatorNameForCompare,
+        compareName: COMPARE_FROM_URL.name || shortKey(COMPARE_FROM_URL.voteKey),
+        baseMetrics,
+        compareMetrics
+      });
+      setCompareFeedback("Comparison loaded from URL.");
+      refreshShareUrl();
+    } catch (err) {
+      console.warn("url comparison failed:", err);
+      setCompareFeedback("Could not load comparison from URL.", true);
+    } finally {
+      if (compareBtn) compareBtn.disabled = false;
+    }
+  }
 }
 
 main();
