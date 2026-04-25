@@ -1158,8 +1158,8 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
   const nameBEl = document.getElementById("compare-name-b");
   if (!panel || !rowsEl || !summaryEl) return;
 
-  if (nameAEl) nameAEl.textContent = baseName || "Current";
-  if (nameBEl) nameBEl.textContent = compareName || "Compared";
+  if (nameAEl) nameAEl.textContent = `Validator A (${baseName || "Current"})`;
+  if (nameBEl) nameBEl.textContent = `Validator B (${compareName || "Compared"})`;
 
   const rows = [
     {
@@ -1256,7 +1256,7 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
 
   if (rulesEl) {
     rulesEl.textContent =
-      "How this works: higher is better for Stability, Voting consistency, APY, and Pools delegating. Lower is better for Commission. For live status: Healthy is best.";
+      "A = currently opened validator. B = entered validator. Higher is better for Stability, Voting consistency, APY, and Pools delegating. Lower is better for Commission. For live status: Healthy is best.";
   }
 
   if (wins.left === wins.right) {

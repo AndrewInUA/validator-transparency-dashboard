@@ -1675,7 +1675,7 @@
             <button type="button" id="compare-validator-btn" class="copy-btn">Compare</button>
             <button type="button" id="clear-compare-btn" class="copy-btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Clear</button>
           </div>
-          <div id="compare-feedback" class="open-validator-help">Tip: this compares the currently opened validator against the vote account you enter here.</div>
+          <div id="compare-feedback" class="open-validator-help">Tip: <strong>Validator A</strong> is the currently opened validator on this page. <strong>Validator B</strong> is the vote account you enter above.</div>
           <div id="compare-panel" class="compare-panel" style="display:none">
             <div class="compare-head">
               <div>Metric</div>
@@ -1692,6 +1692,7 @@
           <input id="share-url" class="share-input" type="text" readonly value="Loading…" aria-label="URL for this validator view" />
           <button type="button" id="copy-btn" class="copy-btn">Copy URL</button>
         </div>
+        <div class="open-validator-help">This link saves your current view. If comparison is active, it also includes <code class="inline-code">vote2</code> so others open the same A vs B comparison.</div>
         <div class="roadmap-block">
           <div class="card-title">Roadmap</div>
           <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
@@ -1977,7 +1978,7 @@
   });
 </script>
 
-<script src="./app.js?v=69" defer></script>
+<script src="./app.js?v=70" defer></script>
 
 </body>
 </html>
