@@ -1234,8 +1234,12 @@
       color: var(--heading);
     }
 
-    .compare-row-better.warn {
-      color: var(--warn);
+    .compare-row-better.good {
+      color: var(--success);
+    }
+
+    .compare-row-better.tie {
+      color: var(--text2);
     }
 
     .compare-summary {
@@ -1250,6 +1254,23 @@
       font-size: 11px;
       color: var(--text3);
       line-height: 1.45;
+    }
+
+    .compare-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1 1 280px;
+      min-width: 220px;
+    }
+
+    .compare-field-label {
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text3);
+      font-weight: 700;
+      padding-left: 2px;
     }
 
     @media (max-width: 820px) {
@@ -1640,8 +1661,14 @@
         <div class="compare-block">
           <p class="compare-title">Compare on this page</p>
           <div class="open-validator-row">
-            <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="First vote account or dashboard URL" aria-label="First validator vote account or URL" />
-            <input id="compare-validator-name" class="share-input" type="text" value="" placeholder="Second vote account or dashboard URL" aria-label="Second validator vote account or URL" />
+            <div class="compare-field">
+              <label class="compare-field-label" for="compare-validator-input">Validator A</label>
+              <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="First vote account or dashboard URL" aria-label="First validator vote account or URL" />
+            </div>
+            <div class="compare-field">
+              <label class="compare-field-label" for="compare-validator-name">Validator B</label>
+              <input id="compare-validator-name" class="share-input" type="text" value="" placeholder="Second vote account or dashboard URL" aria-label="Second validator vote account or URL" />
+            </div>
             <button type="button" id="compare-validator-btn" class="copy-btn">Compare</button>
             <button type="button" id="clear-compare-btn" class="copy-btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Clear</button>
           </div>
@@ -1947,7 +1974,7 @@
   });
 </script>
 
-<script src="./app.js?v=67" defer></script>
+<script src="./app.js?v=68" defer></script>
 
 </body>
 </html>

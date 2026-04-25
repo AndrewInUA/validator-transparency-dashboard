@@ -1238,7 +1238,9 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
     row.appendChild(compared);
 
     const betterEl = document.createElement("div");
-    betterEl.className = `compare-row-better ${better === "right" ? "warn" : ""}`.trim();
+    betterEl.className = `compare-row-better ${
+      better === "tie" || better === "na" ? "tie" : "good"
+    }`.trim();
     betterEl.textContent =
       better === "left"
         ? "Validator A"
