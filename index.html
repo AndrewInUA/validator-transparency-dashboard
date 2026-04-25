@@ -1256,20 +1256,17 @@
       line-height: 1.45;
     }
 
-    .compare-field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1 1 280px;
-      min-width: 220px;
-    }
-
     .compare-block .open-validator-row {
-      align-items: flex-end;
+      align-items: center;
+      flex-wrap: nowrap;
     }
 
-    .compare-field .share-input {
-      flex: 0 0 auto;
+    .compare-single-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .compare-single-field .share-input {
       width: 100%;
       min-height: 48px;
     }
@@ -1671,18 +1668,14 @@
         <div class="compare-block">
           <p class="compare-title">Compare on this page</p>
           <div class="open-validator-row">
-            <div class="compare-field">
-              <label class="compare-field-label" for="compare-validator-input">Validator A</label>
-              <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="First vote account or dashboard URL" aria-label="First validator vote account or URL" />
-            </div>
-            <div class="compare-field">
-              <label class="compare-field-label" for="compare-validator-name">Validator B</label>
-              <input id="compare-validator-name" class="share-input" type="text" value="" placeholder="Second vote account or dashboard URL" aria-label="Second validator vote account or URL" />
+            <div class="compare-single-field">
+              <label class="compare-field-label" for="compare-validator-input">Compare current validator with</label>
+              <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="Other vote account or dashboard URL" aria-label="Other validator vote account or URL" />
             </div>
             <button type="button" id="compare-validator-btn" class="copy-btn">Compare</button>
             <button type="button" id="clear-compare-btn" class="copy-btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Clear</button>
           </div>
-          <div id="compare-feedback" class="open-validator-help">Tip: fields A and B are fully editable; compare any two vote accounts directly on this page.</div>
+          <div id="compare-feedback" class="open-validator-help">Tip: this compares the currently opened validator against the vote account you enter here.</div>
           <div id="compare-panel" class="compare-panel" style="display:none">
             <div class="compare-head">
               <div>Metric</div>
@@ -1984,7 +1977,7 @@
   });
 </script>
 
-<script src="./app.js?v=68" defer></script>
+<script src="./app.js?v=69" defer></script>
 
 </body>
 </html>

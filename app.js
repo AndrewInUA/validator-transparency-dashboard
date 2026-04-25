@@ -1347,10 +1347,10 @@ async function main() {
   let compareState = null;
   let currentBaseMetrics = null;
   const getShareLink = () =>
-    compareState?.voteA && compareState?.voteB
+    compareState?.voteB
       ? buildCompareUrl(
-          compareState.voteA,
-          compareState.nameA || "",
+          CURRENT.voteKey,
+          CURRENT.nameFromUrl || "",
           compareState.voteB,
           compareState.nameB || ""
         )
@@ -1384,7 +1384,6 @@ async function main() {
   const openBtn = document.getElementById("open-validator-btn");
   const openFeedback = document.getElementById("open-validator-feedback");
   const compareInput = document.getElementById("compare-validator-input");
-  const compareNameInput = document.getElementById("compare-validator-name");
   const compareBtn = document.getElementById("compare-validator-btn");
   const clearCompareBtn = document.getElementById("clear-compare-btn");
   const compareFeedback = document.getElementById("compare-feedback");
@@ -1441,16 +1440,16 @@ async function main() {
 
   const validatorNameForCompare = validatorName;
 
-  const runComparison = async (voteAValue, voteBValue) => {
-    if (!isProbablyVoteKey(voteAValue) || !isProbablyVoteKey(voteBValue)) {
+  const runComparison = async voteBValue => {
+    if (!isProbablyVoteKey(voteBValue)) {
       setCompareFeedback(
-        "Enter two valid vote accounts (or dashboard URLs that include vote=).",
+        "Enter a valid vote account (or a dashboard URL that includes vote=).",
         true
       );
       return;
     }
-    if (voteAValue === voteBValue) {
-      setCompareFeedback("Use two different vote accounts for comparison.", true);
+    if (voteBValue === CURRENT.voteKey) {
+      setCompareFeedback("This is already the currently opened validator.", true);
       return;
     }
 
@@ -1459,16 +1458,10 @@ async function main() {
     if (clearCompareBtn) clearCompareBtn.disabled = true;
 
     try {
-      registerValidatorForTracking(voteAValue).catch(() => {});
       registerValidatorForTracking(voteBValue).catch(() => {});
 
-      const [baseMetrics, compareMetrics] = await Promise.all([
-        voteAValue === CURRENT.voteKey && currentBaseMetrics
-          ? Promise.resolve(currentBaseMetrics)
-          : loadComparisonMetrics(voteAValue),
-        loadComparisonMetrics(voteBValue)
-      ]);
-      const safeBaseMetrics = baseMetrics || {
+      const compareMetrics = await loadComparisonMetrics(voteBValue);
+      const safeBaseMetrics = currentBaseMetrics || {
         stabilityScore: null,
         stabilityLabel: "–",
         commission: null,
@@ -1480,23 +1473,21 @@ async function main() {
       };
 
       compareState = {
-        voteA: voteAValue,
         voteB: voteBValue,
-        nameA: "",
         nameB: ""
       };
       refreshShareUrl();
 
       const url = buildCompareUrl(
-        voteAValue,
-        compareState.nameA || "",
+        CURRENT.voteKey,
+        CURRENT.nameFromUrl || "",
         voteBValue,
         ""
       );
       window.history.replaceState({}, "", url);
 
       renderComparePanel({
-        baseName: displayCompareName(voteAValue),
+        baseName: displayCompareName(CURRENT.voteKey),
         compareName: displayCompareName(voteBValue),
         baseMetrics: safeBaseMetrics,
         compareMetrics
@@ -1514,26 +1505,15 @@ async function main() {
 
   if (compareBtn) {
     compareBtn.onclick = async () => {
-      const parsedA = extractVoteAndNameFromInput(compareInput?.value || "");
-      const parsedB = extractVoteAndNameFromInput(compareNameInput?.value || "");
-      await runComparison(parsedA.vote, parsedB.vote);
+      const parsed = extractVoteAndNameFromInput(compareInput?.value || "");
+      await runComparison(parsed.vote);
     };
   }
   if (compareInput) {
     compareInput.addEventListener("keydown", async e => {
       if (e.key === "Enter") {
-        const parsedA = extractVoteAndNameFromInput(compareInput.value || "");
-        const parsedB = extractVoteAndNameFromInput(compareNameInput?.value || "");
-        await runComparison(parsedA.vote, parsedB.vote);
-      }
-    });
-  }
-  if (compareNameInput) {
-    compareNameInput.addEventListener("keydown", async e => {
-      if (e.key === "Enter") {
-        const parsedA = extractVoteAndNameFromInput(compareInput?.value || "");
-        const parsedB = extractVoteAndNameFromInput(compareNameInput.value || "");
-        await runComparison(parsedA.vote, parsedB.vote);
+        const parsed = extractVoteAndNameFromInput(compareInput.value || "");
+        await runComparison(parsed.vote);
       }
     });
   }
@@ -1542,7 +1522,6 @@ async function main() {
       compareState = null;
       if (comparePanel) comparePanel.style.display = "none";
       if (compareInput) compareInput.value = "";
-      if (compareNameInput) compareNameInput.value = "";
       setCompareFeedback("Comparison cleared.");
       refreshShareUrl();
       const url = buildValidatorUrl(CURRENT.voteKey, CURRENT.nameFromUrl || "");
@@ -1673,18 +1652,14 @@ async function main() {
   currentBaseMetrics = baseMetrics;
 
   if (COMPARE_FROM_URL.voteKey && isProbablyVoteKey(COMPARE_FROM_URL.voteKey)) {
-    if (compareInput) compareInput.value = CURRENT.voteKey;
-    if (compareNameInput) compareNameInput.value = COMPARE_FROM_URL.voteKey;
+    if (compareInput) compareInput.value = COMPARE_FROM_URL.voteKey;
     setCompareFeedback("Loading comparison from URL…");
     if (compareBtn) compareBtn.disabled = true;
     try {
-      registerValidatorForTracking(CURRENT.voteKey).catch(() => {});
       registerValidatorForTracking(COMPARE_FROM_URL.voteKey).catch(() => {});
       const compareMetrics = await loadComparisonMetrics(COMPARE_FROM_URL.voteKey);
       compareState = {
-        voteA: CURRENT.voteKey,
         voteB: COMPARE_FROM_URL.voteKey,
-        nameA: "",
         nameB: COMPARE_FROM_URL.name || ""
       };
       renderComparePanel({
@@ -1702,9 +1677,8 @@ async function main() {
       if (compareBtn) compareBtn.disabled = false;
     }
   } else {
-    if (compareInput && !compareInput.value) compareInput.value = VALIDATOR.voteKey;
-    if (compareNameInput && !compareNameInput.value) compareNameInput.value = "";
-    setCompareFeedback("A and B are fully editable. You can compare any two vote accounts.");
+    if (compareInput && !compareInput.value) compareInput.value = "";
+    setCompareFeedback("Compare this opened validator against another vote account.");
   }
 }
 
