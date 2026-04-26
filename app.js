@@ -332,18 +332,9 @@ function renderRatings(r) {
       ? knownPoolsStake + nonPoolStake
       : null;
 
-  safeSetText(
-    document.getElementById("pools-totals"),
-    `Known pools (itemized below): ${fmtSol(knownPoolsStake)} SOL`
-  );
-  safeSetText(
-    document.getElementById("pools-breakdown-note"),
-    `Other non-pool/untagged (not itemized): ${fmtSol(nonPoolStake)} SOL`
-  );
-  safeSetText(
-    document.getElementById("pools-total-context"),
-    `Total active stake context: ${fmtSol(totalStakeContext)} SOL`
-  );
+  safeSetText(document.getElementById("stake-known"), `${fmtSol(knownPoolsStake)} SOL`);
+  safeSetText(document.getElementById("stake-other"), `${fmtSol(nonPoolStake)} SOL`);
+  safeSetText(document.getElementById("stake-total"), `${fmtSol(totalStakeContext)} SOL`);
 
   const poolList = document.getElementById("pools-list");
   if (poolList) {
