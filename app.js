@@ -79,6 +79,11 @@ function fmtSol(v) {
     : n.toFixed(2);
 }
 
+function toFiniteNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function average(nums) {
   const a = nums.filter(x => Number.isFinite(x));
   return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
@@ -320,11 +325,24 @@ function renderRatings(r) {
     document.getElementById("stake-not-pools"),
     fmtSol(r?.pools?.total_not_from_stake_pools) + " SOL"
   );
+  const knownPoolsStake = toFiniteNumber(r?.pools?.total_from_stake_pools);
+  const nonPoolStake = toFiniteNumber(r?.pools?.total_not_from_stake_pools);
+  const totalStakeContext =
+    knownPoolsStake !== null && nonPoolStake !== null
+      ? knownPoolsStake + nonPoolStake
+      : null;
+
   safeSetText(
     document.getElementById("pools-totals"),
-    `Known pool stake (itemized below): ${fmtSol(
-      r?.pools?.total_from_stake_pools
-    )} SOL • Other non-pool/untagged stake (not itemized below): ${fmtSol(r?.pools?.total_not_from_stake_pools)} SOL`
+    `Known pools (itemized below): ${fmtSol(knownPoolsStake)} SOL`
+  );
+  safeSetText(
+    document.getElementById("pools-breakdown-note"),
+    `Other non-pool/untagged (not itemized): ${fmtSol(nonPoolStake)} SOL`
+  );
+  safeSetText(
+    document.getElementById("pools-total-context"),
+    `Total active stake context: ${fmtSol(totalStakeContext)} SOL`
   );
 
   const poolList = document.getElementById("pools-list");
