@@ -322,9 +322,9 @@ function renderRatings(r) {
   );
   safeSetText(
     document.getElementById("pools-totals"),
-    `Stake from pools: ${fmtSol(
+    `Stake from known pools: ${fmtSol(
       r?.pools?.total_from_stake_pools
-    )} SOL • Not from pools: ${fmtSol(r?.pools?.total_not_from_stake_pools)} SOL`
+    )} SOL • Other non-pool stake (combined): ${fmtSol(r?.pools?.total_not_from_stake_pools)} SOL`
   );
 
   const poolList = document.getElementById("pools-list");

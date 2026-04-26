@@ -1569,11 +1569,14 @@
           <div id="apy-trillium" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="How many staking pools currently delegate here. Useful context, not automatic proof of better rewards or lower risk.">i</span></div>
+          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="How many known staking pools currently delegate here. Useful context, not automatic proof of better rewards or lower risk.">i</span></div>
           <div id="pools-count" class="apy-value blue">–</div>
         </div>
       </div>
-      <div class="last-updated" id="pools-totals">Stake from pools: – SOL • Not from pools: – SOL</div>
+      <div class="last-updated" id="pools-totals">Stake from known pools: – SOL • Other non-pool stake (combined): – SOL</div>
+      <div class="last-updated" id="pools-breakdown-note" style="margin-top:6px">
+        "Other non-pool stake" combines direct/personal delegators and entities not tagged as known stake pools.
+      </div>
       <div class="pool-badges" id="pools-list"></div>
       <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: –</div>
     </div>
