@@ -1455,9 +1455,98 @@
       .validator-name-head { font-size: 30px; }
       .stat-value { font-size: 24px; }
     }
+
+    html.app-landing #dashboard-view { display: none !important; }
+    html:not(.app-landing) #landing-view { display: none !important; }
+
+    .landing-view {
+      max-width: 640px;
+      margin: 0 auto 28px;
+    }
+    .landing-card {
+      padding: 28px 24px 24px;
+    }
+    .landing-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 8px;
+    }
+    .landing-title {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: var(--text);
+    }
+    .landing-lead {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text2);
+      margin: 0 0 20px;
+    }
+    .landing-search-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .landing-search-row .share-input {
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+    .landing-example {
+      font-size: 13px;
+      color: var(--text2);
+      margin: 16px 0 0;
+    }
+    .landing-example a {
+      font-weight: 600;
+    }
+    #landing-feedback {
+      font-size: 13px;
+      color: var(--warn);
+      margin-top: 10px;
+      min-height: 1.2em;
+    }
+    .footer-brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text2);
+    }
+    .footer-brand-row .footer-mini-logo {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .footer-brand-row strong { color: var(--text); }
   </style>
 </head>
 <body>
+<script>
+(function () {
+  try {
+    var q = new URLSearchParams(window.location.search);
+    var hash = window.location.hash && window.location.hash.charAt(0) === "#"
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    var hq = new URLSearchParams(hash || "");
+    var vote = String(q.get("vote") || hq.get("vote") || "").trim();
+    var ok = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(vote);
+    if (!ok) document.documentElement.classList.add("app-landing");
+  } catch (e) {
+    document.documentElement.classList.add("app-landing");
+  }
+})();
+</script>
 <div class="wrap">
 
   <div class="top-bar">
@@ -1479,6 +1568,27 @@
 
   <div id="commission-critical-alert" class="critical-commission-alert"></div>
 
+  <section id="landing-view" class="landing-view" aria-label="Start">
+    <div class="card landing-card">
+      <div class="landing-kicker">Solana mainnet</div>
+      <h1 class="landing-title">Look up a vote account</h1>
+      <p class="landing-lead">
+        Paste any mainnet <strong>vote account</strong> to see snapshot-based stability, live RPC context, APY sources, and pool context—same data path for every validator.
+      </p>
+      <div class="landing-search-row">
+        <input type="text" id="landing-vote-input" class="share-input" placeholder="Vote account or paste a dashboard link" autocomplete="off" aria-label="Vote account or dashboard URL" />
+        <button type="button" id="landing-open-btn" class="copy-btn">Load validator</button>
+      </div>
+      <div id="landing-feedback" aria-live="polite"></div>
+      <p class="landing-example">
+        Example (creator’s node):
+        <a id="landing-example-link" href="#">Open AndrewInUA</a>
+      </p>
+      <div id="landing-system-signals" class="last-updated" style="margin-top:14px">System signals: …</div>
+    </div>
+  </section>
+
+  <div id="dashboard-view">
   <div class="row-hero">
     <div class="hero-col-left">
       <div class="card identity-card">
@@ -1765,13 +1875,21 @@
     </div>
 
   </div>
+  </div>
 
   <div class="footer">
     <div><strong>Source model.</strong> Live inputs come from Solana RPC + Stakewiz + Trillium + Jito proxy. Stability uses backend snapshot history plus current public inputs.</div>
     <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots for the opened vote account. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context. Two validators can both be “fully covered” by collection but have different history lengths until enough days of snapshots accrue.</div>
     <div><strong>History model.</strong> Scheduled jobs snapshot <strong>all</strong> mainnet vote accounts returned by RPC and write shared rows in storage. Opening a page only sends an optional analytics ping (does not gate whether snapshots exist). Everyone reads the same dataset for a given vote key.</div>
-    <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
-      <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
+    <div class="footer-brand-row">
+      <img src="./assets/logo-transparent.png" alt="" class="footer-mini-logo" width="28" height="28" loading="lazy" />
+      <div>
+        <strong>Validator Transparency</strong> — made by <strong>AndrewInUA</strong>
+        <span> · </span>
+        <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank" rel="noopener">GitHub</a>
+        <span> · </span>
+        <span class="last-updated" style="display:inline">Open tool for any Solana validator</span>
+      </div>
     </div>
   </div>
 

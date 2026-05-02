@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v41
+ * Validator Transparency Dashboard – app.js v42
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -7,10 +7,10 @@
 
 const USE_LIVE = true;
 
-const VALIDATOR = {
-  name: "AndrewInUA",
-  voteKey: "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K"
-};
+/** Example link on the home screen only (no default loaded validator). */
+const CREATOR_EXAMPLE_VOTE =
+  "3QPGLackJy5LKctYYoPGmA4P8ncyE197jdxr1zP2ho8K";
+const CREATOR_EXAMPLE_NAME = "AndrewInUA";
 
 const API_BASE = window.location.hostname.includes("github.io")
   ? "https://validator-transparency-dashboard.vercel.app"
@@ -48,8 +48,8 @@ function computeCurrentValidator() {
   const name = (getParam("name") || "").trim();
 
   return {
-    voteKey: vote.length ? vote : VALIDATOR.voteKey,
-    name: name.length ? name : VALIDATOR.name,
+    voteKey: vote.length ? vote : "",
+    name: name.length ? name : "",
     voteFromUrl: vote.length ? vote : null,
     nameFromUrl: name.length ? name : null
   };
@@ -513,19 +513,21 @@ async function fetchSystemSignals() {
   }
 }
 
-function renderSystemSignals(signals) {
-  const el = document.getElementById("system-signals");
-  if (!el) return;
-  if (!signals) {
-    el.textContent = "System signals: unavailable";
-    return;
-  }
+function formatSystemSignalsText(signals) {
+  if (!signals) return "System signals: unavailable";
   const asWord = v => (v ? "ON" : "OFF");
-  el.textContent =
+  return (
     `System signals: Alpha ${asWord(signals.alpha)} · ` +
     `Bravo ${asWord(signals.bravo)} · ` +
     `Charlie ${asWord(signals.charlie)} · ` +
-    `Delta ${asWord(signals.delta)}`;
+    `Delta ${asWord(signals.delta)}`
+  );
+}
+
+function renderSystemSignals(signals) {
+  const el = document.getElementById("system-signals");
+  if (!el) return;
+  el.textContent = formatSystemSignalsText(signals);
 }
 
 function renderRuntimeSources(live) {
@@ -1356,11 +1358,59 @@ async function loadComparisonMetrics(voteKey) {
   };
 }
 
+async function initLandingPage() {
+  const inp = document.getElementById("landing-vote-input");
+  const btn = document.getElementById("landing-open-btn");
+  const ex = document.getElementById("landing-example-link");
+  const fb = document.getElementById("landing-feedback");
+
+  if (ex) {
+    ex.href = buildValidatorUrl(CREATOR_EXAMPLE_VOTE, CREATOR_EXAMPLE_NAME);
+  }
+
+  const go = () => {
+    if (fb) fb.textContent = "";
+    const parsed = extractVoteAndNameFromInput(inp?.value || "");
+    if (!isProbablyVoteKey(parsed.vote)) {
+      if (fb) {
+        fb.textContent =
+          "Enter a valid Solana vote account (base58, 32–44 chars), or paste a link that includes vote=.";
+      }
+      return;
+    }
+    window.location.href = buildValidatorUrl(parsed.vote, parsed.name);
+  };
+
+  if (btn) btn.onclick = go;
+  if (inp) {
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter") go();
+    });
+  }
+
+  try {
+    const signals = await fetchSystemSignals();
+    const landSig = document.getElementById("landing-system-signals");
+    if (landSig) landSig.textContent = formatSystemSignalsText(signals);
+  } catch {
+    const landSig = document.getElementById("landing-system-signals");
+    if (landSig) landSig.textContent = formatSystemSignalsText(null);
+  }
+}
+
 // ── MAIN ─────────────────────────────────────────
 async function main() {
+  if (!isProbablyVoteKey(CURRENT.voteKey)) {
+    document.documentElement.classList.add("app-landing");
+    document.title = "Validator Transparency Dashboard";
+    await initLandingPage();
+    return;
+  }
+
+  document.documentElement.classList.remove("app-landing");
+
   let resolvedDisplayName =
-    CURRENT.nameFromUrl ||
-    (CURRENT.voteFromUrl ? shortKey(CURRENT.voteKey) : CURRENT.name);
+    CURRENT.nameFromUrl || shortKey(CURRENT.voteKey);
 
   const applyValidatorDisplayName = ratings => {
     const auto = pickValidatorDisplayName(ratings);
@@ -1369,9 +1419,7 @@ async function main() {
     } else if (auto) {
       resolvedDisplayName = auto;
     } else {
-      resolvedDisplayName = CURRENT.voteFromUrl
-        ? shortKey(CURRENT.voteKey)
-        : CURRENT.name;
+      resolvedDisplayName = shortKey(CURRENT.voteKey);
     }
 
     document.title = `${resolvedDisplayName} · Validator Dashboard`;
@@ -1386,9 +1434,7 @@ async function main() {
 
     const ctx = document.getElementById("current-context");
     if (ctx) {
-      if (!CURRENT.voteFromUrl) {
-        ctx.textContent = "Default profile loaded.";
-      } else if (CURRENT.nameFromUrl) {
+      if (CURRENT.nameFromUrl) {
         ctx.textContent = "Custom display name from URL (?name=).";
       } else if (auto) {
         ctx.textContent =
@@ -1417,12 +1463,9 @@ async function main() {
 
   const currentContext = document.getElementById("current-context");
   if (currentContext) {
-    const isDefault = !CURRENT.voteFromUrl;
-    currentContext.textContent = isDefault
-      ? "Default profile loaded."
-      : CURRENT.nameFromUrl
-        ? "Custom display name from URL (?name=)."
-        : "Loading directory name…";
+    currentContext.textContent = CURRENT.nameFromUrl
+      ? "Custom display name from URL (?name=)."
+      : "Loading directory name…";
   }
 
   let compareState = null;
