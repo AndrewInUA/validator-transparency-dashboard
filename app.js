@@ -1,8 +1,8 @@
 /**
  * Validator Transparency Dashboard – app.js v38
  * Backend-only snapshot model:
- * page open -> /api/track-validator -> tracked_validators
- * CRON -> /api/collect -> Supabase -> frontend reads only
+ * page open -> /api/track-validator (interest / analytics; optional)
+ * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
  */
 
 const USE_LIVE = true;
