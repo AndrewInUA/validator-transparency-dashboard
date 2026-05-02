@@ -1766,7 +1766,7 @@
   <div class="footer">
     <div><strong>Source model.</strong> Live inputs come from Solana RPC + Stakewiz + Trillium + Jito proxy. Stability uses backend snapshot history plus current public inputs.</div>
     <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context.</div>
-    <div><strong>History model.</strong> Opening a validator can register it for backend tracking. Snapshots are collected server-side on a schedule and shared for all viewers (not browser-local).</div>
+    <div><strong>History model.</strong> Scheduled server jobs snapshot <strong>all mainnet vote accounts</strong> returned by RPC (not only pages you open). Opening a validator can still register interest in tracking analytics; everyone reads the same stored history.</div>
     <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
     </div>
