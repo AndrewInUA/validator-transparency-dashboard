@@ -1494,7 +1494,7 @@
         </div>
         <div id="current-context" class="header-context">Loading context…</div>
         <div class="header-note identity-note">
-          Data on this page follows the vote account in the URL.
+          This page is tied to the <code class="inline-code">vote</code> in the URL. The backend records scheduled snapshots for <strong>all</strong> mainnet vote accounts; per-validator “how much history” still grows from the first day that account appears in storage.
         </div>
       </div>
 
@@ -1538,7 +1538,7 @@
         <span class="info-dot" tabindex="0" data-tip="How to read this block: this score is snapshot-only. It uses stored snapshot history (all-time delinquency share + commission-change history) with no live/API context mixed into the ring value.">i</span>
       </div>
       <div class="card-note">
-        Snapshot-only block. 100 means no delinquency and no commission changes in stored history.
+        Snapshot-only block. 100 means no delinquency and no commission changes in stored history. Coverage is network-wide; confidence still rises as more snapshots accumulate for <em>this</em> vote account over time.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -1570,8 +1570,9 @@
       <div class="stability-usage-note">
         <p class="stability-usage-title">How to use</p>
         <ul class="stability-usage-list">
-          <li>This score reflects full stored history.</li>
+          <li>This score reflects full stored history for this vote account (same pipeline as every other validator).</li>
           <li>Higher is better for consistency (fewer delinquency events and fee changes).</li>
+          <li>New entries can look “early” until enough daily snapshots pile up—compare validators with similar history length when possible.</li>
           <li>Use this as the main consistency signal; then check APY and pool context.</li>
         </ul>
       </div>
@@ -1688,7 +1689,7 @@
     <div class="card delegator-assessment-card">
       <div class="card-title">
         Delegator takeaway (auto-assessment)
-        <span class="info-dot" tabindex="0" data-tip="Auto-summary from current displayed metrics: commission, status, voting consistency, stability scores, snapshot depth, APY/Jito context, and pool presence.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Auto-summary from current displayed metrics: commission, status, voting consistency, stability scores, snapshot depth for this vote account, APY/Jito context, and pool presence. Snapshot depth grows over calendar time even though collection is network-wide.">i</span>
       </div>
       <p id="delegator-summary" class="delegator-summary-note">Loading assessment…</p>
       <div id="delegator-verdict" class="status-big">–</div>
@@ -1712,7 +1713,7 @@
     <div class="card">
         <div class="card-title">Open another validator</div>
         <p class="open-validator-blurb">
-          Put any mainnet vote account after <code class="inline-code">?vote=</code> in the address bar to load that validator. Optional <code class="inline-code">&amp;name=</code> sets the title. The field below is this page – copy or edit the vote segment to switch.
+          Put any mainnet vote account after <code class="inline-code">?vote=</code> in the address bar to load that validator—the same snapshot-backed stability pipeline applies to everyone on the network. Optional <code class="inline-code">&amp;name=</code> sets the title. Use the field below to paste or edit the vote segment.
         </p>
         <div class="open-validator-row">
           <input id="open-validator-input" class="share-input" type="text" value="" placeholder="Paste vote account or dashboard URL" aria-label="Vote account or dashboard URL" />
@@ -1753,6 +1754,8 @@
           <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
             <div class="pill pill-ok">Done: All-time snapshot-based stability scoring</div>
             <div class="pill pill-ok">Done: Validator comparison on the same page</div>
+            <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
+            <div class="pill">Next: Network directory &amp; sortable table (browse / rank)</div>
             <div class="pill">Next: Per-epoch detail page</div>
             <div class="pill">Next: Delinquency alerts</div>
           </div>
@@ -1765,8 +1768,8 @@
 
   <div class="footer">
     <div><strong>Source model.</strong> Live inputs come from Solana RPC + Stakewiz + Trillium + Jito proxy. Stability uses backend snapshot history plus current public inputs.</div>
-    <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context.</div>
-    <div><strong>History model.</strong> Scheduled server jobs snapshot <strong>all mainnet vote accounts</strong> returned by RPC (not only pages you open). Opening a validator can still register interest in tracking analytics; everyone reads the same stored history.</div>
+    <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots for the opened vote account. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context. Two validators can both be “fully covered” by collection but have different history lengths until enough days of snapshots accrue.</div>
+    <div><strong>History model.</strong> Scheduled jobs snapshot <strong>all</strong> mainnet vote accounts returned by RPC and write shared rows in storage. Opening a page only sends an optional analytics ping (does not gate whether snapshots exist). Everyone reads the same dataset for a given vote key.</div>
     <div>Built by <strong>AndrewInUA</strong> – open for any Solana validator ·
       <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank">GitHub</a>
     </div>

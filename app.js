@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v38
+ * Validator Transparency Dashboard – app.js v39
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -1046,7 +1046,7 @@ function renderDelegatorAssessment(assessment) {
   safeSetText(document.getElementById("delegator-summary"), assessment.summary);
   safeSetText(
     document.getElementById("delegator-confidence"),
-    `Confidence: ${assessment.confidence} (based on current snapshot depth and signal coverage).`
+    `Confidence: ${assessment.confidence} (snapshot depth for this vote account and signal coverage; network-wide collection does not shortcut history length).`
   );
 
   const verdictEl = document.getElementById("delegator-verdict");
