@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v42
+ * Validator Transparency Dashboard – app.js v43
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -1395,6 +1395,112 @@ async function initLandingPage() {
   } catch {
     const landSig = document.getElementById("landing-system-signals");
     if (landSig) landSig.textContent = formatSystemSignalsText(null);
+  }
+
+  await initValidatorDirectoryEmbed();
+}
+
+function escapeHtmlDirectory(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function fmtStakeDirectory(n) {
+  if (!Number.isFinite(n)) return "–";
+  return n >= 1000
+    ? n.toLocaleString("en-US", { maximumFractionDigits: 0 })
+    : n.toFixed(1);
+}
+
+function buildDashboardHrefLocal(vote) {
+  return `./index.html?${new URLSearchParams({ vote }).toString()}`;
+}
+
+async function initValidatorDirectoryEmbed() {
+  const tbody = document.getElementById("directory-tbody");
+  const meta = document.getElementById("directory-meta");
+  const input = document.getElementById("directory-search");
+  const clearBtn = document.getElementById("directory-clear");
+
+  if (!tbody || !meta) return;
+
+  const renderRows = rows => {
+    tbody.innerHTML = "";
+    if (!rows.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td colspan="5" style="color:var(--text3)">No matches. Try another search.</td>';
+      tbody.appendChild(tr);
+      return;
+    }
+
+    for (const r of rows) {
+      const name = r.name || "(unnamed)";
+      const del = r.delinquent
+        ? '<span class="dir-pill dir-pill-warn">Delinquent</span>'
+        : '<span class="dir-pill dir-pill-ok">Active</span>';
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td class="dir-name">${escapeHtmlDirectory(name)} ${del}</td>` +
+        `<td class="dir-vote">${escapeHtmlDirectory(r.vote)}</td>` +
+        `<td>${Number.isFinite(r.commission) ? `${r.commission}%` : "–"}</td>` +
+        `<td>${fmtStakeDirectory(r.stake_sol)}</td>` +
+        `<td><a class="dir-open" href="${buildDashboardHrefLocal(r.vote)}">Open →</a></td>`;
+      tbody.appendChild(tr);
+    }
+  };
+
+  let debounceTimer;
+
+  const runSearch = async q => {
+    meta.classList.remove("err");
+    meta.textContent = "Searching…";
+    try {
+      const url = `${API_BASE}/api/validators-directory?q=${encodeURIComponent(q)}&limit=60`;
+      const res = await fetch(url);
+      const j = await res.json();
+      if (!j.ok) throw new Error(j.error || "Request failed");
+      meta.textContent =
+        `Showing ${j.returned} of ${j.total_catalog} validators in catalog` +
+        (q ? ` matching “${q}”` : " (top by stake)") +
+        ".";
+      renderRows(j.results || []);
+    } catch (e) {
+      meta.textContent = `Could not load directory: ${e?.message || e}`;
+      meta.classList.add("err");
+      renderRows([]);
+    }
+  };
+
+  await runSearch("");
+
+  if (input) {
+    input.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      const v = input.value.trim();
+      debounceTimer = setTimeout(() => runSearch(v), 280);
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      if (input) input.value = "";
+      runSearch("");
+    };
+  }
+
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash === "directory" || hash === "directory-section") {
+    requestAnimationFrame(() => {
+      document.getElementById("directory-section")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+      input?.focus();
+    });
   }
 }
 
