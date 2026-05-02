@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v40
+ * Validator Transparency Dashboard – app.js v41
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -415,21 +415,36 @@ async function fetchLive(voteKey) {
     let epochConsistencySeries = [];
 
     try {
-      // Each epochCredits row already carries (credits, previous_credits) for that epoch.
-      // Use that directly so one row maps to one chart point.
+      // Each epochCredits row maps to one chart point (normalized vs max delta in window).
+      // The LAST row is usually the *current* epoch: credits are still accumulating, so
+      // consistency looks artificially low — exclude it from chart + headline uptime.
       const deltas = credits
         .map(epochEarnedCredits)
         .filter(v => Number.isFinite(v));
 
       const recent = deltas.slice(-30);
+      let fullSeries = [];
       if (recent.length) {
         const maxD = Math.max(...recent, 1);
-        epochConsistencySeries = recent.map(d => Math.round((d / maxD) * 10000) / 100);
+        fullSeries = recent.map(
+          d => Math.round((d / maxD) * 10000) / 100
+        );
       }
 
-      const last5 = epochConsistencySeries.slice(-5);
+      if (fullSeries.length > 1) {
+        epochConsistencySeries = fullSeries.slice(0, -1);
+      } else if (fullSeries.length === 1) {
+        epochConsistencySeries = [];
+      } else {
+        epochConsistencySeries = [];
+      }
+
+      const completedForUptime =
+        fullSeries.length > 1 ? fullSeries.slice(0, -1) : [];
+      const last5 = completedForUptime.slice(-5);
       uptimePct = last5.length
-        ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) / 100
+        ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) /
+          100
         : 0;
     } catch (e) {
       console.warn("epoch calc:", e);
@@ -1672,8 +1687,18 @@ async function main() {
 
   safeSetText(document.getElementById("last-updated"), `Last updated: ${ts}`);
 
+  const chartEmpty = document.getElementById("chart-empty");
+  if (chartEmpty) {
+    chartEmpty.textContent =
+      live.epochCreditsLen > 0 && !(live.epochConsistencySeries || []).length
+        ? "Not enough completed epochs in the RPC window yet. The in-progress epoch is excluded so it cannot look like a false dip."
+        : "No epoch data yet";
+  }
+
   if (live.epochConsistencySeries?.length && window.renderEpochChart) {
     window.renderEpochChart(live.epochConsistencySeries);
+  } else if (window.renderEpochChart) {
+    window.renderEpochChart([]);
   }
 
   let ratings = null;
