@@ -133,8 +133,12 @@ async function fetchStakewiz(vote) {
     throw new Error("Stakewiz APY not available");
   }
 
+  const moniker =
+    typeof j.name === "string" && j.name.trim() ? j.name.trim() : null;
+
   return {
     rank: toNumber(j.rank),
+    name: moniker,
     is_jito: !!j.is_jito,
     apy_estimate: toNumber(j.apy_estimate),
     staking_apy: toNumber(j.staking_apy),
@@ -165,6 +169,10 @@ module.exports = async (req, res) => {
 
     const out = {
       vote,
+      display: {
+        name: null,
+        name_source: null,
+      },
       sources: {
         stakewiz: null,
         trillium: null,
@@ -192,6 +200,10 @@ module.exports = async (req, res) => {
 
     if (stakewiz.status === "fulfilled") {
       out.sources.stakewiz = stakewiz.value;
+      if (stakewiz.value?.name) {
+        out.display.name = stakewiz.value.name;
+        out.display.name_source = "stakewiz";
+      }
       if (Number.isFinite(stakewiz.value?.total_apy)) {
         out.derived.apy_values.push(stakewiz.value.total_apy);
       }

@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v39
+ * Validator Transparency Dashboard – app.js v40
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -282,6 +282,17 @@ async function fetchRatings(voteKey) {
   const res = await fetch(`${API_BASE}/api/ratings?vote=${encodeURIComponent(voteKey)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
+}
+
+/** Public catalog name (e.g. Stakewiz) — not on-chain; optional ?name= still overrides. */
+function pickValidatorDisplayName(ratings) {
+  if (!ratings) return null;
+  if (ratings.display?.name) return String(ratings.display.name).trim();
+  const sw = ratings.sources?.stakewiz;
+  if (sw && !sw.error && typeof sw.name === "string" && sw.name.trim()) {
+    return sw.name.trim();
+  }
+  return null;
 }
 
 function pickTrilliumApy(t) {
@@ -1311,6 +1322,8 @@ async function loadComparisonMetrics(voteKey) {
     ? Number(commissionHistory[commissionHistory.length - 1])
     : null;
 
+  const autoName = pickValidatorDisplayName(ratings);
+
   return {
     stabilityScore: Number.isFinite(primaryStability) ? primaryStability : null,
     stabilityLabel: primaryLabel || "–",
@@ -1323,20 +1336,62 @@ async function loadComparisonMetrics(voteKey) {
     apyMedian: Number.isFinite(Number(ratings?.derived?.apy_median))
       ? Number(ratings.derived.apy_median)
       : null,
-    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null
+    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null,
+    displayLabel: autoName || shortKey(voteKey)
   };
 }
 
 // ── MAIN ─────────────────────────────────────────
 async function main() {
-  const validatorName =
+  let resolvedDisplayName =
     CURRENT.nameFromUrl ||
     (CURRENT.voteFromUrl ? shortKey(CURRENT.voteKey) : CURRENT.name);
 
-  document.title = `${validatorName} · Validator Dashboard`;
+  const applyValidatorDisplayName = ratings => {
+    const auto = pickValidatorDisplayName(ratings);
+    if (CURRENT.nameFromUrl) {
+      resolvedDisplayName = CURRENT.nameFromUrl;
+    } else if (auto) {
+      resolvedDisplayName = auto;
+    } else {
+      resolvedDisplayName = CURRENT.voteFromUrl
+        ? shortKey(CURRENT.voteKey)
+        : CURRENT.name;
+    }
 
-  safeSetText(document.getElementById("validator-name-head"), validatorName);
-  safeSetText(document.getElementById("validator-name-badge"), `Viewed: ${validatorName}`);
+    document.title = `${resolvedDisplayName} · Validator Dashboard`;
+    safeSetText(
+      document.getElementById("validator-name-head"),
+      resolvedDisplayName
+    );
+    safeSetText(
+      document.getElementById("validator-name-badge"),
+      `Viewed: ${resolvedDisplayName}`
+    );
+
+    const ctx = document.getElementById("current-context");
+    if (ctx) {
+      if (!CURRENT.voteFromUrl) {
+        ctx.textContent = "Default profile loaded.";
+      } else if (CURRENT.nameFromUrl) {
+        ctx.textContent = "Custom display name from URL (?name=).";
+      } else if (auto) {
+        ctx.textContent =
+          "Loaded from URL — display name from Stakewiz when listed.";
+      } else {
+        ctx.textContent =
+          "Loaded from URL — no directory name yet (showing shortened vote key).";
+      }
+    }
+  };
+
+  document.title = `${resolvedDisplayName} · Validator Dashboard`;
+
+  safeSetText(document.getElementById("validator-name-head"), resolvedDisplayName);
+  safeSetText(
+    document.getElementById("validator-name-badge"),
+    `Viewed: ${resolvedDisplayName}`
+  );
 
   const headerVote = document.getElementById("header-vote-key");
   if (headerVote) {
@@ -1350,7 +1405,9 @@ async function main() {
     const isDefault = !CURRENT.voteFromUrl;
     currentContext.textContent = isDefault
       ? "Default profile loaded."
-      : "Custom validator loaded from the URL.";
+      : CURRENT.nameFromUrl
+        ? "Custom display name from URL (?name=)."
+        : "Loading directory name…";
   }
 
   let compareState = null;
@@ -1447,8 +1504,6 @@ async function main() {
     });
   }
 
-  const validatorNameForCompare = validatorName;
-
   const runComparison = async voteBValue => {
     if (!isProbablyVoteKey(voteBValue)) {
       setCompareFeedback(
@@ -1496,8 +1551,8 @@ async function main() {
       window.history.replaceState({}, "", url);
 
       renderComparePanel({
-        baseName: displayCompareName(CURRENT.voteKey),
-        compareName: displayCompareName(voteBValue),
+        baseName: resolvedDisplayName,
+        compareName: compareMetrics.displayLabel || displayCompareName(voteBValue),
         baseMetrics: safeBaseMetrics,
         compareMetrics
       });
@@ -1625,8 +1680,10 @@ async function main() {
   try {
     ratings = await fetchRatings(CURRENT.voteKey);
     renderRatings(ratings);
+    applyValidatorDisplayName(ratings);
   } catch (e) {
     console.warn("ratings failed:", e);
+    applyValidatorDisplayName(null);
   }
 
   renderRecentPerformance(computeRecentPerformance({ live, ratings }));
@@ -1672,8 +1729,11 @@ async function main() {
         nameB: COMPARE_FROM_URL.name || ""
       };
       renderComparePanel({
-        baseName: displayCompareName(CURRENT.voteKey),
-        compareName: displayCompareName(COMPARE_FROM_URL.voteKey),
+        baseName: resolvedDisplayName,
+        compareName:
+          COMPARE_FROM_URL.name ||
+          compareMetrics.displayLabel ||
+          displayCompareName(COMPARE_FROM_URL.voteKey),
         baseMetrics,
         compareMetrics
       });
