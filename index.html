@@ -1687,6 +1687,48 @@
     }
     .nav-back-arrow { font-size: 14px; line-height: 1; }
     html.app-landing .nav-back-btn { display: none !important; }
+
+    .reading-guide {
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    .reading-guide-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .reading-guide-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .reading-guide-toggle {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .reading-guide-toggle:hover { background: var(--surface); }
+    .reading-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px 18px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text2);
+    }
+    .reading-guide-grid strong { color: var(--text); }
+    .reading-guide.collapsed .reading-guide-grid { display: none; }
   </style>
 </head>
 <body>
@@ -1782,6 +1824,41 @@
   </section>
 
   <div id="dashboard-view">
+  <div class="card reading-guide" id="reading-guide">
+    <div class="reading-guide-head">
+      <span class="reading-guide-kicker">How to read this page</span>
+      <button type="button" class="reading-guide-toggle" id="reading-guide-toggle" aria-expanded="true">Hide</button>
+    </div>
+    <div class="reading-guide-grid" id="reading-guide-body">
+      <div>
+        <strong>1 · Trust Card</strong><br />
+        A quick at-a-glance check: what fee they take, are they alive right now, and how steady their recent voting was.
+      </div>
+      <div>
+        <strong>2 · Stability score</strong><br />
+        The single most important number. Higher = fewer past delinquency events and fee changes in stored history. Use this first.
+      </div>
+      <div>
+        <strong>3 · Profitability &amp; Pools</strong><br />
+        Estimated yield (from public APIs) and which staking pools delegate here. Useful context, not a guaranteed payout.
+      </div>
+      <div>
+        <strong>4 · Recent voting (chart + numbers)</strong><br />
+        Short-term, live read from RPC. Helpful for spotting recent changes; the Stability score above is still your primary signal.
+      </div>
+      <div>
+        <strong>5 · Delegator takeaway</strong><br />
+        A plain-English summary auto-generated from everything above, with “what looks good” and “what to watch”.
+      </div>
+      <div>
+        <strong>Color cues</strong><br />
+        <span style="color:var(--success);font-weight:600">Green</span> = good,
+        <span style="color:var(--warn);font-weight:600">red/orange</span> = caution,
+        gray = unknown / not enough data yet.
+      </div>
+    </div>
+  </div>
+
   <div class="row-hero">
     <div class="hero-col-left">
       <div class="card identity-card">
@@ -1807,27 +1884,27 @@
           <div class="trust-stat-grid">
             <div class="trust-stat-col">
               <div class="stat-label">
-                Commission
-                <span class="info-dot" tabindex="0" data-tip="Delegator meaning: this is the validator fee on rewards. Lower is usually better for net yield. 0% means no validator-level fee here, but pool/protocol fees may still apply.">i</span>
+                Commission (validator fee)
+                <span class="info-dot" tabindex="0" data-tip="Slice of staking rewards the validator keeps. Lower usually = more for you, but 100% is a red flag.">i</span>
               </div>
               <div id="commission" class="stat-value green">–%</div>
-              <p class="stat-hint">Profit view: lower commission usually lets delegators keep more staking rewards. 0% here is generally best for net yield, though pool/program fees may still apply.</p>
+              <p class="stat-hint">Lower is usually better for your net yield. 0% means the validator takes no fee here (pool/program fees may still apply). 100% means delegators effectively earn nothing — avoid.</p>
               <div class="trust-status-block">
                 <div class="stat-label">
-                  Status
-                  <span class="info-dot" tabindex="0" data-tip="Delegator meaning: live RPC activity signal (for example healthy vs delinquent). Useful for quick checks, but not a full safety audit.">i</span>
+                  Status (alive right now?)
+                  <span class="info-dot" tabindex="0" data-tip="‘Healthy’ = voting normally now. ‘Delinquent’ = the network considers them inactive at this moment. This is a snapshot, not a deep audit.">i</span>
                 </div>
                 <div id="status" class="status-big ok">–</div>
-                <p class="stat-hint">Delegator view: shows whether the validator looks active right now. Useful for quick checks, but not a full risk assessment by itself.</p>
+                <p class="stat-hint">Quick liveness check from RPC. <strong>Healthy</strong> is what you want; <strong>Delinquent</strong> means the validator is currently missing votes — combine with the Stability score before deciding.</p>
               </div>
             </div>
             <div class="trust-stat-col">
               <div class="stat-label">
-                Recent voting consistency
-                <span class="info-dot" tabindex="0" data-tip="Delegator meaning: recent voting steadiness. Higher usually means more reliable short-term participation, not guaranteed future return.">i</span>
+                Recent voting % (last few epochs)
+                <span class="info-dot" tabindex="0" data-tip="How much of their recent voting opportunities they actually used. Closer to 100% = more reliable. Below 90% in normal conditions is a yellow flag.">i</span>
               </div>
               <div id="uptime" class="stat-value">–%</div>
-              <p class="stat-hint">Delegator view: higher means this validator has voted more consistently in recent epochs. Treat it as a reliability signal, not a promise of specific rewards.</p>
+              <p class="stat-hint">Average across the last few <strong>finished</strong> epochs. <strong>~99–100% is great.</strong> Drops below ~90% in normal conditions deserve a closer look (could be temporary, but worth checking).</p>
             </div>
           </div>
         </div>
@@ -1885,13 +1962,16 @@
   <div class="main-grid">
 
     <div class="interpretation-strip">
-      <strong>Interpretation:</strong> prioritize all-time Stability as the primary signal, use Commission and Live status as risk checks, then use APY and pool presence for reward context.
+      <strong>How to weigh things:</strong> start with the <strong>Stability score</strong>, double-check <strong>Commission</strong> and live <strong>Status</strong> for risk, then look at <strong>APY</strong> and <strong>pool presence</strong> for reward context. If two signals disagree, trust the long-term ones.
     </div>
 
     <div class="card profitability-card">
       <div class="card-title">
-        Profitability (APY) &amp; Pool presence
-        <span class="info-dot" tabindex="0" data-tip="Delegator meaning: APY values are third-party estimates, not guaranteed payouts. Use for rough comparison. Pool presence is context, not proof of quality.">i</span>
+        Estimated rewards &amp; who else stakes here
+        <span class="info-dot" tabindex="0" data-tip="APY values are estimates from third-party APIs, not promises. Pool presence shows whether established staking pools delegate here.">i</span>
+      </div>
+      <div class="card-note" style="font-size:13px;color:var(--text2);margin:4px 0 12px">
+        <strong>APY ≈ approximate yearly yield</strong> (estimates from public APIs). <strong>Pools delegating</strong> = how many known staking pools (Marinade, Jito, etc.) trust this validator with stake.
       </div>
       <div class="source-row">
         <span class="source-chip">Stakewiz API</span>
@@ -1899,26 +1979,26 @@
       </div>
       <div class="apy-row">
         <div class="apy-block">
-          <div class="apy-label">APY (median) <span class="info-dot" tabindex="0" data-tip="Blended APY estimate from public sources. Good for quick comparison, not a guaranteed payout quote.">i</span></div>
+          <div class="apy-label">APY (blended estimate) <span class="info-dot" tabindex="0" data-tip="Median of the public APY sources we read. Use for rough comparison, not a payout quote.">i</span></div>
           <div id="apy-median" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Stakewiz APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Stakewiz. Use as one reference point.">i</span></div>
+          <div class="apy-label">Stakewiz APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Stakewiz.">i</span></div>
           <div id="apy-stakewiz" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Trillium. Compare with Stakewiz; both are estimates.">i</span></div>
+          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Trillium. Compare with Stakewiz — closer numbers = more confidence.">i</span></div>
           <div id="apy-trillium" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="How many known staking pools currently delegate here. Useful context, not automatic proof of better rewards or lower risk.">i</span></div>
+          <div class="apy-label">Pools delegating <span class="info-dot" tabindex="0" data-tip="How many known staking pools currently delegate to this validator. More established pools = more eyes already vetted them. Not automatic proof of best rewards.">i</span></div>
           <div id="pools-count" class="apy-value blue">–</div>
         </div>
       </div>
       <div class="stake-split-grid">
-        <div class="stake-split-item">Known pools (itemized below)<strong id="stake-known">– SOL</strong></div>
-        <div class="stake-split-item">Other non-pool / untagged (not itemized)<strong id="stake-other">– SOL</strong></div>
-        <div class="stake-split-item">Total active stake context<strong id="stake-total">– SOL</strong></div>
+        <div class="stake-split-item">Stake from known pools<strong id="stake-known">– SOL</strong></div>
+        <div class="stake-split-item">Other / untagged stake<strong id="stake-other">– SOL</strong></div>
+        <div class="stake-split-item">Total active stake<strong id="stake-total">– SOL</strong></div>
       </div>
       <div class="pool-badges" id="pools-list"></div>
       <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: –</div>
@@ -1926,14 +2006,14 @@
 
     <div class="row-epoch-metrics">
     <div class="secondary-section-note">
-      <strong>About the two cards below:</strong> short-window live context only (chart + RPC summary). Primary decision signal remains Stability (all-time).
+      <strong>The two cards below = recent live behavior.</strong> Use them to confirm what the Stability score above already told you. If they disagree, prefer Stability (it’s based on stored history, not a few epochs).
     </div>
     <div class="card chart-card chart-card-wide">
       <div class="card-title">
-        Live voting signal (RPC short window)
-        <span class="info-dot" tabindex="0" data-tip="Live short-window RPC signal. Good for quick change detection, but read together with snapshot-based stability. The chart uses completed epochs only — the current in-progress epoch is omitted because partial credits can look like a sudden drop.">i</span>
+        Recent voting (last few epochs)
+        <span class="info-dot" tabindex="0" data-tip="Each point is one finished epoch. Higher means they voted on most opportunities in that epoch. The current in-progress epoch is excluded so partial credits don’t look like a crash.">i</span>
       </div>
-      <div class="card-note">Quick live read from RPC. Helpful for change detection, but your main decision should start with the all-time Stability score above. Chart points are <strong>completed epochs only</strong> (the active epoch is excluded while voting is still in progress).</div>
+      <div class="card-note">Each dot = one <strong>finished</strong> epoch. Higher is better (they voted on more of their slots). The active epoch is hidden while voting is still in progress.</div>
       <div class="chart-header">
         <div class="chart-legend">
           <div class="legend-item">
@@ -1955,33 +2035,33 @@
 
     <div class="card epoch-perf-card">
       <div class="card-title">
-        Live RPC summary (same short window)
-        <span class="info-dot" tabindex="0" data-tip="Quick supporting indicators from the same short RPC window. Secondary context; primary decision signal is snapshot-based stability.">i</span>
+        At a glance — recent epochs
+        <span class="info-dot" tabindex="0" data-tip="Plain-language summary of the same short window as the chart. Use it as quick context, not as the main decision signal.">i</span>
       </div>
       <div class="source-row">
-        <span class="source-chip">Solana RPC (short window)</span>
+        <span class="source-chip">Solana RPC</span>
         <span class="source-chip">Stakewiz</span>
         <span class="source-chip">Trillium</span>
         <span class="source-chip">Jito</span>
       </div>
       <div class="perf-grid">
         <div class="perf-item">
-          <div class="perf-label">Available RPC epochs <span class="info-dot" tabindex="0" data-tip="More available epochs usually means less noise in this short-window read. Very small counts need caution.">i</span></div>
+          <div class="perf-label">How many recent epochs we can see <span class="info-dot" tabindex="0" data-tip="More epochs = less noise. Very small counts can mislead.">i</span></div>
           <div id="perf-window-value" class="perf-value">–</div>
           <div id="perf-window-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Direction (newer vs older) <span class="info-dot" tabindex="0" data-tip="Shows whether recent voting activity is improving, flat, or weakening in this short window. Early hint, not long-term proof.">i</span></div>
+          <div class="perf-label">Trend (getting better or worse) <span class="info-dot" tabindex="0" data-tip="Compares the newer half of the visible epochs to the older half. ‘Improving’ is good, ‘Declining’ is a yellow flag.">i</span></div>
           <div id="perf-trend-value" class="perf-value">–</div>
           <div id="perf-trend-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Point-to-point stability <span class="info-dot" tabindex="0" data-tip="Smoother points usually mean steadier short-term behavior; choppy points mean more short-window volatility.">i</span></div>
+          <div class="perf-label">Steadiness between epochs <span class="info-dot" tabindex="0" data-tip="‘Low’ = epochs look similar to each other (steady). ‘High’ = big jumps up and down between epochs.">i</span></div>
           <div id="perf-var-value" class="perf-value">–</div>
           <div id="perf-var-sub" class="perf-sub">–</div>
         </div>
         <div class="perf-item">
-          <div class="perf-label">Reward context (public APIs) <span class="info-dot" tabindex="0" data-tip="Combines APY estimates with Jito signal status. Helpful context, not guaranteed realized profit.">i</span></div>
+          <div class="perf-label">Reward signals (Jito + APY estimates) <span class="info-dot" tabindex="0" data-tip="Jito ON usually means extra reward potential. APY numbers are estimates from public APIs, not guaranteed yield.">i</span></div>
           <div id="perf-reward-value" class="perf-value">–</div>
           <div id="perf-reward-sub" class="perf-sub">–</div>
         </div>
@@ -1991,8 +2071,8 @@
 
     <div class="card delegator-assessment-card">
       <div class="card-title">
-        Delegator takeaway (auto-assessment)
-        <span class="info-dot" tabindex="0" data-tip="Auto-summary from current displayed metrics: commission, status, voting consistency, stability scores, snapshot depth for this vote account, APY/Jito context, and pool presence. Snapshot depth grows over calendar time even though collection is network-wide.">i</span>
+        Plain-English summary
+        <span class="info-dot" tabindex="0" data-tip="Auto summary based on what is shown above: commission, live status, recent voting, Stability score and history depth, APY, Jito and pools.">i</span>
       </div>
       <p id="delegator-summary" class="delegator-summary-note">Loading assessment…</p>
       <div id="delegator-verdict" class="status-big">–</div>

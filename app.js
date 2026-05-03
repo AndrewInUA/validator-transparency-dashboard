@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v45
+ * Validator Transparency Dashboard – app.js v46
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -556,16 +556,16 @@ function computeRecentPerformance({ live, ratings }) {
   const tr = pickTrilliumApy(ratings?.sources?.trillium);
 
   const out = {
-    window: { value: "–", sub: "Waiting for recent epoch data from the network." },
-    trend: { value: "–", sub: "Not enough epochs to compare yet." },
-    variability: { value: "–", sub: "Not enough epochs to measure spread yet." },
+    window: { value: "–", sub: "Waiting for live epoch data from the network." },
+    trend: { value: "–", sub: "Need a few epochs of data before we can spot a trend." },
+    variability: { value: "–", sub: "Need at least 2 finished epochs before we can measure steadiness." },
     reward: {
       value:
         jito === true
-          ? "Jito signal: ON (potential upside)"
+          ? "Jito ON · extra reward potential"
           : jito === false
-            ? "Jito signal: OFF (baseline rewards)"
-            : "Jito signal: unknown",
+            ? "Jito OFF · baseline rewards"
+            : "Jito signal unknown",
       sub: "–"
     }
   };
@@ -575,79 +575,76 @@ function computeRecentPerformance({ live, ratings }) {
   if (n > 0) {
     out.window.value = `${n} epoch${n === 1 ? "" : "s"}`;
     if (rel.level === "very_low") {
-      out.window.sub = `Only ${n} ${n === 1 ? "epoch is" : "epochs are"} available from RPC. This is a quick live signal, not a full history view.`;
+      out.window.sub = `Only ${n} ${n === 1 ? "epoch is" : "epochs are"} visible. Treat this as a quick live peek, not full history.`;
     } else if (rel.level === "low") {
-      out.window.sub = `${n} epochs are available from RPC. Useful for a quick read, but still a short sample.`;
+      out.window.sub = `${n} recent epochs visible. Good for a quick read, but still a short sample.`;
     } else if (rel.level === "medium") {
-      out.window.sub = `${n} epochs in view: a reasonable short-term slice.`;
+      out.window.sub = `${n} recent epochs visible — a reasonable short-term slice.`;
     } else {
-      out.window.sub = `${n} epochs in view: good coverage for this live summary.`;
+      out.window.sub = `${n} recent epochs visible — solid coverage for a short-term view.`;
     }
   }
 
   if (n >= 4 && Number.isFinite(diff)) {
-    const s = simplifyTrendDelta(diff);
-    const cap = s ? s[0].toUpperCase() + s.slice(1) : "";
-
     if (rel.level === "very_low" || rel.level === "low") {
-      out.trend.value = "Limited data";
-      out.trend.sub = `We compare the newer half of these ${n} epochs to the older half; with so few points the trend is unreliable – check again as history grows.`;
+      out.trend.value = "Not enough data";
+      out.trend.sub = `Only ${n} epochs to compare — too few to call a trend confidently.`;
     } else if (diff >= 3) {
       out.trend.value = "Improving";
-      out.trend.sub = `${cap} stronger voting activity in the newer part of this window than in the older part.`;
+      out.trend.sub = "Newer epochs look stronger than older ones in this window — good direction.";
     } else if (diff <= -3) {
-      out.trend.value = "Declining";
-      out.trend.sub = `${cap} weaker voting activity in the newer part of this window than in the older part.`;
+      out.trend.value = "Getting worse";
+      out.trend.sub = "Newer epochs look weaker than older ones — recent yellow flag, worth watching.";
     } else {
-      out.trend.value = "Stable";
-      out.trend.sub = "Newer and older epochs in this window look broadly similar.";
+      out.trend.value = "Steady";
+      out.trend.sub = "Newer and older epochs look about the same — no recent change either way.";
     }
   } else if (n > 0) {
-    out.trend.value = "Limited data";
+    out.trend.value = "Not enough data";
     out.trend.sub =
       n < 4
-        ? "Need at least 4 epochs before we can compare newer vs older fairly."
-        : "Not enough signal to describe a trend.";
+        ? "We need at least 4 finished epochs to compare ‘newer’ vs ‘older’."
+        : "Not enough signal to describe a trend yet.";
   }
 
   if (n >= 2 && Number.isFinite(volatility)) {
     if (volatility <= 5) {
-      out.variability.value = "Low";
+      out.variability.value = "Steady";
       out.variability.sub = smallSample
-        ? "Numbers stay close together in this short window – the range can look smaller than it really is until more epochs arrive."
-        : "Epoch-to-epoch values sit fairly close together.";
+        ? "Epochs look very similar to each other — but the sample is short, so check again later."
+        : "Epochs look very similar to each other — predictable behavior.";
     } else if (volatility <= 12) {
-      out.variability.value = "Moderate";
+      out.variability.value = "Some bumps";
       out.variability.sub = smallSample
-        ? "Some bounce between epochs; with few data points this can look noisier than it really is."
-        : "Clear ups and downs, but not wild swings.";
+        ? "Some ups and downs between epochs; small sample can look noisier than reality."
+        : "Some ups and downs between epochs, but no wild swings.";
     } else {
-      out.variability.value = "High";
+      out.variability.value = "Choppy";
       out.variability.sub =
-        "Large differences between epochs in this window." +
-        (smallSample ? " Still a short sample – confirm with more history." : "");
+        "Big jumps between epochs in this window — less predictable short-term behavior." +
+        (smallSample ? " Still a short sample — re-check as more epochs come in." : "");
     }
   }
 
   const rp = [];
   rp.push(
     jito === true
-      ? "Jito signal is ON: delegators may receive extra MEV-related reward upside on top of baseline staking rewards, depending on validator setup and network conditions."
+      ? "Jito ON usually means delegators can get a bit more on top of base staking rewards (MEV)."
       : jito === false
-        ? "Jito signal is OFF in public data: expect baseline staking rewards without Jito-related uplift from this indicator."
-        : "Jito signal is temporarily unavailable from the proxy, so this part of reward context is unknown right now."
+        ? "Jito OFF in public data — expect baseline staking rewards without the Jito uplift."
+        : "Jito signal is temporarily unavailable, so we can’t confirm this part of rewards right now."
   );
   if (Number.isFinite(apyMedian)) {
     rp.push(
-      `Blended APY estimate from public sources: ~${apyMedian.toFixed(2)}%. Use as planning context only, not guaranteed delegator return.`
+      `Estimated APY ~${apyMedian.toFixed(2)}% (blended from public sources — planning context only, not a guarantee).`
     );
   }
   rp.push(
     Number.isFinite(sw) && Number.isFinite(tr)
       ? Math.abs(sw - tr) <= 1
-        ? "Stakewiz and Trillium are close on APY now, which lowers estimate uncertainty."
-        : "Stakewiz and Trillium disagree on APY, so estimated yield confidence is lower."
-      : "One or both APY feeds are missing, so reward estimate confidence is limited."
+        ? "APY estimates from Stakewiz and Trillium agree closely — higher confidence."
+        : "APY estimates from Stakewiz and Trillium disagree — lower confidence in the exact number."
+      : "One of the APY sources is missing right now, so the estimate is less confident."
   );
 
   out.reward.sub = rp.join(" ");
@@ -1419,6 +1416,39 @@ function buildDashboardHrefLocal(vote) {
   return `./index.html?${new URLSearchParams({ vote }).toString()}`;
 }
 
+function setupReadingGuideToggle() {
+  const card = document.getElementById("reading-guide");
+  const btn = document.getElementById("reading-guide-toggle");
+  if (!card || !btn) return;
+
+  const KEY = "vtd-reading-guide-collapsed";
+  let collapsed = false;
+  try {
+    collapsed = localStorage.getItem(KEY) === "1";
+  } catch {}
+
+  const apply = () => {
+    if (collapsed) {
+      card.classList.add("collapsed");
+      btn.textContent = "Show";
+      btn.setAttribute("aria-expanded", "false");
+    } else {
+      card.classList.remove("collapsed");
+      btn.textContent = "Hide";
+      btn.setAttribute("aria-expanded", "true");
+    }
+  };
+  apply();
+
+  btn.addEventListener("click", () => {
+    collapsed = !collapsed;
+    try {
+      localStorage.setItem(KEY, collapsed ? "1" : "0");
+    } catch {}
+    apply();
+  });
+}
+
 function setupBackToDirectoryNav() {
   const btn = document.getElementById("nav-back-btn");
   if (!btn) return;
@@ -1583,6 +1613,7 @@ async function main() {
   document.documentElement.classList.remove("app-landing");
 
   setupBackToDirectoryNav();
+  setupReadingGuideToggle();
 
   let resolvedDisplayName =
     CURRENT.nameFromUrl || shortKey(CURRENT.voteKey);
