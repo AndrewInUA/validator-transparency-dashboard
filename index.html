@@ -1812,6 +1812,17 @@
       color: var(--text2);
     }
     .reading-guide-grid strong { color: var(--text); }
+    /* Color cue labels — match verdict / stat semantics (not overridden by strong { color }) */
+    .reading-guide-grid .reading-cue {
+      font-weight: 600;
+    }
+    .reading-guide-grid .reading-cue--lime { color: var(--success); }
+    .reading-guide-grid .reading-cue--mint { color: var(--solana-mint); }
+    .reading-guide-grid .reading-cue--yellow { color: #f1c40f; }
+    .reading-guide-grid .reading-cue--gray { color: #95a5a6; }
+    .reading-guide-grid .reading-cue--orange { color: #e67e22; }
+    .reading-guide-grid .reading-cue--green { color: var(--success); }
+    .reading-guide-grid .reading-cue--caution { color: var(--warn); }
     .reading-guide.collapsed .reading-guide-grid { display: none; }
 
     .typeahead-wrap {
@@ -2108,11 +2119,12 @@
       </div>
       <div>
         <strong>Color cues</strong><br />
-        On the <strong>verdict</strong> strip: <strong>lime</strong> = more stored history, stronger read; <strong style="color:var(--solana-mint)">mint</strong> = healthy signals but less history in this tool; <strong>yellow</strong> = mixed metrics; <strong>gray</strong> = very new here; <strong>orange</strong> = serious concern (e.g. very high fee or offline).
+        <span class="reading-cue reading-cue--gray">Gray</span> means the same thing everywhere: not enough data yet, or a neutral read (on the verdict bar that usually means “very new in this tool”; beside a metric it usually means “unknown / still collecting”).
         <br />
-        In the rest of the page: <span style="color:var(--success);font-weight:600">green</span> = good,
-        <span style="color:var(--warn);font-weight:600">orange/red</span> = caution,
-        gray = unknown / not enough data yet.
+        <strong>Verdict strip:</strong> <span class="reading-cue reading-cue--lime">lime</span> = more stored history, stronger read; <span class="reading-cue reading-cue--mint">mint</span> = healthy signals but less history in this tool; <span class="reading-cue reading-cue--yellow">yellow</span> = mixed metrics; <span class="reading-cue reading-cue--orange">orange</span> = serious concern (e.g. very high fee or offline).
+        <br />
+        <strong>Elsewhere:</strong> <span class="reading-cue reading-cue--green">green</span> = good;
+        <span class="reading-cue reading-cue--caution">orange/red</span> = caution.
       </div>
     </div>
   </div>
