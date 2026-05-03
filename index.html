@@ -669,6 +669,41 @@
       margin-bottom: 10px;
     }
 
+    /* Plain-English summary: clear green when verdict is "Attractive" (not chartreuse / yellow-ish) */
+    .delegator-assessment-card[data-delegator-tone="attractive"] {
+      border-color: rgba(46, 204, 113, 0.42);
+      background: linear-gradient(
+        165deg,
+        rgba(46, 204, 113, 0.08) 0%,
+        var(--surface) 48%
+      );
+      box-shadow: 0 6px 28px rgba(46, 204, 113, 0.06);
+    }
+
+    .delegator-assessment-card[data-delegator-tone="attractive"] #delegator-verdict.ok {
+      border: 1px solid rgba(46, 204, 113, 0.5) !important;
+      background: rgba(46, 204, 113, 0.14) !important;
+      color: #1e8449 !important;
+    }
+
+    html[data-theme="dark"] .delegator-assessment-card[data-delegator-tone="attractive"] #delegator-verdict.ok {
+      color: #58d68d !important;
+    }
+
+    .delegator-assessment-card[data-delegator-tone="attractive"] .pill.pill-ok {
+      border-color: rgba(46, 204, 113, 0.4) !important;
+      background: rgba(46, 204, 113, 0.12) !important;
+      color: #1e6633 !important;
+    }
+
+    html[data-theme="dark"] .delegator-assessment-card[data-delegator-tone="attractive"] .pill.pill-ok {
+      color: #abebc6 !important;
+    }
+
+    .delegator-assessment-card[data-delegator-tone="attractive"] .pill.pill-ok::before {
+      background: #2ecc71 !important;
+    }
+
     @media (max-width: 860px) {
       .delegator-assessment-grid {
         grid-template-columns: 1fr;
@@ -2665,7 +2700,7 @@
   });
 </script>
 
-<script src="./app.js?v=75" defer></script>
+<script src="./app.js?v=76" defer></script>
 
 </body>
 </html>

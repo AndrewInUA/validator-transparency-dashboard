@@ -1042,6 +1042,14 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
         ? { label: "Balanced", className: "ok" }
         : { label: "Caution", className: "warn" };
 
+  const tone = commissionCriticalRisk
+    ? "caution"
+    : verdict.label === "Attractive"
+      ? "attractive"
+      : verdict.label === "Balanced"
+        ? "balanced"
+        : "caution";
+
   const confidence =
     snapCount >= 48
       ? "High"
@@ -1060,6 +1068,7 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
 
   return {
     verdict,
+    tone,
     summary,
     confidence,
     positives: positives.slice(0, 4),
@@ -1068,6 +1077,11 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
 }
 
 function renderDelegatorAssessment(assessment) {
+  const card = document.querySelector(".delegator-assessment-card");
+  if (card && assessment.tone) {
+    card.dataset.delegatorTone = assessment.tone;
+  }
+
   safeSetText(document.getElementById("delegator-summary"), assessment.summary);
   safeSetText(
     document.getElementById("delegator-confidence"),
