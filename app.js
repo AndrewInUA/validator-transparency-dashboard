@@ -284,7 +284,7 @@ async function fetchRatings(voteKey) {
   return res.json();
 }
 
-/** Public catalog name (e.g. Stakewiz) — not on-chain; optional ?name= still overrides. */
+/** Public catalog name (e.g. Stakewiz) – not on-chain; optional ?name= still overrides. */
 function pickValidatorDisplayName(ratings) {
   if (!ratings) return null;
   if (ratings.display?.name) return String(ratings.display.name).trim();
@@ -417,7 +417,7 @@ async function fetchLive(voteKey) {
     try {
       // Each epochCredits row maps to one chart point (normalized vs max delta in window).
       // The LAST row is usually the *current* epoch: credits are still accumulating, so
-      // consistency looks artificially low — exclude it from chart + headline uptime.
+      // consistency looks artificially low – exclude it from chart + headline uptime.
       const deltas = credits
         .map(epochEarnedCredits)
         .filter(v => Number.isFinite(v));
@@ -579,25 +579,25 @@ function computeRecentPerformance({ live, ratings }) {
     } else if (rel.level === "low") {
       out.window.sub = `${n} recent epochs visible. Good for a quick read, but still a short sample.`;
     } else if (rel.level === "medium") {
-      out.window.sub = `${n} recent epochs visible — a reasonable short-term slice.`;
+      out.window.sub = `${n} recent epochs visible – a reasonable short-term slice.`;
     } else {
-      out.window.sub = `${n} recent epochs visible — solid coverage for a short-term view.`;
+      out.window.sub = `${n} recent epochs visible – solid coverage for a short-term view.`;
     }
   }
 
   if (n >= 4 && Number.isFinite(diff)) {
     if (rel.level === "very_low" || rel.level === "low") {
       out.trend.value = "Not enough data";
-      out.trend.sub = `Only ${n} epochs to compare — too few to call a trend confidently.`;
+      out.trend.sub = `Only ${n} epochs to compare – too few to call a trend confidently.`;
     } else if (diff >= 3) {
       out.trend.value = "Improving";
-      out.trend.sub = "Newer epochs look stronger than older ones in this window — good direction.";
+      out.trend.sub = "Newer epochs look stronger than older ones in this window – good direction.";
     } else if (diff <= -3) {
       out.trend.value = "Getting worse";
-      out.trend.sub = "Newer epochs look weaker than older ones — recent yellow flag, worth watching.";
+      out.trend.sub = "Newer epochs look weaker than older ones – recent yellow flag, worth watching.";
     } else {
       out.trend.value = "Steady";
-      out.trend.sub = "Newer and older epochs look about the same — no recent change either way.";
+      out.trend.sub = "Newer and older epochs look about the same – no recent change either way.";
     }
   } else if (n > 0) {
     out.trend.value = "Not enough data";
@@ -611,8 +611,8 @@ function computeRecentPerformance({ live, ratings }) {
     if (volatility <= 5) {
       out.variability.value = "Steady";
       out.variability.sub = smallSample
-        ? "Epochs look very similar to each other — but the sample is short, so check again later."
-        : "Epochs look very similar to each other — predictable behavior.";
+        ? "Epochs look very similar to each other – but the sample is short, so check again later."
+        : "Epochs look very similar to each other – predictable behavior.";
     } else if (volatility <= 12) {
       out.variability.value = "Some bumps";
       out.variability.sub = smallSample
@@ -621,8 +621,8 @@ function computeRecentPerformance({ live, ratings }) {
     } else {
       out.variability.value = "Choppy";
       out.variability.sub =
-        "Big jumps between epochs in this window — less predictable short-term behavior." +
-        (smallSample ? " Still a short sample — re-check as more epochs come in." : "");
+        "Big jumps between epochs in this window – less predictable short-term behavior." +
+        (smallSample ? " Still a short sample – re-check as more epochs come in." : "");
     }
   }
 
@@ -631,19 +631,19 @@ function computeRecentPerformance({ live, ratings }) {
     jito === true
       ? "Jito ON usually means delegators can get a bit more on top of base staking rewards (MEV)."
       : jito === false
-        ? "Jito OFF in public data — expect baseline staking rewards without the Jito uplift."
+        ? "Jito OFF in public data – expect baseline staking rewards without the Jito uplift."
         : "Jito signal is temporarily unavailable, so we can’t confirm this part of rewards right now."
   );
   if (Number.isFinite(apyMedian)) {
     rp.push(
-      `Estimated APY ~${apyMedian.toFixed(2)}% (blended from public sources — planning context only, not a guarantee).`
+      `Estimated APY ~${apyMedian.toFixed(2)}% (blended from public sources – planning context only, not a guarantee).`
     );
   }
   rp.push(
     Number.isFinite(sw) && Number.isFinite(tr)
       ? Math.abs(sw - tr) <= 1
-        ? "APY estimates from Stakewiz and Trillium agree closely — higher confidence."
-        : "APY estimates from Stakewiz and Trillium disagree — lower confidence in the exact number."
+        ? "APY estimates from Stakewiz and Trillium agree closely – higher confidence."
+        : "APY estimates from Stakewiz and Trillium disagree – lower confidence in the exact number."
       : "One of the APY sources is missing right now, so the estimate is less confident."
   );
 
@@ -1241,7 +1241,7 @@ function formatVsNetworkText({ value, stats, mode, unit = "", decimals = 1 }) {
   if (Number.isFinite(pct)) {
     const beats =
       mode === "lower" ? Math.max(0, Math.min(100, 100 - pct)) : pct;
-    percentileText = ` — better than ${Math.round(beats)}% of validators`;
+    percentileText = ` – better than ${Math.round(beats)}% of validators`;
   }
   return `Network median ${fmt(med)} · ${comparison}${percentileText}`;
 }
@@ -1309,7 +1309,7 @@ function computeVerdict({
     reasons.push("currently delinquent on the network");
   } else if (Number.isFinite(commission) && commission >= 80) {
     tier = "caution";
-    reasons.push(`commission is ${commission.toFixed(0)}% — delegators effectively earn nothing`);
+    reasons.push(`commission is ${commission.toFixed(0)}% – delegators effectively earn nothing`);
   } else if (
     Number.isFinite(recentVotingPct) &&
     recentVotingPct < 90 &&
@@ -1317,7 +1317,7 @@ function computeVerdict({
   ) {
     tier = "caution";
     reasons.push(
-      `recent voting % is ${recentVotingPct.toFixed(1)}% — well below the ~99% norm`
+      `recent voting % is ${recentVotingPct.toFixed(1)}% – well below the ~99% norm`
     );
   } else if (
     Number.isFinite(stabilityScore) &&
@@ -1410,7 +1410,7 @@ function computeVerdict({
       const d = Math.round(historyDays);
       reasons.push(
         `${positives.slice(0, 3).join(", ") || "healthy signals on record"}. ` +
-          `We have only ~${d} day${d === 1 ? "" : "s"} of history in this tool — that is a data limit, not a problem with the validator. Staking rewards work the same; we just get more confidence as time passes.`
+          `Only ~${d} day${d === 1 ? "" : "s"} of history stored here so far – not a long track record yet in this dashboard. Rewards on-chain are unaffected.`
       );
     } else {
       tier = "watch";
@@ -1428,23 +1428,23 @@ function computeVerdict({
   const meta = {
     recommended: {
       label: "Strong pick (longer track record here)",
-      blurbPrefix: "Looks strong for delegators —"
+      blurbPrefix: "Looks strong for delegators –"
     },
     promising: {
       label: "Healthy signs so far",
-      blurbPrefix: "Nothing here should stop you from earning normal staking rewards —"
+      blurbPrefix: "Nothing here blocks normal staking rewards –"
     },
     watch: {
-      label: "OK to consider — compare a few numbers",
-      blurbPrefix: "This is not a warning —"
+      label: "OK to consider – compare a few numbers",
+      blurbPrefix: "Not a warning –"
     },
     wait: {
       label: "Very new on our charts",
-      blurbPrefix: "We need a bit more stored history before a confident read —"
+      blurbPrefix: "Need more stored history before a confident read –"
     },
     caution: {
       label: "High risk to skip or read carefully",
-      blurbPrefix: "Serious concern —"
+      blurbPrefix: "Serious concern –"
     }
   };
   const m = meta[tier];
@@ -1491,15 +1491,15 @@ function renderVerdictBadge(verdict) {
 
   const hintByTier = {
     recommended:
-      "Lime line: enough stored history here and strong metrics vs the network — aligned with the bright ring in the logo. Not financial advice — still read fee and status yourself.",
+      "Strong metrics vs the network and enough history stored here. Not financial advice – still verify commission and live status.",
     promising:
-      "Mint matches the Solana-style accent in the logo checkmark: metrics look healthy; we simply have fewer stored days here than the full “recommended” tier — that does not reduce your rewards.",
+      "Same metrics idea as lime, but fewer days of history in this database yet – your rewards are not reduced; confidence grows as snapshots add up.",
     watch:
-      "Yellow: usually one or two things are only average (for example yield a bit below the network middle). It does not mean “do not stake” — it means glance at Trust Card and APY and pick what matters to you.",
+      "One or two metrics are only average vs the network. Not a “no” – just compare Trust Card, commission, and APY.",
     wait:
-      "Gray: we have not stored enough snapshots yet for a full read. The validator can still be fine — check back as more days appear here.",
+      "Very little history stored here yet. The validator may still be fine – check again after more days.",
     caution:
-      "Orange: something serious — for example very high commission (you may earn almost nothing), currently delinquent, or weak stability. Read the details above before delegating."
+      "Red-flag signals (e.g. very high commission, delinquent now, or weak stability). Read the cards above."
   };
 
   root.className = `card verdict-card ${cls}`;
@@ -1617,7 +1617,7 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       compareValue: compareMetrics.apyMedian,
       mode: "higher",
       why: "higher estimated yearly yield from public APIs (Stakewiz / Trillium)",
-      whyNote: "APY is an estimate, not a guarantee — small differences (<0.2%) are often noise."
+      whyNote: "APY is an estimate, not a guarantee – small differences (<0.2%) are often noise."
     },
     {
       metric: "Pools delegating",
@@ -1693,11 +1693,11 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
 
   let verdictLabel;
   if (wins.left === wins.right) {
-    verdictLabel = `Overall: A (${safeBaseName}) and B (${safeCompareName}) look about the same — they each win ${wins.left} of the ${rows.length} metrics below.`;
+    verdictLabel = `Overall: A (${safeBaseName}) and B (${safeCompareName}) look about the same – they each win ${wins.left} of the ${rows.length} metrics below.`;
   } else if (wins.left > wins.right) {
-    verdictLabel = `Overall for a delegator: Validator A (${safeBaseName}) looks stronger here — it wins ${wins.left} of the ${rows.length} metrics below, B wins ${wins.right}.`;
+    verdictLabel = `Overall for a delegator: Validator A (${safeBaseName}) looks stronger here – it wins ${wins.left} of the ${rows.length} metrics below, B wins ${wins.right}.`;
   } else {
-    verdictLabel = `Overall for a delegator: Validator B (${safeCompareName}) looks stronger here — it wins ${wins.right} of the ${rows.length} metrics below, A wins ${wins.left}.`;
+    verdictLabel = `Overall for a delegator: Validator B (${safeCompareName}) looks stronger here – it wins ${wins.right} of the ${rows.length} metrics below, A wins ${wins.left}.`;
   }
   summaryEl.textContent = verdictLabel;
 
@@ -1708,7 +1708,7 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       const items = reasons
         .map(r => {
           const note = r.whyNote
-            ? ` <span style="color:var(--text3)">— ${esc(r.whyNote)}</span>`
+            ? ` <span style="color:var(--text3)">– ${esc(r.whyNote)}</span>`
             : "";
           return `<li><strong>${esc(r.metric)}:</strong> ${esc(r.why || "")}.${note}</li>`;
         })
@@ -1726,7 +1726,7 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
         html +=
           `<div class="compare-why-tied">Validator B (${esc(safeCompareName)}) wins ` +
           reasonsRight.map(r => `<strong>${esc(r.metric)}</strong>`).join(", ") +
-          ` — weigh those if they matter to you.</div>`;
+          ` – weigh those if they matter to you.</div>`;
       }
     } else if (wins.right > wins.left && reasonsRight.length) {
       html += renderReasonList(`Validator B (${safeCompareName})`, reasonsRight);
@@ -1734,7 +1734,7 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
         html +=
           `<div class="compare-why-tied">Validator A (${esc(safeBaseName)}) wins ` +
           reasonsLeft.map(r => `<strong>${esc(r.metric)}</strong>`).join(", ") +
-          ` — weigh those if they matter to you.</div>`;
+          ` – weigh those if they matter to you.</div>`;
       }
     } else if (wins.left === wins.right && (reasonsLeft.length || reasonsRight.length)) {
       if (reasonsLeft.length) {
@@ -1746,12 +1746,12 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
     } else {
       html +=
         `<div class="compare-why-title">Why neither side clearly wins</div>` +
-        `<div>All visible metrics are too close to call or have no data yet — treat them as roughly equal.</div>`;
+        `<div>All visible metrics are too close to call or have no data yet – treat them as roughly equal.</div>`;
     }
 
     if (tiedMetrics.length) {
       html +=
-        `<div class="compare-why-tied">Tied on: ${tiedMetrics.map(esc).join(", ")} — both look similar here.</div>`;
+        `<div class="compare-why-tied">Tied on: ${tiedMetrics.map(esc).join(", ")} – both look similar here.</div>`;
     }
     if (naMetrics.length) {
       html +=
@@ -1762,7 +1762,7 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       `<div class="compare-why-excluded">` +
       `<strong>What this verdict does NOT include:</strong> total stake size, validator age, geographic location, hardware setup, or decentralization impact. ` +
       `Those don't directly change your rewards as a delegator, so they're left out of this quick verdict on purpose. ` +
-      `If a newer validator looks weaker on <em>Stability score</em> or <em>Pools delegating</em>, it may simply be young — those metrics improve with time.` +
+      `If a newer validator looks weaker on <em>Stability score</em> or <em>Pools delegating</em>, it may simply be young – those metrics improve with time.` +
       `</div>`;
 
     whyEl.innerHTML = html;
@@ -2261,10 +2261,10 @@ async function main() {
         ctx.textContent = "Custom display name from URL (?name=).";
       } else if (auto) {
         ctx.textContent =
-          "Loaded from URL — display name from Stakewiz when listed.";
+          "Loaded from URL – display name from Stakewiz when listed.";
       } else {
         ctx.textContent =
-          "Loaded from URL — no directory name yet (showing shortened vote key).";
+          "Loaded from URL – no directory name yet (showing shortened vote key).";
       }
     }
   };

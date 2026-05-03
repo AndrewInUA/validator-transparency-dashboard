@@ -43,7 +43,7 @@
       --surface-alt: #EEF3EA;
       --border: #E3E8EF;
       --border2: #D6DCE5;
-      /* Brand: lime ring (matches logo glass) + Solana mint (matches logo check) */
+      /* Brand accents: lime + mint (UI semantic colors) */
       --accent: #c9ff15;
       --accent-dark: #060314;
       --accent2: #93a3ff;
@@ -2035,7 +2035,7 @@
         <div class="landing-kicker">Solana mainnet</div>
         <h1 class="landing-title">Find a validator</h1>
         <p class="landing-lead">
-          <strong>Browse the catalog below</strong> (search by name or vote key), or <strong>paste a vote account</strong> here if you already have one—same dashboard for every mainnet validator.
+          <strong>Browse the catalog below</strong> (search by name or vote key), or <strong>paste a vote account</strong> here if you already have one–same dashboard for every mainnet validator.
         </p>
         <div class="landing-search-row">
           <input type="text" id="landing-vote-input" class="share-input" placeholder="Vote account or paste a dashboard link" autocomplete="off" aria-label="Vote account or dashboard URL" />
@@ -2108,7 +2108,7 @@
       </div>
       <div>
         <strong>Color cues</strong><br />
-        On the <strong>verdict</strong> strip: <strong>lime</strong> = strong recommended pick (more stored history here); <strong style="color:var(--solana-mint)">mint</strong> = healthy so far — same idea as the Solana-colored tick in the logo (fewer days of data in this tool, not a penalty); <strong>yellow</strong> = mixed-but-OK numbers; <strong>gray</strong> = very new on our charts; <strong>orange</strong> = serious concern (e.g. very high fee or offline).
+        On the <strong>verdict</strong> strip: <strong>lime</strong> = more stored history, stronger read; <strong style="color:var(--solana-mint)">mint</strong> = healthy signals but less history in this tool; <strong>yellow</strong> = mixed metrics; <strong>gray</strong> = very new here; <strong>orange</strong> = serious concern (e.g. very high fee or offline).
         <br />
         In the rest of the page: <span style="color:var(--success);font-weight:600">green</span> = good,
         <span style="color:var(--warn);font-weight:600">orange/red</span> = caution,
@@ -2156,14 +2156,14 @@
                 <span class="info-dot" tabindex="0" data-tip="Slice of staking rewards the validator keeps. Lower usually = more for you, but 100% is a red flag.">i</span>
               </div>
               <div id="commission" class="stat-value green">–%</div>
-              <p class="stat-hint">Lower is usually better for your net yield. 0% means the validator takes no fee here (pool/program fees may still apply). 100% means delegators effectively earn nothing — avoid.</p>
+              <p class="stat-hint">Lower is usually better for your net yield. 0% means the validator takes no fee here (pool/program fees may still apply). 100% means delegators effectively earn nothing – avoid.</p>
               <div class="trust-status-block">
                 <div class="stat-label">
                   Status (alive right now?)
                   <span class="info-dot" tabindex="0" data-tip="‘Healthy’ = voting normally now. ‘Delinquent’ = the network considers them inactive at this moment. This is a snapshot, not a deep audit.">i</span>
                 </div>
                 <div id="status" class="status-big ok">–</div>
-                <p class="stat-hint">Quick liveness check from RPC. <strong>Healthy</strong> is what you want; <strong>Delinquent</strong> means the validator is currently missing votes — combine with the Stability score before deciding.</p>
+                <p class="stat-hint">Quick liveness check from RPC. <strong>Healthy</strong> is what you want; <strong>Delinquent</strong> means the validator is currently missing votes – combine with the Stability score before deciding.</p>
               </div>
             </div>
             <div class="trust-stat-col">
@@ -2220,7 +2220,7 @@
         <ul class="stability-usage-list">
           <li>This score reflects full stored history for this vote account (same pipeline as every other validator).</li>
           <li>Higher is better for consistency (fewer delinquency events and fee changes).</li>
-          <li>New entries can look “early” until enough daily snapshots pile up—compare validators with similar history length when possible.</li>
+          <li>New entries can look “early” until enough daily snapshots pile up–compare validators with similar history length when possible.</li>
           <li>Use this as the main consistency signal; then check APY and pool context.</li>
         </ul>
       </div>
@@ -2255,7 +2255,7 @@
           <div id="apy-stakewiz" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
-          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Trillium. Compare with Stakewiz — closer numbers = more confidence.">i</span></div>
+          <div class="apy-label">Trillium APY <span class="info-dot" tabindex="0" data-tip="APY estimate from Trillium. Compare with Stakewiz – closer numbers = more confidence.">i</span></div>
           <div id="apy-trillium" class="apy-value">–%</div>
         </div>
         <div class="apy-block">
@@ -2303,7 +2303,7 @@
 
     <div class="card epoch-perf-card">
       <div class="card-title">
-        At a glance — recent epochs
+        At a glance – recent epochs
         <span class="info-dot" tabindex="0" data-tip="Plain-language summary of the same short window as the chart. Use it as quick context, not as the main decision signal.">i</span>
       </div>
       <div class="source-row">
@@ -2413,7 +2413,7 @@
             <div class="pill pill-ok">Done: All-time snapshot-based stability scoring</div>
             <div class="pill pill-ok">Done: Validator comparison on the same page</div>
             <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
-            <div class="pill pill-ok">Done: Directory on home — search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
+            <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
             <div class="pill">Next: Per-epoch detail page</div>
             <div class="pill">Next: Delinquency alerts</div>
           </div>
@@ -2432,7 +2432,7 @@
     <div class="footer-brand-row">
       <img src="./assets/logo-transparent.png" alt="" class="footer-mini-logo" width="28" height="28" loading="lazy" />
       <div>
-        <strong>Validator Transparency</strong> — made by <strong>AndrewInUA</strong>
+        <strong>Validator Transparency</strong> – made by <strong>AndrewInUA</strong>
         <span> · </span>
         <a href="https://github.com/andrewinua/validator-transparency-dashboard" target="_blank" rel="noopener">GitHub</a>
         <span> · </span>
@@ -2705,7 +2705,7 @@
   });
 </script>
 
-<script src="./app.js?v=79" defer></script>
+<script src="./app.js?v=80" defer></script>
 
 </body>
 </html>
