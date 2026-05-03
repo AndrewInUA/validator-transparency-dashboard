@@ -1188,12 +1188,16 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
   const rowsEl = document.getElementById("compare-rows");
   const summaryEl = document.getElementById("compare-summary");
   const rulesEl = document.getElementById("compare-rules");
+  const whyEl = document.getElementById("compare-why");
   const nameAEl = document.getElementById("compare-name-a");
   const nameBEl = document.getElementById("compare-name-b");
   if (!panel || !rowsEl || !summaryEl) return;
 
-  if (nameAEl) nameAEl.textContent = `Validator A (${baseName || "Current"})`;
-  if (nameBEl) nameBEl.textContent = `Validator B (${compareName || "Compared"})`;
+  const safeBaseName = baseName || "Current";
+  const safeCompareName = compareName || "Compared";
+
+  if (nameAEl) nameAEl.textContent = `Validator A (${safeBaseName})`;
+  if (nameBEl) nameBEl.textContent = `Validator B (${safeCompareName})`;
 
   const rows = [
     {
@@ -1202,7 +1206,9 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       compareText: formatScoreText(compareMetrics.stabilityScore, compareMetrics.stabilityLabel),
       currentValue: baseMetrics.stabilityScore,
       compareValue: compareMetrics.stabilityScore,
-      mode: "higher"
+      mode: "higher",
+      why: "fewer past delinquency events and fewer commission changes in stored snapshot history",
+      whyNote: "Newer validators can score lower simply because they have less history yet, not because they behaved worse."
     },
     {
       metric: "Commission",
@@ -1210,7 +1216,8 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       compareText: Number.isFinite(compareMetrics.commission) ? `${compareMetrics.commission.toFixed(0)}%` : "–",
       currentValue: baseMetrics.commission,
       compareValue: compareMetrics.commission,
-      mode: "lower"
+      mode: "lower",
+      why: "lower commission means the validator keeps a smaller cut of your rewards"
     },
     {
       metric: "Recent voting consistency",
@@ -1218,7 +1225,8 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       compareText: Number.isFinite(compareMetrics.uptime) ? `${compareMetrics.uptime.toFixed(1)}%` : "–",
       currentValue: baseMetrics.uptime,
       compareValue: compareMetrics.uptime,
-      mode: "higher"
+      mode: "higher",
+      why: "higher recent voting % means more votes landed on time across the last finished epochs"
     },
     {
       metric: "Live status",
@@ -1226,7 +1234,8 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       compareText: compareMetrics.statusLabel,
       currentValue: baseMetrics.statusRank,
       compareValue: compareMetrics.statusRank,
-      mode: "status"
+      mode: "status",
+      why: "Healthy = currently voting normally; Delinquent = currently missing votes"
     },
     {
       metric: "APY (median)",
@@ -1234,7 +1243,9 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       compareText: Number.isFinite(compareMetrics.apyMedian) ? `${compareMetrics.apyMedian.toFixed(2)}%` : "–",
       currentValue: baseMetrics.apyMedian,
       compareValue: compareMetrics.apyMedian,
-      mode: "higher"
+      mode: "higher",
+      why: "higher estimated yearly yield from public APIs (Stakewiz / Trillium)",
+      whyNote: "APY is an estimate, not a guarantee — small differences (<0.2%) are often noise."
     },
     {
       metric: "Pools delegating",
@@ -1242,18 +1253,33 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       compareText: Number.isFinite(compareMetrics.poolsCount) ? String(compareMetrics.poolsCount) : "–",
       currentValue: baseMetrics.poolsCount,
       compareValue: compareMetrics.poolsCount,
-      mode: "higher"
+      mode: "higher",
+      why: "more known staking pools (Marinade, Jito, etc.) already trust this validator with stake",
+      whyNote: "Pools take time to onboard new validators, so newer operators often start at 0 here."
     }
   ];
 
   rowsEl.innerHTML = "";
   const wins = { left: 0, right: 0, tie: 0 };
+  const reasonsLeft = [];
+  const reasonsRight = [];
+  const tiedMetrics = [];
+  const naMetrics = [];
 
   for (const r of rows) {
     const better = compareBetter(r.currentValue, r.compareValue, r.mode);
-    if (better === "left") wins.left += 1;
-    else if (better === "right") wins.right += 1;
-    else wins.tie += 1;
+    if (better === "left") {
+      wins.left += 1;
+      reasonsLeft.push(r);
+    } else if (better === "right") {
+      wins.right += 1;
+      reasonsRight.push(r);
+    } else if (better === "tie") {
+      wins.tie += 1;
+      tiedMetrics.push(r.metric);
+    } else {
+      naMetrics.push(r.metric);
+    }
 
     const row = document.createElement("div");
     row.className = "compare-row";
@@ -1293,12 +1319,82 @@ function renderComparePanel({ baseName, compareName, baseMetrics, compareMetrics
       "A = currently opened validator. B = entered validator. Higher is better for Stability, Voting consistency, APY, and Pools delegating. Lower is better for Commission. For live status: Healthy is best.";
   }
 
+  let verdictLabel;
   if (wins.left === wins.right) {
-    summaryEl.textContent = "Overall: both validators look similar on these visible metrics.";
+    verdictLabel = `Overall: A (${safeBaseName}) and B (${safeCompareName}) look about the same — they each win ${wins.left} of the ${rows.length} metrics below.`;
   } else if (wins.left > wins.right) {
-    summaryEl.textContent = "Overall: Validator A looks stronger on more visible metrics in this quick comparison.";
+    verdictLabel = `Overall for a delegator: Validator A (${safeBaseName}) looks stronger here — it wins ${wins.left} of the ${rows.length} metrics below, B wins ${wins.right}.`;
   } else {
-    summaryEl.textContent = "Overall: Validator B looks stronger on more visible metrics in this quick comparison.";
+    verdictLabel = `Overall for a delegator: Validator B (${safeCompareName}) looks stronger here — it wins ${wins.right} of the ${rows.length} metrics below, A wins ${wins.left}.`;
+  }
+  summaryEl.textContent = verdictLabel;
+
+  if (whyEl) {
+    const esc = escapeHtmlDirectory;
+    const renderReasonList = (winnerLabel, reasons) => {
+      if (!reasons.length) return "";
+      const items = reasons
+        .map(r => {
+          const note = r.whyNote
+            ? ` <span style="color:var(--text3)">— ${esc(r.whyNote)}</span>`
+            : "";
+          return `<li><strong>${esc(r.metric)}:</strong> ${esc(r.why || "")}.${note}</li>`;
+        })
+        .join("");
+      return (
+        `<div class="compare-why-title">Why ${esc(winnerLabel)} wins these metrics</div>` +
+        `<ul>${items}</ul>`
+      );
+    };
+
+    let html = "";
+    if (wins.left > wins.right && reasonsLeft.length) {
+      html += renderReasonList(`Validator A (${safeBaseName})`, reasonsLeft);
+      if (reasonsRight.length) {
+        html +=
+          `<div class="compare-why-tied">Validator B (${esc(safeCompareName)}) wins ` +
+          reasonsRight.map(r => `<strong>${esc(r.metric)}</strong>`).join(", ") +
+          ` — weigh those if they matter to you.</div>`;
+      }
+    } else if (wins.right > wins.left && reasonsRight.length) {
+      html += renderReasonList(`Validator B (${safeCompareName})`, reasonsRight);
+      if (reasonsLeft.length) {
+        html +=
+          `<div class="compare-why-tied">Validator A (${esc(safeBaseName)}) wins ` +
+          reasonsLeft.map(r => `<strong>${esc(r.metric)}</strong>`).join(", ") +
+          ` — weigh those if they matter to you.</div>`;
+      }
+    } else if (wins.left === wins.right && (reasonsLeft.length || reasonsRight.length)) {
+      if (reasonsLeft.length) {
+        html += renderReasonList(`Validator A (${safeBaseName})`, reasonsLeft);
+      }
+      if (reasonsRight.length) {
+        html += renderReasonList(`Validator B (${safeCompareName})`, reasonsRight);
+      }
+    } else {
+      html +=
+        `<div class="compare-why-title">Why neither side clearly wins</div>` +
+        `<div>All visible metrics are too close to call or have no data yet — treat them as roughly equal.</div>`;
+    }
+
+    if (tiedMetrics.length) {
+      html +=
+        `<div class="compare-why-tied">Tied on: ${tiedMetrics.map(esc).join(", ")} — both look similar here.</div>`;
+    }
+    if (naMetrics.length) {
+      html +=
+        `<div class="compare-why-tied">Not enough data for: ${naMetrics.map(esc).join(", ")}.</div>`;
+    }
+
+    html +=
+      `<div class="compare-why-excluded">` +
+      `<strong>What this verdict does NOT include:</strong> total stake size, validator age, geographic location, hardware setup, or decentralization impact. ` +
+      `Those don't directly change your rewards as a delegator, so they're left out of this quick verdict on purpose. ` +
+      `If a newer validator looks weaker on <em>Stability score</em> or <em>Pools delegating</em>, it may simply be young — those metrics improve with time.` +
+      `</div>`;
+
+    whyEl.innerHTML = html;
+    whyEl.hidden = false;
   }
 
   panel.style.display = "block";
@@ -1998,6 +2094,11 @@ async function main() {
     clearCompareBtn.onclick = () => {
       compareState = null;
       if (comparePanel) comparePanel.style.display = "none";
+      const whyEl = document.getElementById("compare-why");
+      if (whyEl) {
+        whyEl.hidden = true;
+        whyEl.innerHTML = "";
+      }
       if (compareInput) compareInput.value = "";
       setCompareFeedback("Comparison cleared.");
       refreshShareUrl();
