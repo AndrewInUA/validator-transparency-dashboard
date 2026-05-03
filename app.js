@@ -1165,6 +1165,303 @@ function normalizeStatusForCompare(status) {
   return { rank: 1, label: raw.charAt(0).toUpperCase() + raw.slice(1) };
 }
 
+let __networkStatsPromise = null;
+async function loadNetworkStats() {
+  if (__networkStatsPromise) return __networkStatsPromise;
+  __networkStatsPromise = fetch("/api/network-stats", { cache: "no-store" })
+    .then(async r => {
+      if (!r.ok) return null;
+      const j = await r.json().catch(() => null);
+      return j && j.ok ? j : null;
+    })
+    .catch(() => null);
+  return __networkStatsPromise;
+}
+
+function percentileOfValue(value, statBucket) {
+  if (!Number.isFinite(value) || !statBucket) return null;
+  const refs = [
+    { p: 0, v: statBucket.min },
+    { p: 10, v: statBucket.p10 },
+    { p: 25, v: statBucket.p25 },
+    { p: 50, v: statBucket.median },
+    { p: 75, v: statBucket.p75 },
+    { p: 90, v: statBucket.p90 },
+    { p: 100, v: statBucket.max }
+  ].filter(r => Number.isFinite(r.v));
+  if (refs.length < 2) return null;
+  if (value <= refs[0].v) return refs[0].p;
+  if (value >= refs[refs.length - 1].v) return refs[refs.length - 1].p;
+  for (let i = 1; i < refs.length; i += 1) {
+    const a = refs[i - 1];
+    const b = refs[i];
+    if (value <= b.v) {
+      const range = b.v - a.v;
+      const w = range > 0 ? (value - a.v) / range : 0;
+      return a.p + (b.p - a.p) * w;
+    }
+  }
+  return 50;
+}
+
+function formatVsNetworkText({ value, stats, mode, unit = "", decimals = 1 }) {
+  if (!Number.isFinite(value) || !stats || !Number.isFinite(stats.median)) {
+    return "";
+  }
+  const med = stats.median;
+  const fmt = n => `${Number(n).toFixed(decimals)}${unit}`;
+  const pct = percentileOfValue(value, stats);
+  const close = Math.abs(value - med) / Math.max(med || 1, 1) < 0.05;
+  let comparison;
+  if (close) {
+    comparison = "around the network median";
+  } else if (mode === "lower") {
+    comparison =
+      value < med
+        ? "below network median (better for delegators)"
+        : "above network median";
+  } else {
+    comparison = value > med ? "above network median" : "below network median";
+  }
+  let percentileText = "";
+  if (Number.isFinite(pct)) {
+    const beats =
+      mode === "lower" ? Math.max(0, Math.min(100, 100 - pct)) : pct;
+    percentileText = ` — better than ${Math.round(beats)}% of validators`;
+  }
+  return `Network median ${fmt(med)} · ${comparison}${percentileText}`;
+}
+
+function setVsNetworkSubtext(targetEl, text) {
+  if (!targetEl) return;
+  let sub = targetEl.parentElement?.querySelector(":scope > .vs-network");
+  if (!text) {
+    if (sub) sub.remove();
+    return;
+  }
+  if (!sub) {
+    sub = document.createElement("div");
+    sub.className = "vs-network";
+    targetEl.insertAdjacentElement("afterend", sub);
+  }
+  sub.textContent = text;
+}
+
+function snapshotHistoryDays(snapshotMeta) {
+  const oldest = snapshotMeta?.oldest_captured_at;
+  if (!oldest) return null;
+  const t = new Date(oldest).getTime();
+  if (!Number.isFinite(t)) return null;
+  const days = (Date.now() - t) / (24 * 3600 * 1000);
+  return days > 0 ? days : 0;
+}
+
+function computeVerdict({
+  stability,
+  snapshotMeta,
+  liveStatus,
+  recentVotingPct,
+  commission,
+  apy,
+  poolsCount,
+  networkStats
+}) {
+  const status = String(liveStatus || "").toLowerCase();
+  const isDelinquentNow = status === "delinquent";
+  const stabilityScore = Number.isFinite(stability?.allTimeScore)
+    ? stability.allTimeScore
+    : Number.isFinite(stability?.score)
+      ? stability.score
+      : null;
+  const historyDays = snapshotHistoryDays(snapshotMeta);
+  const totalSnapshots = Number(snapshotMeta?.all_time?.sample_count);
+  const allTimeDelinquent = Number(snapshotMeta?.all_time?.delinquent_count);
+  const allTimeCommissionChanges = Number(
+    snapshotMeta?.all_time?.commission_changes
+  );
+
+  const commissionMedian = Number.isFinite(networkStats?.stats?.commission?.median)
+    ? networkStats.stats.commission.median
+    : null;
+  const apyMedian = Number.isFinite(networkStats?.stats?.apy?.median)
+    ? networkStats.stats.apy.median
+    : null;
+
+  const reasons = [];
+  let tier = "watch";
+
+  if (isDelinquentNow) {
+    tier = "caution";
+    reasons.push("currently delinquent on the network");
+  } else if (Number.isFinite(commission) && commission >= 80) {
+    tier = "caution";
+    reasons.push(`commission is ${commission.toFixed(0)}% — delegators effectively earn nothing`);
+  } else if (
+    Number.isFinite(recentVotingPct) &&
+    recentVotingPct < 90 &&
+    recentVotingPct > 0
+  ) {
+    tier = "caution";
+    reasons.push(
+      `recent voting % is ${recentVotingPct.toFixed(1)}% — well below the ~99% norm`
+    );
+  } else if (
+    Number.isFinite(stabilityScore) &&
+    stabilityScore < 60 &&
+    Number.isFinite(historyDays) &&
+    historyDays >= 14
+  ) {
+    tier = "caution";
+    reasons.push(`stability score is ${stabilityScore}/100 over recorded history`);
+  } else if (
+    !Number.isFinite(stabilityScore) ||
+    (Number.isFinite(historyDays) && historyDays < 14) ||
+    (Number.isFinite(totalSnapshots) && totalSnapshots < 14)
+  ) {
+    tier = "wait";
+    if (Number.isFinite(historyDays)) {
+      reasons.push(
+        `only ~${Math.max(1, Math.round(historyDays))} day${Math.round(historyDays) === 1 ? "" : "s"} of stored history so far`
+      );
+    } else {
+      reasons.push("not enough stored snapshot history yet");
+    }
+  } else {
+    const positives = [];
+    const negatives = [];
+
+    if (stabilityScore >= 90) positives.push("strong stability score");
+    else if (stabilityScore >= 70) positives.push("solid stability score");
+    else negatives.push(`stability score ${stabilityScore}/100`);
+
+    if (Number.isFinite(historyDays) && historyDays >= 60) {
+      positives.push(`${Math.round(historyDays)} days of recorded history`);
+    }
+
+    if (Number.isFinite(commission)) {
+      if (Number.isFinite(commissionMedian) && commission < commissionMedian) {
+        positives.push(`commission ${commission.toFixed(0)}% (below network median)`);
+      } else if (Number.isFinite(commissionMedian) && commission > commissionMedian + 2) {
+        negatives.push(
+          `commission ${commission.toFixed(0)}% (above network median ${commissionMedian.toFixed(0)}%)`
+        );
+      }
+    }
+
+    if (Number.isFinite(apy) && Number.isFinite(apyMedian)) {
+      if (apy >= apyMedian) positives.push(`APY at or above network median`);
+      else if (apyMedian - apy > 0.3) negatives.push(`APY below network median`);
+    }
+
+    if (
+      Number.isFinite(recentVotingPct) &&
+      recentVotingPct >= 99 &&
+      Number.isFinite(allTimeDelinquent) &&
+      allTimeDelinquent === 0
+    ) {
+      positives.push("no delinquency events on record");
+    }
+
+    if (Number.isFinite(allTimeCommissionChanges) && allTimeCommissionChanges === 0) {
+      positives.push("no fee changes on record");
+    }
+
+    const meetsRecommended =
+      Number.isFinite(stabilityScore) &&
+      stabilityScore >= 90 &&
+      Number.isFinite(historyDays) &&
+      historyDays >= 60 &&
+      (!Number.isFinite(recentVotingPct) || recentVotingPct >= 98) &&
+      (!Number.isFinite(commission) ||
+        !Number.isFinite(commissionMedian) ||
+        commission <= commissionMedian + 1) &&
+      negatives.length === 0;
+
+    if (meetsRecommended) {
+      tier = "recommended";
+      reasons.push(positives.slice(0, 3).join(", ") || "consistent recorded behavior");
+    } else {
+      tier = "watch";
+      const blurb = [];
+      if (positives.length) blurb.push(`good: ${positives.slice(0, 2).join(", ")}`);
+      if (negatives.length) blurb.push(`watch: ${negatives.slice(0, 2).join(", ")}`);
+      if (!blurb.length) blurb.push("solid baseline, but a few signals are mixed");
+      reasons.push(blurb.join("; "));
+    }
+  }
+
+  const meta = {
+    recommended: {
+      label: "Recommended for delegators",
+      blurbPrefix: "Looks safe for a first delegation —"
+    },
+    watch: {
+      label: "Watch — could be a fit",
+      blurbPrefix: "Worth a look, but weigh the trade-offs —"
+    },
+    wait: {
+      label: "Wait for more history",
+      blurbPrefix: "Not enough stored history to judge yet —"
+    },
+    caution: {
+      label: "Caution — review before delegating",
+      blurbPrefix: "Be careful here —"
+    }
+  };
+  const m = meta[tier];
+  const rationale = `${m.blurbPrefix} ${reasons.join("; ")}.`;
+
+  return {
+    tier,
+    label: m.label,
+    rationale,
+    historyDays: Number.isFinite(historyDays) ? historyDays : null,
+    stabilityScore,
+    commissionMedian,
+    apyMedian
+  };
+}
+
+function renderVerdictBadge(verdict) {
+  const root = document.getElementById("verdict-card");
+  const tierEl = document.getElementById("verdict-tier");
+  const labelEl = document.getElementById("verdict-label");
+  const rationaleEl = document.getElementById("verdict-rationale");
+  const metaEl = document.getElementById("verdict-meta");
+  if (!root || !labelEl || !rationaleEl) return;
+
+  const cls =
+    verdict.tier === "recommended"
+      ? "verdict-recommended"
+      : verdict.tier === "caution"
+        ? "verdict-caution"
+        : verdict.tier === "wait"
+          ? "verdict-wait"
+          : "verdict-watch";
+  root.className = `card verdict-card ${cls}`;
+  if (tierEl) {
+    tierEl.textContent = verdict.label;
+  }
+  labelEl.textContent = verdict.label;
+  rationaleEl.textContent = verdict.rationale;
+
+  if (metaEl) {
+    const bits = [];
+    if (Number.isFinite(verdict.historyDays)) {
+      bits.push(`${Math.round(verdict.historyDays)} days of stored history`);
+    }
+    if (Number.isFinite(verdict.stabilityScore)) {
+      bits.push(`Stability ${Math.round(verdict.stabilityScore)}/100`);
+    }
+    if (Number.isFinite(verdict.commissionMedian)) {
+      bits.push(`Network median commission ${verdict.commissionMedian.toFixed(0)}%`);
+    }
+    metaEl.textContent = bits.join("  ·  ");
+  }
+
+  root.style.display = "";
+}
+
 function formatScoreText(score, label) {
   return Number.isFinite(score) ? `${score}/100 (${label || "–"})` : "–";
 }
@@ -2272,6 +2569,58 @@ async function main() {
     poolsCount: Number.isFinite(poolsCount) ? poolsCount : null
   };
   currentBaseMetrics = baseMetrics;
+
+  loadNetworkStats().then(networkStats => {
+    try {
+      const verdict = computeVerdict({
+        stability,
+        snapshotMeta,
+        liveStatus: live?.status,
+        recentVotingPct: Number.isFinite(uptimeNum) ? uptimeNum : null,
+        commission: Number.isFinite(latestCom) ? latestCom : null,
+        apy: Number.isFinite(apyMedian) ? apyMedian : null,
+        poolsCount: Number.isFinite(poolsCount) ? poolsCount : null,
+        networkStats
+      });
+      renderVerdictBadge(verdict);
+
+      if (networkStats?.stats) {
+        setVsNetworkSubtext(
+          document.getElementById("commission"),
+          formatVsNetworkText({
+            value: Number.isFinite(latestCom) ? latestCom : NaN,
+            stats: networkStats.stats.commission,
+            mode: "lower",
+            unit: "%",
+            decimals: 0
+          })
+        );
+
+        setVsNetworkSubtext(
+          document.getElementById("apy-median"),
+          formatVsNetworkText({
+            value: Number.isFinite(apyMedian) ? apyMedian : NaN,
+            stats: networkStats.stats.apy,
+            mode: "higher",
+            unit: "%",
+            decimals: 2
+          })
+        );
+
+        if (Number.isFinite(networkStats.delinquent_pct)) {
+          const uptimeEl = document.getElementById("uptime");
+          if (uptimeEl) {
+            const txt =
+              `Network context: ${networkStats.delinquent_pct.toFixed(1)}% of validators are currently delinquent · ` +
+              `~99–100% recent voting is the norm for a healthy validator`;
+            setVsNetworkSubtext(uptimeEl, txt);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("verdict render failed:", err);
+    }
+  });
 
   if (COMPARE_FROM_URL.voteKey && isProbablyVoteKey(COMPARE_FROM_URL.voteKey)) {
     if (compareInput) compareInput.value = COMPARE_FROM_URL.voteKey;
