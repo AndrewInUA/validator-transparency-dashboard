@@ -1917,6 +1917,12 @@
     }
     .verdict-recommended .verdict-tier { color: #2ecc71; }
 
+    .verdict-promising {
+      border-color: rgba(26, 188, 156, 0.55);
+      background: linear-gradient(180deg, rgba(26, 188, 156, 0.09), transparent);
+    }
+    .verdict-promising .verdict-tier { color: #1abc9c; }
+
     .verdict-watch {
       border-color: rgba(241, 196, 15, 0.55);
       background: linear-gradient(180deg, rgba(241, 196, 15, 0.08), transparent);
@@ -2065,7 +2071,7 @@
       </div>
       <div>
         <strong>Color cues</strong><br />
-        On the <strong>verdict</strong> strip: green = strong fit, yellow = review first (not “bad,” just not a full green check on every metric), gray = need more history, orange = be careful.
+        On the <strong>verdict</strong> strip: <strong>green</strong> = strong long track record, <strong>teal</strong> = healthy signs so far (we have fewer days of data, not a penalty), <strong>yellow</strong> = one or two metrics are only average — still OK to stake if the trade-offs work for you, <strong>gray</strong> = very new on our charts, <strong>orange</strong> = real red flags (e.g. very high fee or offline).
         <br />
         In the rest of the page: <span style="color:var(--success);font-weight:600">green</span> = good,
         <span style="color:var(--warn);font-weight:600">orange/red</span> = caution,
@@ -2659,7 +2665,7 @@
   });
 </script>
 
-<script src="./app.js?v=74" defer></script>
+<script src="./app.js?v=75" defer></script>
 
 </body>
 </html>

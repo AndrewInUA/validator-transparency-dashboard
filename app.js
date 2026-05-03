@@ -1377,36 +1377,60 @@ function computeVerdict({
         commission <= commissionMedian + 1) &&
       negatives.length === 0;
 
+    const meetsPromising =
+      !meetsRecommended &&
+      negatives.length === 0 &&
+      Number.isFinite(historyDays) &&
+      historyDays >= 14 &&
+      historyDays < 60 &&
+      Number.isFinite(stabilityScore) &&
+      stabilityScore >= 85 &&
+      (!Number.isFinite(recentVotingPct) || recentVotingPct >= 95) &&
+      (!Number.isFinite(commission) || commission < 80);
+
     if (meetsRecommended) {
       tier = "recommended";
       reasons.push(positives.slice(0, 3).join(", ") || "consistent recorded behavior");
+    } else if (meetsPromising) {
+      tier = "promising";
+      const d = Math.round(historyDays);
+      reasons.push(
+        `${positives.slice(0, 3).join(", ") || "healthy signals on record"}. ` +
+          `We have only ~${d} day${d === 1 ? "" : "s"} of history in this tool — that is a data limit, not a problem with the validator. Staking rewards work the same; we just get more confidence as time passes.`
+      );
     } else {
       tier = "watch";
       const blurb = [];
-      if (positives.length) blurb.push(`strengths: ${positives.slice(0, 2).join(", ")}`);
-      if (negatives.length) blurb.push(`things to compare: ${negatives.slice(0, 2).join(", ")}`);
-      if (!blurb.length) blurb.push("solid baseline, but a few signals are mixed");
+      if (positives.length) blurb.push(`what looks good: ${positives.slice(0, 2).join(", ")}`);
+      if (negatives.length) {
+        blurb.push(`what to double-check: ${negatives.slice(0, 2).join(", ")}`);
+      } else {
+        blurb.push("a few numbers are only average compared with the rest of the network");
+      }
       reasons.push(blurb.join("; "));
     }
   }
 
   const meta = {
     recommended: {
-      label: "Recommended for delegators",
-      blurbPrefix: "Looks safe for a first delegation —"
+      label: "Strong pick (longer track record here)",
+      blurbPrefix: "Looks strong for delegators —"
+    },
+    promising: {
+      label: "Healthy signs so far",
+      blurbPrefix: "Nothing here should stop you from earning normal staking rewards —"
     },
     watch: {
-      label: "Review first (mixed signals)",
-      blurbPrefix:
-        "Not a full green light and not a red flag — some metrics look good and some look average — "
+      label: "OK to consider — compare a few numbers",
+      blurbPrefix: "This is not a warning —"
     },
     wait: {
-      label: "Wait for more history",
-      blurbPrefix: "Not enough stored history to judge yet —"
+      label: "Very new on our charts",
+      blurbPrefix: "We need a bit more stored history before a confident read —"
     },
     caution: {
-      label: "Caution — review before delegating",
-      blurbPrefix: "Be careful here —"
+      label: "High risk to skip or read carefully",
+      blurbPrefix: "Serious concern —"
     }
   };
   const m = meta[tier];
@@ -1435,28 +1459,33 @@ function renderVerdictBadge(verdict) {
   const cls =
     verdict.tier === "recommended"
       ? "verdict-recommended"
-      : verdict.tier === "caution"
-        ? "verdict-caution"
-        : verdict.tier === "wait"
-          ? "verdict-wait"
-          : "verdict-watch";
+      : verdict.tier === "promising"
+        ? "verdict-promising"
+        : verdict.tier === "caution"
+          ? "verdict-caution"
+          : verdict.tier === "wait"
+            ? "verdict-wait"
+            : "verdict-watch";
 
   const chipByTier = {
-    recommended: "Green · recommended",
-    watch: "Yellow · review first",
-    wait: "Gray · need more history",
-    caution: "Orange · caution"
+    recommended: "Green · strong track record",
+    promising: "Teal · healthy so far",
+    watch: "Yellow · compare a bit",
+    wait: "Gray · need more data",
+    caution: "Orange · read carefully"
   };
 
   const hintByTier = {
     recommended:
-      "Green means this validator lines up well on the metrics we track (stability, fees, yield vs the network). It is still not financial advice — always double-check before you stake.",
+      "Green: we have enough days of history and the main metrics look strong vs the network. Not financial advice — still read fee and status yourself.",
+    promising:
+      "Teal: the visible metrics look healthy. The only reason this is not “green” is that this dashboard has not stored many days of history yet — that does not reduce your rewards; it just means our confidence grows over time.",
     watch:
-      "Yellow means: not “avoid,” but also not an automatic “yes.” Compare commission, APY, and stability with a few other validators before you decide.",
+      "Yellow: usually one or two things are only average (for example yield a bit below the network middle). It does not mean “do not stake” — it means glance at Trust Card and APY and pick what matters to you.",
     wait:
-      "Gray means: we do not have enough stored snapshot history yet to call this “recommended” or “caution.” Check again after more days of data.",
+      "Gray: we have not stored enough snapshots yet for a full read. The validator can still be fine — check back as more days appear here.",
     caution:
-      "Orange means: at least one serious concern (for example currently delinquent, very high commission, or weak stability). Read the details above before delegating."
+      "Orange: something serious — for example very high commission (you may earn almost nothing), currently delinquent, or weak stability. Read the details above before delegating."
   };
 
   root.className = `card verdict-card ${cls}`;
