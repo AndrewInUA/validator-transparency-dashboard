@@ -164,7 +164,19 @@
       flex-shrink: 0;
       display: block;
       transform: none;
-      filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.35));
+    }
+
+    /* Vector mark: uses --good-muted so it matches buttons / verdict / charts */
+    .svg-defs {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .product-logo-mark {
+      color: var(--good-muted);
+      filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.32));
     }
 
     .product-name {
@@ -1743,8 +1755,9 @@
     .footer-brand-row .footer-mini-logo {
       width: 28px;
       height: 28px;
-      object-fit: contain;
       flex-shrink: 0;
+      color: var(--good-muted);
+      filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.22));
     }
     .footer-brand-row strong { color: var(--text); }
 
@@ -2002,9 +2015,23 @@
 </script>
 <div class="wrap">
 
+  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" class="svg-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="vtd-logo-mark" viewBox="0 0 48 48">
+        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="18" r="11" stroke-width="2.25" />
+          <path d="M26.5 26.5 L37 37" stroke-width="2.85" />
+          <path d="M13.5 18.2 L17.1 21.8 L24.2 13.8" stroke-width="2.35" />
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
   <div class="top-bar">
     <div class="product-brand">
-      <img src="./assets/logo-transparent.png" alt="Validator Transparency logo" class="product-logo" />
+      <svg class="product-logo product-logo-mark" width="48" height="48" role="img" aria-label="Validator Transparency logo">
+        <use href="#vtd-logo-mark" />
+      </svg>
       <div class="product-name">Validator Transparency Dashboard</div>
     </div>
     <div class="header-actions">
@@ -2426,7 +2453,9 @@
     <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots for the opened vote account. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context. Two validators can both be “fully covered” by collection but have different history lengths until enough days of snapshots accrue.</div>
     <div><strong>History model.</strong> Scheduled jobs snapshot <strong>all</strong> mainnet vote accounts returned by RPC and write shared rows in storage. Opening a page only sends an optional analytics ping (does not gate whether snapshots exist). Everyone reads the same dataset for a given vote key.</div>
     <div class="footer-brand-row">
-      <img src="./assets/logo-transparent.png" alt="" class="footer-mini-logo" width="28" height="28" loading="lazy" />
+      <svg class="footer-mini-logo product-logo-mark" width="28" height="28" aria-hidden="true" focusable="false">
+        <use href="#vtd-logo-mark" />
+      </svg>
       <div>
         <strong>Validator Transparency</strong> — made by <strong>AndrewInUA</strong>
         <span> · </span>
@@ -2701,7 +2730,7 @@
   });
 </script>
 
-<script src="./app.js?v=77" defer></script>
+<script src="./app.js?v=78" defer></script>
 
 </body>
 </html>
