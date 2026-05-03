@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v44
+ * Validator Transparency Dashboard – app.js v45
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -1419,6 +1419,33 @@ function buildDashboardHrefLocal(vote) {
   return `./index.html?${new URLSearchParams({ vote }).toString()}`;
 }
 
+function setupBackToDirectoryNav() {
+  const btn = document.getElementById("nav-back-btn");
+  if (!btn) return;
+
+  btn.addEventListener("click", e => {
+    const sameOriginReferrer =
+      document.referrer &&
+      (() => {
+        try {
+          const u = new URL(document.referrer);
+          return (
+            u.origin === window.location.origin &&
+            (u.pathname.endsWith("/") || u.pathname.endsWith("/index.html")) &&
+            !new URLSearchParams(u.search).get("vote")
+          );
+        } catch {
+          return false;
+        }
+      })();
+
+    if (sameOriginReferrer) {
+      e.preventDefault();
+      window.history.back();
+    }
+  });
+}
+
 function initialsFromName(name) {
   const trimmed = String(name || "").trim();
   if (!trimmed) return "?";
@@ -1554,6 +1581,8 @@ async function main() {
   }
 
   document.documentElement.classList.remove("app-landing");
+
+  setupBackToDirectoryNav();
 
   let resolvedDisplayName =
     CURRENT.nameFromUrl || shortKey(CURRENT.voteKey);

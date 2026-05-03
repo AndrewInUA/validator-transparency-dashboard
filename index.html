@@ -1663,6 +1663,30 @@
       flex-shrink: 0;
     }
     .footer-brand-row strong { color: var(--text); }
+
+    .nav-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .nav-back-btn:hover {
+      background: var(--surface);
+      border-color: var(--border2);
+      text-decoration: none;
+    }
+    .nav-back-arrow { font-size: 14px; line-height: 1; }
+    html.app-landing .nav-back-btn { display: none !important; }
   </style>
 </head>
 <body>
@@ -1690,6 +1714,10 @@
       <div class="product-name">Validator Transparency Dashboard</div>
     </div>
     <div class="header-actions">
+      <a href="./index.html#directory-section" class="nav-back-btn" id="nav-back-btn" title="Back to validator directory">
+        <span class="nav-back-arrow" aria-hidden="true">←</span>
+        <span>Directory</span>
+      </a>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" title="Theme">
         <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
         <span class="theme-toggle-label" id="theme-toggle-label">Light</span>
