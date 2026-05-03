@@ -1729,6 +1729,83 @@
     }
     .reading-guide-grid strong { color: var(--text); }
     .reading-guide.collapsed .reading-guide-grid { display: none; }
+
+    .typeahead-wrap {
+      position: relative;
+      flex: 1 1 240px;
+      min-width: 0;
+    }
+    .typeahead-wrap > .share-input { width: 100%; }
+    .typeahead-results {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow-float);
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .typeahead-results[hidden] { display: none !important; }
+    .typeahead-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .typeahead-row:hover,
+    .typeahead-row.is-active {
+      background: var(--surface2);
+    }
+    .typeahead-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .typeahead-avatar-fallback {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 10px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .typeahead-text {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .typeahead-name { font-weight: 600; }
+    .typeahead-vote {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--text2);
+      word-break: break-all;
+    }
+    .typeahead-empty {
+      padding: 10px 12px;
+      color: var(--text3);
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -2096,25 +2173,31 @@
     <div class="card">
         <div class="card-title">Open another validator</div>
         <p class="open-validator-blurb">
-          Put any mainnet vote account after <code class="inline-code">?vote=</code> in the address bar to load that validator—the same snapshot-backed stability pipeline applies to everyone on the network. Optional <code class="inline-code">&amp;name=</code> sets the title. Use the field below to paste or edit the vote segment.
+          <strong>Search by name</strong> below (e.g. “Coinbase”, “Marinade”), or <strong>paste a vote account</strong> / dashboard URL. Optional name overrides the auto-detected display name in the new tab.
         </p>
         <div class="open-validator-row">
-          <input id="open-validator-input" class="share-input" type="text" value="" placeholder="Paste vote account or dashboard URL" aria-label="Vote account or dashboard URL" />
+          <div class="typeahead-wrap">
+            <input id="open-validator-input" class="share-input" type="text" value="" placeholder="Type a name or paste a vote account / URL" autocomplete="off" aria-label="Validator name, vote account, or URL" />
+            <div id="open-validator-results" class="typeahead-results" hidden></div>
+          </div>
           <input id="open-validator-name" class="share-input" type="text" value="" placeholder="Optional display name" aria-label="Optional validator display name" />
           <button type="button" id="open-validator-btn" class="copy-btn">Open validator</button>
         </div>
-        <div id="open-validator-feedback" class="open-validator-help">Tip: paste a raw vote account or a full dashboard link. Optional name overrides the automatic Stakewiz display name for the new tab.</div>
+        <div id="open-validator-feedback" class="open-validator-help">Tip: pick a row from the dropdown to auto-fill, or paste a raw vote account / dashboard link.</div>
         <div class="compare-block">
           <p class="compare-title">Compare on this page</p>
           <div class="open-validator-row">
             <div class="compare-single-field">
               <label class="compare-field-label" for="compare-validator-input">Compare current validator with</label>
-              <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="Other vote account or dashboard URL" aria-label="Other validator vote account or URL" />
+              <div class="typeahead-wrap">
+                <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="Search by name or paste vote account / URL" autocomplete="off" aria-label="Other validator name, vote account, or URL" />
+                <div id="compare-validator-results" class="typeahead-results" hidden></div>
+              </div>
             </div>
             <button type="button" id="compare-validator-btn" class="copy-btn">Compare</button>
             <button type="button" id="clear-compare-btn" class="copy-btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)">Clear</button>
           </div>
-          <div id="compare-feedback" class="open-validator-help">Tip: <strong>Validator A</strong> is the currently opened validator on this page. <strong>Validator B</strong> is the vote account you enter above.</div>
+          <div id="compare-feedback" class="open-validator-help">Tip: <strong>Validator A</strong> is the currently opened validator on this page. <strong>Validator B</strong> is the vote account you pick or enter above.</div>
           <div id="compare-panel" class="compare-panel" style="display:none">
             <div class="compare-head">
               <div>Metric</div>
@@ -2427,7 +2510,7 @@
   });
 </script>
 
-<script src="./app.js?v=70" defer></script>
+<script src="./app.js?v=71" defer></script>
 
 </body>
 </html>

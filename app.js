@@ -1508,6 +1508,155 @@ function avatarHtml(row) {
   return `<span class="dir-avatar-fallback">${initials}</span>`;
 }
 
+function typeaheadAvatarHtml(row) {
+  const name = row?.name || "";
+  const initials = escapeHtmlDirectory(initialsFromName(name));
+  if (row?.image) {
+    const safeUrl = escapeHtmlDirectory(row.image);
+    const safeAlt = escapeHtmlDirectory(name || "Validator");
+    return (
+      `<img class="typeahead-avatar" src="${safeUrl}" alt="${safeAlt}" loading="lazy" ` +
+      `onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'typeahead-avatar-fallback',textContent:'${initials}'}))" />`
+    );
+  }
+  return `<span class="typeahead-avatar-fallback">${initials}</span>`;
+}
+
+function setupValidatorTypeahead({ input, resultsBox, onPick, excludeVote, limit = 8 }) {
+  if (!input || !resultsBox) return null;
+
+  let debounceTimer = null;
+  let lastQuery = "";
+  let activeIdx = -1;
+  let currentRows = [];
+  let openWithFocus = true;
+
+  const close = () => {
+    resultsBox.hidden = true;
+    activeIdx = -1;
+    currentRows = [];
+  };
+
+  const renderRows = rows => {
+    currentRows = rows;
+    if (!rows.length) {
+      resultsBox.innerHTML =
+        '<div class="typeahead-empty">No matches. You can still paste a vote account.</div>';
+      resultsBox.hidden = false;
+      activeIdx = -1;
+      return;
+    }
+    resultsBox.innerHTML = rows
+      .map((r, i) => {
+        const name = r.name || "(unnamed)";
+        const shortVote = r.vote ? `${r.vote.slice(0, 6)}…${r.vote.slice(-4)}` : "";
+        return (
+          `<div class="typeahead-row${i === activeIdx ? " is-active" : ""}" data-idx="${i}">` +
+            typeaheadAvatarHtml(r) +
+            `<div class="typeahead-text">` +
+              `<span class="typeahead-name">${escapeHtmlDirectory(name)}</span>` +
+              `<span class="typeahead-vote">${escapeHtmlDirectory(shortVote)}</span>` +
+            `</div>` +
+          `</div>`
+        );
+      })
+      .join("");
+    resultsBox.hidden = false;
+  };
+
+  const setActive = idx => {
+    const rows = resultsBox.querySelectorAll(".typeahead-row");
+    rows.forEach((el, i) => {
+      if (i === idx) el.classList.add("is-active");
+      else el.classList.remove("is-active");
+    });
+    activeIdx = idx;
+    if (idx >= 0 && rows[idx]) {
+      rows[idx].scrollIntoView({ block: "nearest" });
+    }
+  };
+
+  const pick = row => {
+    if (!row) return;
+    close();
+    onPick(row);
+  };
+
+  const fetchAndRender = async q => {
+    try {
+      const url = `/api/validators-directory?limit=${limit}` +
+        (q ? `&q=${encodeURIComponent(q)}` : "");
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) {
+        close();
+        return;
+      }
+      const json = await res.json().catch(() => ({}));
+      let rows = Array.isArray(json?.results) ? json.results : [];
+      if (typeof excludeVote === "function") {
+        const ex = excludeVote();
+        if (ex) rows = rows.filter(r => r.vote !== ex);
+      }
+      renderRows(rows.slice(0, limit));
+    } catch {
+      close();
+    }
+  };
+
+  const onInput = () => {
+    const q = String(input.value || "").trim();
+    if (q === lastQuery) return;
+    lastQuery = q;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => fetchAndRender(q), 180);
+  };
+
+  input.addEventListener("input", onInput);
+  input.addEventListener("focus", () => {
+    if (!openWithFocus) return;
+    const v = String(input.value || "").trim();
+    if (v.length >= 32) return;
+    fetchAndRender(v);
+  });
+
+  input.addEventListener("keydown", e => {
+    if (resultsBox.hidden) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = Math.min(currentRows.length - 1, activeIdx + 1);
+      setActive(next);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = Math.max(0, activeIdx - 1);
+      setActive(prev);
+    } else if (e.key === "Enter") {
+      if (activeIdx >= 0 && currentRows[activeIdx]) {
+        e.preventDefault();
+        pick(currentRows[activeIdx]);
+      }
+    } else if (e.key === "Escape") {
+      close();
+    }
+  });
+
+  resultsBox.addEventListener("mousedown", e => {
+    const rowEl = e.target.closest(".typeahead-row");
+    if (!rowEl) return;
+    e.preventDefault();
+    const idx = Number(rowEl.getAttribute("data-idx"));
+    if (Number.isFinite(idx) && currentRows[idx]) pick(currentRows[idx]);
+  });
+
+  document.addEventListener("mousedown", e => {
+    if (resultsBox.hidden) return;
+    if (e.target === input) return;
+    if (resultsBox.contains(e.target)) return;
+    close();
+  });
+
+  return { close, refresh: () => fetchAndRender(String(input.value || "").trim()) };
+}
+
 async function initValidatorDirectoryEmbed() {
   const tbody = document.getElementById("directory-tbody");
   const meta = document.getElementById("directory-meta");
@@ -1856,6 +2005,38 @@ async function main() {
       window.history.replaceState({}, "", url);
     };
   }
+
+  const openResults = document.getElementById("open-validator-results");
+  const compareResults = document.getElementById("compare-validator-results");
+
+  setupValidatorTypeahead({
+    input: openInput,
+    resultsBox: openResults,
+    excludeVote: () => CURRENT.voteKey,
+    onPick: row => {
+      if (!row?.vote) return;
+      if (openInput) openInput.value = row.vote;
+      if (openNameInput && !openNameInput.value && row.name) {
+        openNameInput.value = row.name;
+      }
+      setOpenFeedback(`Selected ${row.name || row.vote.slice(0, 8) + "…"}. Opening…`);
+      openValidatorFromInputs();
+    }
+  });
+
+  setupValidatorTypeahead({
+    input: compareInput,
+    resultsBox: compareResults,
+    excludeVote: () => CURRENT.voteKey,
+    onPick: async row => {
+      if (!row?.vote) return;
+      if (compareInput) compareInput.value = row.vote;
+      setCompareFeedback(
+        `Selected ${row.name || row.vote.slice(0, 8) + "…"}. Loading comparison…`
+      );
+      await runComparison(row.vote);
+    }
+  });
 
   registerValidatorForTracking(CURRENT.voteKey).catch(err => {
     console.warn("tracking registration error:", err);
