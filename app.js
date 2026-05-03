@@ -1383,8 +1383,8 @@ function computeVerdict({
     } else {
       tier = "watch";
       const blurb = [];
-      if (positives.length) blurb.push(`good: ${positives.slice(0, 2).join(", ")}`);
-      if (negatives.length) blurb.push(`watch: ${negatives.slice(0, 2).join(", ")}`);
+      if (positives.length) blurb.push(`strengths: ${positives.slice(0, 2).join(", ")}`);
+      if (negatives.length) blurb.push(`things to compare: ${negatives.slice(0, 2).join(", ")}`);
       if (!blurb.length) blurb.push("solid baseline, but a few signals are mixed");
       reasons.push(blurb.join("; "));
     }
@@ -1396,8 +1396,9 @@ function computeVerdict({
       blurbPrefix: "Looks safe for a first delegation —"
     },
     watch: {
-      label: "Watch — could be a fit",
-      blurbPrefix: "Worth a look, but weigh the trade-offs —"
+      label: "Review first (mixed signals)",
+      blurbPrefix:
+        "Not a full green light and not a red flag — some metrics look good and some look average — "
     },
     wait: {
       label: "Wait for more history",
@@ -1428,6 +1429,7 @@ function renderVerdictBadge(verdict) {
   const labelEl = document.getElementById("verdict-label");
   const rationaleEl = document.getElementById("verdict-rationale");
   const metaEl = document.getElementById("verdict-meta");
+  const hintEl = document.getElementById("verdict-hint");
   if (!root || !labelEl || !rationaleEl) return;
 
   const cls =
@@ -1438,9 +1440,28 @@ function renderVerdictBadge(verdict) {
         : verdict.tier === "wait"
           ? "verdict-wait"
           : "verdict-watch";
+
+  const chipByTier = {
+    recommended: "Green · recommended",
+    watch: "Yellow · review first",
+    wait: "Gray · need more history",
+    caution: "Orange · caution"
+  };
+
+  const hintByTier = {
+    recommended:
+      "Green means this validator lines up well on the metrics we track (stability, fees, yield vs the network). It is still not financial advice — always double-check before you stake.",
+    watch:
+      "Yellow means: not “avoid,” but also not an automatic “yes.” Compare commission, APY, and stability with a few other validators before you decide.",
+    wait:
+      "Gray means: we do not have enough stored snapshot history yet to call this “recommended” or “caution.” Check again after more days of data.",
+    caution:
+      "Orange means: at least one serious concern (for example currently delinquent, very high commission, or weak stability). Read the details above before delegating."
+  };
+
   root.className = `card verdict-card ${cls}`;
   if (tierEl) {
-    tierEl.textContent = verdict.label;
+    tierEl.textContent = chipByTier[verdict.tier] || verdict.label;
   }
   labelEl.textContent = verdict.label;
   rationaleEl.textContent = verdict.rationale;
@@ -1457,6 +1478,17 @@ function renderVerdictBadge(verdict) {
       bits.push(`Network median commission ${verdict.commissionMedian.toFixed(0)}%`);
     }
     metaEl.textContent = bits.join("  ·  ");
+  }
+
+  if (hintEl) {
+    const text = hintByTier[verdict.tier] || "";
+    if (text) {
+      hintEl.textContent = text;
+      hintEl.hidden = false;
+    } else {
+      hintEl.textContent = "";
+      hintEl.hidden = true;
+    }
   }
 
   root.style.display = "";

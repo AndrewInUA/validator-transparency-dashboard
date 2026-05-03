@@ -1902,6 +1902,15 @@
       color: var(--text3);
     }
 
+    .verdict-hint {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text2);
+    }
+
     .verdict-recommended {
       border-color: rgba(46, 204, 113, 0.55);
       background: linear-gradient(180deg, rgba(46, 204, 113, 0.08), transparent);
@@ -1960,9 +1969,9 @@
       <div class="product-name">Validator Transparency Dashboard</div>
     </div>
     <div class="header-actions">
-      <a href="./index.html#directory-section" class="nav-back-btn" id="nav-back-btn" title="Back to validator directory">
+      <a href="./index.html#directory-section" class="nav-back-btn" id="nav-back-btn" title="Back to the start page with the searchable validator list">
         <span class="nav-back-arrow" aria-hidden="true">←</span>
-        <span>Directory</span>
+        <span>Back to validator list</span>
       </a>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" title="Theme">
         <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
@@ -2056,8 +2065,10 @@
       </div>
       <div>
         <strong>Color cues</strong><br />
-        <span style="color:var(--success);font-weight:600">Green</span> = good,
-        <span style="color:var(--warn);font-weight:600">red/orange</span> = caution,
+        On the <strong>verdict</strong> strip: green = strong fit, yellow = review first (not “bad,” just not a full green check on every metric), gray = need more history, orange = be careful.
+        <br />
+        In the rest of the page: <span style="color:var(--success);font-weight:600">green</span> = good,
+        <span style="color:var(--warn);font-weight:600">orange/red</span> = caution,
         gray = unknown / not enough data yet.
       </div>
     </div>
@@ -2070,6 +2081,7 @@
     </div>
     <div id="verdict-rationale" class="verdict-rationale">Computing recommendation…</div>
     <div id="verdict-meta" class="verdict-meta"></div>
+    <div id="verdict-hint" class="verdict-hint" hidden></div>
   </div>
 
   <div class="row-hero">
@@ -2647,7 +2659,7 @@
   });
 </script>
 
-<script src="./app.js?v=73" defer></script>
+<script src="./app.js?v=74" defer></script>
 
 </body>
 </html>
