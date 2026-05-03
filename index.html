@@ -86,6 +86,8 @@
       --card-pad-y: 22px;
       --radius-nested: 16px;
       --chart-area-height: 220px;
+      /* Reading guide: “green” highlights vs verdict “lime” (distinct in legend only) */
+      --reading-cue-good: #047857;
       color-scheme: light;
     }
 
@@ -124,6 +126,7 @@
       --tooltip-border: #3a4358;
       --shadow-card: 0 6px 28px rgba(0, 0, 0, 0.45);
       --shadow-float: 0 14px 48px rgba(0, 0, 0, 0.55);
+      --reading-cue-good: #6ee7b7;
       color-scheme: dark;
     }
 
@@ -1816,13 +1819,15 @@
     .reading-guide-grid .reading-cue {
       font-weight: 600;
     }
+    /* Verdict tier labels — align with .verdict-* tier colors */
     .reading-guide-grid .reading-cue--lime { color: var(--success); }
     .reading-guide-grid .reading-cue--mint { color: var(--solana-mint); }
     .reading-guide-grid .reading-cue--yellow { color: #f1c40f; }
     .reading-guide-grid .reading-cue--gray { color: #95a5a6; }
     .reading-guide-grid .reading-cue--orange { color: #e67e22; }
-    .reading-guide-grid .reading-cue--green { color: var(--success); }
-    .reading-guide-grid .reading-cue--caution { color: var(--warn); }
+    /* “Good” highlights elsewhere — emerald, not verdict lime */
+    .reading-guide-grid .reading-cue--green { color: var(--reading-cue-good); }
+    .reading-guide-grid .reading-cue--red { color: var(--warn); }
     .reading-guide.collapsed .reading-guide-grid { display: none; }
 
     .typeahead-wrap {
@@ -2119,12 +2124,9 @@
       </div>
       <div>
         <strong>Color cues</strong><br />
-        <span class="reading-cue reading-cue--gray">Gray</span> means the same thing everywhere: not enough data yet, or a neutral read (on the verdict bar that usually means “very new in this tool”; beside a metric it usually means “unknown / still collecting”).
+        <span class="reading-cue reading-cue--gray">Gray</span> means the same everywhere: not enough data yet, or a neutral read (on the verdict bar that usually means “very new in this tool”; beside a metric it usually means “unknown / still collecting”).
         <br />
-        <strong>Verdict strip:</strong> <span class="reading-cue reading-cue--lime">lime</span> = more stored history, stronger read; <span class="reading-cue reading-cue--mint">mint</span> = healthy signals but less history in this tool; <span class="reading-cue reading-cue--yellow">yellow</span> = mixed metrics; <span class="reading-cue reading-cue--orange">orange</span> = serious concern (e.g. very high fee or offline).
-        <br />
-        <strong>Elsewhere:</strong> <span class="reading-cue reading-cue--green">green</span> = good;
-        <span class="reading-cue reading-cue--caution">orange/red</span> = caution.
+        The verdict bar runs <span class="reading-cue reading-cue--lime">lime</span> → <span class="reading-cue reading-cue--mint">mint</span> → <span class="reading-cue reading-cue--yellow">yellow</span> → <span class="reading-cue reading-cue--gray">gray</span> → <span class="reading-cue reading-cue--orange">orange</span> (stronger stored signal down to serious concern, e.g. very high fee or offline). Other panels use <span class="reading-cue reading-cue--green">green</span> for good and <span class="reading-cue reading-cue--red">red</span> tones for caution — one mental model; only the bar spells out every tier name.
       </div>
     </div>
   </div>
