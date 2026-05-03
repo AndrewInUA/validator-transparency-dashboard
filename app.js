@@ -1483,7 +1483,7 @@ function renderVerdictBadge(verdict) {
 
   const chipByTier = {
     recommended: "Green · strong track record",
-    promising: "Teal · healthy so far",
+    promising: "Green · healthy so far",
     watch: "Yellow · compare a bit",
     wait: "Gray · need more data",
     caution: "Orange · read carefully"
@@ -1493,7 +1493,7 @@ function renderVerdictBadge(verdict) {
     recommended:
       "Green: we have enough days of history and the main metrics look strong vs the network. Not financial advice — still read fee and status yourself.",
     promising:
-      "Teal: the visible metrics look healthy. The only reason this is not “green” is that this dashboard has not stored many days of history yet — that does not reduce your rewards; it just means our confidence grows over time.",
+      "Same green as above: the visible metrics look healthy. The only reason this is not the top “recommended” line is that this dashboard has not stored as many days of history yet — that does not reduce your rewards; it just means our confidence grows over time.",
     watch:
       "Yellow: usually one or two things are only average (for example yield a bit below the network middle). It does not mean “do not stake” — it means glance at Trust Card and APY and pick what matters to you.",
     wait:

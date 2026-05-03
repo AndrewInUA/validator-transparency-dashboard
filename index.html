@@ -43,28 +43,32 @@
       --surface-alt: #EEF3EA;
       --border: #E3E8EF;
       --border2: #D6DCE5;
-      --accent: #C9FF15;
-      --accent-dark: #060314;
+      --accent: #22c55e;
+      --accent-dark: #052e16;
       --accent2: #93A3FF;
       --accent3: #F6C343;
-      --success: #B8F000;
+      --good: #16a34a;
+      --good-muted: #22c55e;
+      --success: var(--good-muted);
       --warn: #F36B6B;
       --text: #101319;
       --text2: #8B93A6;
       --text3: #B7BFCC;
       --nav-text: #3A4150;
       --heading: #060314;
-      --btn-primary-bg: #060314;
-      --btn-primary-fg: #FFFFFF;
-      --stat-green: #3a7d00;
-      --pill-ok-fg: #3a6600;
+      --btn-primary-bg: var(--good);
+      --btn-primary-fg: #ffffff;
+      --stat-green: #15803d;
+      --pill-ok-fg: #166534;
+      --pill-ok-border: rgba(34, 197, 94, 0.38);
+      --pill-ok-bg: rgba(34, 197, 94, 0.1);
       --pill-warn-fg: #b03030;
       --badge-info-fg: #5a6edd;
       --ring-track: #E8EDF2;
-      --chart-line: #B8F000;
-      --chart-avg: rgba(185, 240, 0, 0.3);
-      --chart-fill-top: rgba(185, 240, 0, 0.18);
-      --chart-fill-bottom: rgba(185, 240, 0, 0.01);
+      --chart-line: var(--good-muted);
+      --chart-avg: rgba(34, 197, 94, 0.28);
+      --chart-fill-top: rgba(34, 197, 94, 0.14);
+      --chart-fill-bottom: rgba(34, 197, 94, 0.02);
       --chart-grid: rgba(0, 0, 0, 0.04);
       --chart-point-border: #FFFFFF;
       --tooltip-bg: #060314;
@@ -97,17 +101,24 @@
       --text3: #6b7488;
       --nav-text: #c8cedc;
       --heading: #f0f3fa;
-      --btn-primary-bg: #c9ff15;
-      --btn-primary-fg: #060314;
-      --stat-green: #9fe000;
-      --pill-ok-fg: #c8f070;
+      --accent: #34d399;
+      --accent-dark: #ecfdf5;
+      --btn-primary-bg: #22c55e;
+      --btn-primary-fg: #ffffff;
+      --stat-green: #6ee7b7;
+      --pill-ok-fg: #bbf7d0;
+      --pill-ok-border: rgba(52, 211, 153, 0.42);
+      --pill-ok-bg: rgba(52, 211, 153, 0.12);
       --pill-warn-fg: #ff9a9a;
       --badge-info-fg: #a8b4ff;
       --ring-track: #2a3142;
-      --chart-line: #B8F000;
-      --chart-avg: rgba(185, 240, 0, 0.35);
-      --chart-fill-top: rgba(185, 240, 0, 0.22);
-      --chart-fill-bottom: rgba(185, 240, 0, 0.02);
+      --good: #22c55e;
+      --good-muted: #34d399;
+      --chart-line: var(--good-muted);
+      --chart-avg: rgba(52, 211, 153, 0.32);
+      --chart-fill-top: rgba(52, 211, 153, 0.16);
+      --chart-fill-bottom: rgba(52, 211, 153, 0.03);
+      --success: var(--good-muted);
       --chart-grid: rgba(255, 255, 255, 0.06);
       --chart-point-border: #141821;
       --tooltip-bg: #1a2030;
@@ -153,7 +164,7 @@
       flex-shrink: 0;
       display: block;
       transform: none;
-      filter: drop-shadow(0 0 12px rgba(185, 240, 0, 0.35));
+      filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.35));
     }
 
     .product-name {
@@ -669,39 +680,31 @@
       margin-bottom: 10px;
     }
 
-    /* Plain-English summary: clear green when verdict is "Attractive" (not chartreuse / yellow-ish) */
+    /* Plain-English summary “Attractive”: same green tokens as pills / buttons */
     .delegator-assessment-card[data-delegator-tone="attractive"] {
-      border-color: rgba(46, 204, 113, 0.42);
+      border-color: var(--pill-ok-border);
       background: linear-gradient(
         165deg,
-        rgba(46, 204, 113, 0.08) 0%,
+        var(--pill-ok-bg) 0%,
         var(--surface) 48%
       );
-      box-shadow: 0 6px 28px rgba(46, 204, 113, 0.06);
+      box-shadow: 0 6px 28px rgba(34, 197, 94, 0.07);
     }
 
     .delegator-assessment-card[data-delegator-tone="attractive"] #delegator-verdict.ok {
-      border: 1px solid rgba(46, 204, 113, 0.5) !important;
-      background: rgba(46, 204, 113, 0.14) !important;
-      color: #1e8449 !important;
-    }
-
-    html[data-theme="dark"] .delegator-assessment-card[data-delegator-tone="attractive"] #delegator-verdict.ok {
-      color: #58d68d !important;
+      border: 1px solid var(--pill-ok-border) !important;
+      background: var(--pill-ok-bg) !important;
+      color: var(--stat-green) !important;
     }
 
     .delegator-assessment-card[data-delegator-tone="attractive"] .pill.pill-ok {
-      border-color: rgba(46, 204, 113, 0.4) !important;
-      background: rgba(46, 204, 113, 0.12) !important;
-      color: #1e6633 !important;
-    }
-
-    html[data-theme="dark"] .delegator-assessment-card[data-delegator-tone="attractive"] .pill.pill-ok {
-      color: #abebc6 !important;
+      border-color: var(--pill-ok-border) !important;
+      background: var(--pill-ok-bg) !important;
+      color: var(--pill-ok-fg) !important;
     }
 
     .delegator-assessment-card[data-delegator-tone="attractive"] .pill.pill-ok::before {
-      background: #2ecc71 !important;
+      background: var(--good-muted) !important;
     }
 
     @media (max-width: 860px) {
@@ -782,14 +785,14 @@
       color: var(--nav-text);
     }
 
-    .badge.ok  { border-color:rgba(185,240,0,.4);  background:rgba(185,240,0,.1);  color:var(--pill-ok-fg); }
+    .badge.ok  { border-color: var(--pill-ok-border); background: var(--pill-ok-bg); color: var(--pill-ok-fg); }
     .badge.warn{ border-color:rgba(243,107,107,.3); background:rgba(243,107,107,.08); color:var(--warn); }
     .badge.info{ border-color:rgba(147,163,255,.35); background:rgba(147,163,255,.1); color:var(--badge-info-fg); }
     .badge.upside {
-      border-color: rgba(185, 240, 0, 0.5);
-      background: rgba(185, 240, 0, 0.15);
+      border-color: var(--pill-ok-border);
+      background: var(--pill-ok-bg);
       color: var(--pill-ok-fg);
-      box-shadow: 0 0 0 1px rgba(185, 240, 0, 0.1), 0 0 16px rgba(185, 240, 0, 0.18);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.12), 0 0 18px rgba(34, 197, 94, 0.14);
     }
 
     .upside-signals-row {
@@ -845,7 +848,7 @@
       letter-spacing: .02em;
     }
 
-    #status.ok   { border:1px solid rgba(185,240,0,.4); background:rgba(185,240,0,.1); color:var(--pill-ok-fg); }
+    #status.ok   { border: 1px solid var(--pill-ok-border); background: var(--pill-ok-bg); color: var(--pill-ok-fg); }
     #status.warn { border:1px solid rgba(243,107,107,.35); background:rgba(243,107,107,.08); color:var(--warn); }
 
     .chart-header {
@@ -1171,8 +1174,8 @@
       background: var(--text3);
     }
 
-    .pill.pill-ok  { border-color:rgba(185,240,0,.35); background:rgba(185,240,0,.08); color:var(--pill-ok-fg); }
-    .pill.pill-ok::before  { background:var(--success); }
+    .pill.pill-ok  { border-color: var(--pill-ok-border); background: var(--pill-ok-bg); color: var(--pill-ok-fg); }
+    .pill.pill-ok::before  { background: var(--good-muted); }
     .pill.pill-warn{ border-color:rgba(243,107,107,.3); background:rgba(243,107,107,.06); color:var(--pill-warn-fg); }
     .pill.pill-warn::before{ background:var(--warn); }
 
@@ -1667,8 +1670,7 @@
       margin-left: 4px;
     }
     .dir-pill-warn { background: rgba(243, 107, 107, 0.12); color: var(--warn); }
-    .dir-pill-ok { background: rgba(184, 240, 0, 0.12); color: #3a6600; }
-    [data-theme="dark"] .dir-pill-ok { color: var(--success); }
+    .dir-pill-ok { background: var(--pill-ok-bg); color: var(--pill-ok-fg); border: 1px solid var(--pill-ok-border); }
     .dir-open {
       font-weight: 600;
       color: var(--accent2);
@@ -1946,17 +1948,13 @@
       color: var(--text2);
     }
 
-    .verdict-recommended {
-      border-color: rgba(46, 204, 113, 0.55);
-      background: linear-gradient(180deg, rgba(46, 204, 113, 0.08), transparent);
-    }
-    .verdict-recommended .verdict-tier { color: #2ecc71; }
-
+    .verdict-recommended,
     .verdict-promising {
-      border-color: rgba(26, 188, 156, 0.55);
-      background: linear-gradient(180deg, rgba(26, 188, 156, 0.09), transparent);
+      border-color: var(--pill-ok-border);
+      background: linear-gradient(180deg, var(--pill-ok-bg), transparent);
     }
-    .verdict-promising .verdict-tier { color: #1abc9c; }
+    .verdict-recommended .verdict-tier,
+    .verdict-promising .verdict-tier { color: var(--good-muted); }
 
     .verdict-watch {
       border-color: rgba(241, 196, 15, 0.55);
@@ -2106,7 +2104,7 @@
       </div>
       <div>
         <strong>Color cues</strong><br />
-        On the <strong>verdict</strong> strip: <strong>green</strong> = strong long track record, <strong>teal</strong> = healthy signs so far (we have fewer days of data, not a penalty), <strong>yellow</strong> = one or two metrics are only average — still OK to stake if the trade-offs work for you, <strong>gray</strong> = very new on our charts, <strong>orange</strong> = real red flags (e.g. very high fee or offline).
+        On the <strong>verdict</strong> strip: <strong>green</strong> = positive (full “recommended” = longer stored history; “healthy so far” uses the same green — fewer days of data in this tool, not a penalty), <strong>yellow</strong> = one or two metrics are only average — still OK to stake if the trade-offs work for you, <strong>gray</strong> = very new on our charts, <strong>orange</strong> = real red flags (e.g. very high fee or offline).
         <br />
         In the rest of the page: <span style="color:var(--success);font-weight:600">green</span> = good,
         <span style="color:var(--warn);font-weight:600">orange/red</span> = caution,
@@ -2453,10 +2451,10 @@
       return v || fb;
     };
     return {
-      line: pick("--chart-line", "#B8F000"),
-      fillTop: pick("--chart-fill-top", "rgba(185, 240, 0, 0.18)"),
-      fillBottom: pick("--chart-fill-bottom", "rgba(185, 240, 0, 0.01)"),
-      avg: pick("--chart-avg", "rgba(185, 240, 0, 0.3)"),
+      line: pick("--chart-line", "#22c55e"),
+      fillTop: pick("--chart-fill-top", "rgba(34, 197, 94, 0.14)"),
+      fillBottom: pick("--chart-fill-bottom", "rgba(34, 197, 94, 0.02)"),
+      avg: pick("--chart-avg", "rgba(34, 197, 94, 0.28)"),
       grid: pick("--chart-grid", "rgba(0,0,0,0.04)"),
       pointBorder: pick("--chart-point-border", "#FFFFFF"),
       tick: pick("--text2", "#8B93A6"),
@@ -2603,7 +2601,10 @@
     const c = 314.16;
     arc.style.strokeDashoffset = c - (score / 100) * c;
 
-    if (score >= 85) arc.setAttribute('stroke', '#B8F000');
+    const goodStroke =
+      getComputedStyle(document.documentElement).getPropertyValue("--chart-line").trim() ||
+      "#22c55e";
+    if (score >= 85) arc.setAttribute("stroke", goodStroke);
     else if (score >= 70) arc.setAttribute('stroke', '#93A3FF');
     else if (score >= 50) arc.setAttribute('stroke', '#F6C343');
     else arc.setAttribute('stroke', '#F36B6B');
@@ -2700,7 +2701,7 @@
   });
 </script>
 
-<script src="./app.js?v=76" defer></script>
+<script src="./app.js?v=77" defer></script>
 
 </body>
 </html>
