@@ -7,12 +7,20 @@
 let cache = { at: 0, rows: null };
 const CACHE_MS = 8 * 60 * 1000;
 
+function safeImageUrl(v) {
+  const raw = typeof v.image === "string" ? v.image.trim() : "";
+  if (!raw) return null;
+  if (!/^https?:\/\//i.test(raw)) return null;
+  return raw;
+}
+
 function normalizeRow(v) {
   const vote = String(v.vote_identity || "").trim();
   const stake = Number(v.activated_stake);
   return {
     vote,
     name: typeof v.name === "string" ? v.name.trim() : "",
+    image: safeImageUrl(v),
     commission: Number.isFinite(Number(v.commission)) ? Number(v.commission) : null,
     stake_sol: Number.isFinite(stake) ? stake : null,
     delinquent: !!v.delinquent,

@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v43
+ * Validator Transparency Dashboard – app.js v44
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -1419,6 +1419,38 @@ function buildDashboardHrefLocal(vote) {
   return `./index.html?${new URLSearchParams({ vote }).toString()}`;
 }
 
+function initialsFromName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return "?";
+  const cleaned = trimmed.replace(/[^\p{L}\p{N}\s]/gu, " ").trim();
+  if (!cleaned) {
+    const ch = [...trimmed][0];
+    return ch ? ch.toUpperCase() : "?";
+  }
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) {
+    const word = parts[0];
+    const arr = [...word];
+    return (arr.slice(0, 2).join("") || word.slice(0, 2)).toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function avatarHtml(row) {
+  const name = row?.name || "";
+  const initials = escapeHtmlDirectory(initialsFromName(name));
+  if (row?.image) {
+    const safeUrl = escapeHtmlDirectory(row.image);
+    const safeAlt = escapeHtmlDirectory(name || "Validator");
+    return (
+      `<img class="dir-avatar" src="${safeUrl}" alt="${safeAlt}" loading="lazy" ` +
+      `onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'dir-avatar-fallback',textContent:'${initials}'}))" />`
+    );
+  }
+  return `<span class="dir-avatar-fallback">${initials}</span>`;
+}
+
 async function initValidatorDirectoryEmbed() {
   const tbody = document.getElementById("directory-tbody");
   const meta = document.getElementById("directory-meta");
@@ -1444,7 +1476,15 @@ async function initValidatorDirectoryEmbed() {
         : '<span class="dir-pill dir-pill-ok">Active</span>';
       const tr = document.createElement("tr");
       tr.innerHTML =
-        `<td class="dir-name">${escapeHtmlDirectory(name)} ${del}</td>` +
+        `<td class="dir-name">` +
+          `<div class="dir-id-cell">` +
+            avatarHtml(r) +
+            `<div class="dir-name-block">` +
+              `<span class="dir-name-text">${escapeHtmlDirectory(name)}</span>` +
+              `<span>${del}</span>` +
+            `</div>` +
+          `</div>` +
+        `</td>` +
         `<td class="dir-vote">${escapeHtmlDirectory(r.vote)}</td>` +
         `<td>${Number.isFinite(r.commission) ? `${r.commission}%` : "–"}</td>` +
         `<td>${fmtStakeDirectory(r.stake_sol)}</td>` +
