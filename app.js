@@ -1890,9 +1890,12 @@ function setupReadingGuideToggle() {
   if (!card || !btn) return;
 
   const KEY = "vtd-reading-guide-collapsed";
-  let collapsed = false;
+  /** Default collapsed so the dashboard content leads; expand via Show or persist "0". */
+  let collapsed = true;
   try {
-    collapsed = localStorage.getItem(KEY) === "1";
+    const v = localStorage.getItem(KEY);
+    if (v === "0") collapsed = false;
+    else if (v === "1") collapsed = true;
   } catch {}
 
   const apply = () => {
