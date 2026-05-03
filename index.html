@@ -43,32 +43,32 @@
       --surface-alt: #EEF3EA;
       --border: #E3E8EF;
       --border2: #D6DCE5;
-      --accent: #22c55e;
-      --accent-dark: #052e16;
-      --accent2: #93A3FF;
-      --accent3: #F6C343;
-      --good: #16a34a;
-      --good-muted: #22c55e;
-      --success: var(--good-muted);
-      --warn: #F36B6B;
+      /* Brand: lime ring (matches logo glass) + Solana mint (matches logo check) */
+      --accent: #c9ff15;
+      --accent-dark: #060314;
+      --accent2: #93a3ff;
+      --accent3: #f6c343;
+      --solana-mint: #14f195;
+      --success: #b8f000;
+      --warn: #f36b6b;
       --text: #101319;
-      --text2: #8B93A6;
-      --text3: #B7BFCC;
-      --nav-text: #3A4150;
+      --text2: #8b93a6;
+      --text3: #b7bfcc;
+      --nav-text: #3a4150;
       --heading: #060314;
-      --btn-primary-bg: var(--good);
+      --btn-primary-bg: #060314;
       --btn-primary-fg: #ffffff;
-      --stat-green: #15803d;
-      --pill-ok-fg: #166534;
-      --pill-ok-border: rgba(34, 197, 94, 0.38);
-      --pill-ok-bg: rgba(34, 197, 94, 0.1);
+      --stat-green: #3a7d00;
+      --pill-ok-fg: #3a6600;
+      --pill-ok-border: rgba(185, 240, 0, 0.38);
+      --pill-ok-bg: rgba(185, 240, 0, 0.1);
       --pill-warn-fg: #b03030;
       --badge-info-fg: #5a6edd;
-      --ring-track: #E8EDF2;
-      --chart-line: var(--good-muted);
-      --chart-avg: rgba(34, 197, 94, 0.28);
-      --chart-fill-top: rgba(34, 197, 94, 0.14);
-      --chart-fill-bottom: rgba(34, 197, 94, 0.02);
+      --ring-track: #e8edf2;
+      --chart-line: #b8f000;
+      --chart-avg: rgba(185, 240, 0, 0.3);
+      --chart-fill-top: rgba(185, 240, 0, 0.18);
+      --chart-fill-bottom: rgba(185, 240, 0, 0.01);
       --chart-grid: rgba(0, 0, 0, 0.04);
       --chart-point-border: #FFFFFF;
       --tooltip-bg: #060314;
@@ -101,24 +101,23 @@
       --text3: #6b7488;
       --nav-text: #c8cedc;
       --heading: #f0f3fa;
-      --accent: #34d399;
-      --accent-dark: #ecfdf5;
-      --btn-primary-bg: #22c55e;
-      --btn-primary-fg: #ffffff;
-      --stat-green: #6ee7b7;
-      --pill-ok-fg: #bbf7d0;
-      --pill-ok-border: rgba(52, 211, 153, 0.42);
-      --pill-ok-bg: rgba(52, 211, 153, 0.12);
+      --accent: #c9ff15;
+      --accent-dark: #060314;
+      --btn-primary-bg: #c9ff15;
+      --btn-primary-fg: #060314;
+      --stat-green: #9fe000;
+      --pill-ok-fg: #c8f070;
+      --pill-ok-border: rgba(185, 240, 0, 0.42);
+      --pill-ok-bg: rgba(185, 240, 0, 0.12);
       --pill-warn-fg: #ff9a9a;
       --badge-info-fg: #a8b4ff;
       --ring-track: #2a3142;
-      --good: #22c55e;
-      --good-muted: #34d399;
-      --chart-line: var(--good-muted);
-      --chart-avg: rgba(52, 211, 153, 0.32);
-      --chart-fill-top: rgba(52, 211, 153, 0.16);
-      --chart-fill-bottom: rgba(52, 211, 153, 0.03);
-      --success: var(--good-muted);
+      --solana-mint: #14f195;
+      --success: #b8f000;
+      --chart-line: #b8f000;
+      --chart-avg: rgba(185, 240, 0, 0.35);
+      --chart-fill-top: rgba(185, 240, 0, 0.22);
+      --chart-fill-bottom: rgba(185, 240, 0, 0.02);
       --chart-grid: rgba(255, 255, 255, 0.06);
       --chart-point-border: #141821;
       --tooltip-bg: #1a2030;
@@ -164,19 +163,7 @@
       flex-shrink: 0;
       display: block;
       transform: none;
-    }
-
-    /* Vector mark: uses --good-muted so it matches buttons / verdict / charts */
-    .svg-defs {
-      position: absolute;
-      width: 0;
-      height: 0;
-      overflow: hidden;
-    }
-
-    .product-logo-mark {
-      color: var(--good-muted);
-      filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.32));
+      filter: drop-shadow(0 0 12px rgba(185, 240, 0, 0.35));
     }
 
     .product-name {
@@ -700,7 +687,7 @@
         var(--pill-ok-bg) 0%,
         var(--surface) 48%
       );
-      box-shadow: 0 6px 28px rgba(34, 197, 94, 0.07);
+      box-shadow: 0 6px 28px rgba(185, 240, 0, 0.08);
     }
 
     .delegator-assessment-card[data-delegator-tone="attractive"] #delegator-verdict.ok {
@@ -716,7 +703,7 @@
     }
 
     .delegator-assessment-card[data-delegator-tone="attractive"] .pill.pill-ok::before {
-      background: var(--good-muted) !important;
+      background: var(--success) !important;
     }
 
     @media (max-width: 860px) {
@@ -804,7 +791,7 @@
       border-color: var(--pill-ok-border);
       background: var(--pill-ok-bg);
       color: var(--pill-ok-fg);
-      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.12), 0 0 18px rgba(34, 197, 94, 0.14);
+      box-shadow: 0 0 0 1px rgba(185, 240, 0, 0.12), 0 0 18px rgba(185, 240, 0, 0.18);
     }
 
     .upside-signals-row {
@@ -1187,7 +1174,7 @@
     }
 
     .pill.pill-ok  { border-color: var(--pill-ok-border); background: var(--pill-ok-bg); color: var(--pill-ok-fg); }
-    .pill.pill-ok::before  { background: var(--good-muted); }
+    .pill.pill-ok::before  { background: var(--success); }
     .pill.pill-warn{ border-color:rgba(243,107,107,.3); background:rgba(243,107,107,.06); color:var(--pill-warn-fg); }
     .pill.pill-warn::before{ background:var(--warn); }
 
@@ -1755,9 +1742,9 @@
     .footer-brand-row .footer-mini-logo {
       width: 28px;
       height: 28px;
+      object-fit: contain;
       flex-shrink: 0;
-      color: var(--good-muted);
-      filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.22));
+      filter: drop-shadow(0 0 6px rgba(185, 240, 0, 0.28));
     }
     .footer-brand-row strong { color: var(--text); }
 
@@ -1961,13 +1948,17 @@
       color: var(--text2);
     }
 
-    .verdict-recommended,
-    .verdict-promising {
-      border-color: var(--pill-ok-border);
-      background: linear-gradient(180deg, var(--pill-ok-bg), transparent);
+    .verdict-recommended {
+      border-color: rgba(185, 240, 0, 0.48);
+      background: linear-gradient(180deg, rgba(185, 240, 0, 0.1), transparent);
     }
-    .verdict-recommended .verdict-tier,
-    .verdict-promising .verdict-tier { color: var(--good-muted); }
+    .verdict-recommended .verdict-tier { color: var(--success); }
+
+    .verdict-promising {
+      border-color: rgba(20, 241, 149, 0.42);
+      background: linear-gradient(180deg, rgba(20, 241, 149, 0.08), transparent);
+    }
+    .verdict-promising .verdict-tier { color: var(--solana-mint); }
 
     .verdict-watch {
       border-color: rgba(241, 196, 15, 0.55);
@@ -2015,23 +2006,9 @@
 </script>
 <div class="wrap">
 
-  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" class="svg-defs" aria-hidden="true" focusable="false">
-    <defs>
-      <symbol id="vtd-logo-mark" viewBox="0 0 48 48">
-        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="18" r="11" stroke-width="2.25" />
-          <path d="M26.5 26.5 L37 37" stroke-width="2.85" />
-          <path d="M13.5 18.2 L17.1 21.8 L24.2 13.8" stroke-width="2.35" />
-        </g>
-      </symbol>
-    </defs>
-  </svg>
-
   <div class="top-bar">
     <div class="product-brand">
-      <svg class="product-logo product-logo-mark" width="48" height="48" role="img" aria-label="Validator Transparency logo">
-        <use href="#vtd-logo-mark" />
-      </svg>
+      <img src="./assets/logo-transparent.png" alt="Validator Transparency logo" class="product-logo" width="48" height="48" />
       <div class="product-name">Validator Transparency Dashboard</div>
     </div>
     <div class="header-actions">
@@ -2131,7 +2108,7 @@
       </div>
       <div>
         <strong>Color cues</strong><br />
-        On the <strong>verdict</strong> strip: <strong>green</strong> = positive (full “recommended” = longer stored history; “healthy so far” uses the same green — fewer days of data in this tool, not a penalty), <strong>yellow</strong> = one or two metrics are only average — still OK to stake if the trade-offs work for you, <strong>gray</strong> = very new on our charts, <strong>orange</strong> = real red flags (e.g. very high fee or offline).
+        On the <strong>verdict</strong> strip: <strong>lime</strong> = strong recommended pick (more stored history here); <strong style="color:var(--solana-mint)">mint</strong> = healthy so far — same idea as the Solana-colored tick in the logo (fewer days of data in this tool, not a penalty); <strong>yellow</strong> = mixed-but-OK numbers; <strong>gray</strong> = very new on our charts; <strong>orange</strong> = serious concern (e.g. very high fee or offline).
         <br />
         In the rest of the page: <span style="color:var(--success);font-weight:600">green</span> = good,
         <span style="color:var(--warn);font-weight:600">orange/red</span> = caution,
@@ -2453,9 +2430,7 @@
     <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots for the opened vote account. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context. Two validators can both be “fully covered” by collection but have different history lengths until enough days of snapshots accrue.</div>
     <div><strong>History model.</strong> Scheduled jobs snapshot <strong>all</strong> mainnet vote accounts returned by RPC and write shared rows in storage. Opening a page only sends an optional analytics ping (does not gate whether snapshots exist). Everyone reads the same dataset for a given vote key.</div>
     <div class="footer-brand-row">
-      <svg class="footer-mini-logo product-logo-mark" width="28" height="28" aria-hidden="true" focusable="false">
-        <use href="#vtd-logo-mark" />
-      </svg>
+      <img src="./assets/logo-transparent.png" alt="" class="footer-mini-logo" width="28" height="28" loading="lazy" />
       <div>
         <strong>Validator Transparency</strong> — made by <strong>AndrewInUA</strong>
         <span> · </span>
@@ -2480,10 +2455,10 @@
       return v || fb;
     };
     return {
-      line: pick("--chart-line", "#22c55e"),
-      fillTop: pick("--chart-fill-top", "rgba(34, 197, 94, 0.14)"),
-      fillBottom: pick("--chart-fill-bottom", "rgba(34, 197, 94, 0.02)"),
-      avg: pick("--chart-avg", "rgba(34, 197, 94, 0.28)"),
+      line: pick("--chart-line", "#B8F000"),
+      fillTop: pick("--chart-fill-top", "rgba(185, 240, 0, 0.18)"),
+      fillBottom: pick("--chart-fill-bottom", "rgba(185, 240, 0, 0.01)"),
+      avg: pick("--chart-avg", "rgba(185, 240, 0, 0.3)"),
       grid: pick("--chart-grid", "rgba(0,0,0,0.04)"),
       pointBorder: pick("--chart-point-border", "#FFFFFF"),
       tick: pick("--text2", "#8B93A6"),
@@ -2632,7 +2607,7 @@
 
     const goodStroke =
       getComputedStyle(document.documentElement).getPropertyValue("--chart-line").trim() ||
-      "#22c55e";
+      "#B8F000";
     if (score >= 85) arc.setAttribute("stroke", goodStroke);
     else if (score >= 70) arc.setAttribute('stroke', '#93A3FF');
     else if (score >= 50) arc.setAttribute('stroke', '#F6C343');
@@ -2730,7 +2705,7 @@
   });
 </script>
 
-<script src="./app.js?v=78" defer></script>
+<script src="./app.js?v=79" defer></script>
 
 </body>
 </html>

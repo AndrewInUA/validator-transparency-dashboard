@@ -1482,8 +1482,8 @@ function renderVerdictBadge(verdict) {
             : "verdict-watch";
 
   const chipByTier = {
-    recommended: "Green · strong track record",
-    promising: "Green · healthy so far",
+    recommended: "Lime · strong track record",
+    promising: "Mint · healthy so far",
     watch: "Yellow · compare a bit",
     wait: "Gray · need more data",
     caution: "Orange · read carefully"
@@ -1491,9 +1491,9 @@ function renderVerdictBadge(verdict) {
 
   const hintByTier = {
     recommended:
-      "Green: we have enough days of history and the main metrics look strong vs the network. Not financial advice — still read fee and status yourself.",
+      "Lime line: enough stored history here and strong metrics vs the network — aligned with the bright ring in the logo. Not financial advice — still read fee and status yourself.",
     promising:
-      "Same green as above: the visible metrics look healthy. The only reason this is not the top “recommended” line is that this dashboard has not stored as many days of history yet — that does not reduce your rewards; it just means our confidence grows over time.",
+      "Mint matches the Solana-style accent in the logo checkmark: metrics look healthy; we simply have fewer stored days here than the full “recommended” tier — that does not reduce your rewards.",
     watch:
       "Yellow: usually one or two things are only average (for example yield a bit below the network middle). It does not mean “do not stake” — it means glance at Trust Card and APY and pick what matters to you.",
     wait:
