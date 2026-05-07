@@ -2038,7 +2038,7 @@
           <strong>Browse the catalog below</strong> (search by name or vote key), or <strong>paste a vote account</strong> here if you already have one–same dashboard for every mainnet validator.
         </p>
         <div class="landing-search-row">
-          <input type="text" id="landing-vote-input" class="share-input" placeholder="Vote account or paste a dashboard link" autocomplete="off" aria-label="Vote account or dashboard URL" />
+          <input type="text" id="landing-vote-input" class="share-input" placeholder="Paste a vote account" autocomplete="off" aria-label="Vote account" />
           <button type="button" id="landing-open-btn" class="copy-btn">Load validator</button>
         </div>
         <div id="landing-feedback" aria-live="polite"></div>
@@ -2356,24 +2356,24 @@
     <div class="card">
         <div class="card-title">Open another validator</div>
         <p class="open-validator-blurb">
-          <strong>Search by name</strong> below (e.g. “Coinbase”, “Marinade”), or <strong>paste a vote account</strong> / dashboard URL. Optional name overrides the auto-detected display name in the new tab.
+          <strong>Search by name</strong> below (e.g. “Coinbase”, “Marinade”), or <strong>paste a vote account</strong>. Optional name overrides the auto-detected display name in the new tab.
         </p>
         <div class="open-validator-row">
           <div class="typeahead-wrap">
-            <input id="open-validator-input" class="share-input" type="text" value="" placeholder="Type a name or paste a vote account / URL" autocomplete="off" aria-label="Validator name, vote account, or URL" />
+            <input id="open-validator-input" class="share-input" type="text" value="" placeholder="Type a name or paste a vote account" autocomplete="off" aria-label="Validator name or vote account" />
             <div id="open-validator-results" class="typeahead-results" hidden></div>
           </div>
           <input id="open-validator-name" class="share-input" type="text" value="" placeholder="Optional display name" aria-label="Optional validator display name" />
           <button type="button" id="open-validator-btn" class="copy-btn">Open validator</button>
         </div>
-        <div id="open-validator-feedback" class="open-validator-help">Tip: pick a row from the dropdown to auto-fill, or paste a raw vote account / dashboard link.</div>
+        <div id="open-validator-feedback" class="open-validator-help">Tip: pick a row from the dropdown to auto-fill, or paste a raw vote account.</div>
         <div class="compare-block">
           <p class="compare-title">Compare on this page</p>
           <div class="open-validator-row">
             <div class="compare-single-field">
               <label class="compare-field-label" for="compare-validator-input">Compare current validator with</label>
               <div class="typeahead-wrap">
-                <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="Search by name or paste vote account / URL" autocomplete="off" aria-label="Other validator name, vote account, or URL" />
+                <input id="compare-validator-input" class="share-input" type="text" value="" placeholder="Search by name or paste vote account" autocomplete="off" aria-label="Other validator name or vote account" />
                 <div id="compare-validator-results" class="typeahead-results" hidden></div>
               </div>
             </div>

@@ -1839,7 +1839,7 @@ async function initLandingPage() {
     if (!isProbablyVoteKey(parsed.vote)) {
       if (fb) {
         fb.textContent =
-          "Enter a valid Solana vote account (base58, 32–44 chars), or paste a link that includes vote=.";
+          "Enter a valid Solana vote account (base58, 32–44 chars).";
       }
       return;
     }
@@ -2351,10 +2351,7 @@ async function main() {
     const name = String(openNameInput?.value || parsed.name || "").trim();
 
     if (!isProbablyVoteKey(vote)) {
-      setOpenFeedback(
-        "Enter a valid vote account, or paste a dashboard link that includes ?vote=.",
-        true
-      );
+      setOpenFeedback("Enter a valid vote account.", true);
       return;
     }
 
@@ -2390,10 +2387,7 @@ async function main() {
 
   const runComparison = async voteBValue => {
     if (!isProbablyVoteKey(voteBValue)) {
-      setCompareFeedback(
-        "Enter a valid vote account (or a dashboard URL that includes vote=).",
-        true
-      );
+      setCompareFeedback("Enter a valid vote account.", true);
       return;
     }
     if (voteBValue === CURRENT.voteKey) {
