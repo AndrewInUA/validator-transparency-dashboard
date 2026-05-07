@@ -1353,12 +1353,10 @@ function computeVerdict({
     }
 
     if (Number.isFinite(commission)) {
-      if (Number.isFinite(commissionMedian) && commission < commissionMedian) {
-        positives.push(`commission ${commission.toFixed(0)}% (below network median)`);
-      } else if (Number.isFinite(commissionMedian) && commission > commissionMedian + 2) {
-        negatives.push(
-          `commission ${commission.toFixed(0)}% (above network median ${commissionMedian.toFixed(0)}%)`
-        );
+      if (commission <= 5) {
+        positives.push(`low validator commission (${commission.toFixed(0)}%)`);
+      } else if (commission >= 10) {
+        negatives.push(`higher validator commission (${commission.toFixed(0)}%)`);
       }
     }
 
@@ -1518,9 +1516,6 @@ function renderVerdictBadge(verdict) {
     }
     if (Number.isFinite(verdict.stabilityScore)) {
       bits.push(`Stability ${Math.round(verdict.stabilityScore)}/100`);
-    }
-    if (Number.isFinite(verdict.commissionMedian)) {
-      bits.push(`Network median commission ${verdict.commissionMedian.toFixed(0)}%`);
     }
     metaEl.textContent = bits.join("  ·  ");
   }
