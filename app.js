@@ -1085,7 +1085,7 @@ function renderDelegatorAssessment(assessment) {
   safeSetText(document.getElementById("delegator-summary"), assessment.summary);
   safeSetText(
     document.getElementById("delegator-confidence"),
-    `Confidence: ${assessment.confidence} (snapshot depth for this vote account and signal coverage; network-wide collection does not shortcut history length).`
+    `Confidence: ${assessment.confidence} (based on snapshot depth for this vote account and signal coverage; confidence grows as more history is recorded).`
   );
 
   const verdictEl = document.getElementById("delegator-verdict");
@@ -1410,7 +1410,7 @@ function computeVerdict({
       const d = Math.round(historyDays);
       reasons.push(
         `${positives.slice(0, 3).join(", ") || "healthy signals on record"}. ` +
-          `Only ~${d} day${d === 1 ? "" : "s"} of history stored here so far – not a long track record yet in this dashboard. Rewards on-chain are unaffected.`
+          `Early read with ~${d} day${d === 1 ? "" : "s"} of stored history so far; confidence naturally improves as more snapshots accumulate. Rewards on-chain are unaffected.`
       );
     } else {
       tier = "watch";
@@ -1439,8 +1439,8 @@ function computeVerdict({
       blurbPrefix: "Not a warning –"
     },
     wait: {
-      label: "Very new on our charts",
-      blurbPrefix: "Need more stored history before a confident read –"
+      label: "Early read on our charts",
+      blurbPrefix: "History is still building in this dashboard –"
     },
     caution: {
       label: "High risk to skip or read carefully",
@@ -1485,7 +1485,7 @@ function renderVerdictBadge(verdict) {
     recommended: "Lime · strong track record",
     promising: "Mint · healthy so far",
     watch: "Yellow · compare a bit",
-    wait: "Gray · need more data",
+    wait: "Gray · early read",
     caution: "Orange · read carefully"
   };
 
@@ -1493,14 +1493,16 @@ function renderVerdictBadge(verdict) {
     recommended:
       "Strong metrics vs the network and enough history stored here. Not financial advice – still verify commission and live status.",
     promising:
-      "Same metrics idea as lime, but fewer days of history in this database yet – your rewards are not reduced; confidence grows as snapshots add up.",
+      "Same metrics idea as lime, with a shorter stored-history window so far. Your rewards are not reduced; confidence grows as snapshots add up.",
     watch:
       "One or two metrics are only average vs the network. Not a “no” – just compare Trust Card, commission, and APY.",
     wait:
-      "Very little history stored here yet. The validator may still be fine – check again after more days.",
+      "This is an early read while stored history builds. The validator may still be fine — re-check as more days accumulate.",
     caution:
       "Red-flag signals (e.g. very high commission, delinquent now, or weak stability). Read the cards above."
   };
+  const timingGuide =
+    "Timing guide: gray = under ~14 days of stored history; mint = ~14-59 days with healthy signals; lime = 60+ days with strong, consistent signals.";
 
   root.className = `card verdict-card ${cls}`;
   if (tierEl) {
@@ -1524,7 +1526,8 @@ function renderVerdictBadge(verdict) {
   }
 
   if (hintEl) {
-    const text = hintByTier[verdict.tier] || "";
+    const base = hintByTier[verdict.tier] || "";
+    const text = base ? `${base} ${timingGuide}` : timingGuide;
     if (text) {
       hintEl.textContent = text;
       hintEl.hidden = false;
