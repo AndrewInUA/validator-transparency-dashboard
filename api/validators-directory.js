@@ -26,7 +26,7 @@ function normalizeRow(v) {
     stake_sol: Number.isFinite(stake) ? stake : null,
     delinquent: !!v.delinquent,
     rank: Number.isFinite(Number(v.rank)) ? Number(v.rank) : null,
-    /** Stakewiz catalog flag — same feed that powers stakewiz.com */
+    /** Stakewiz catalog flag – same feed that powers stakewiz.com */
     is_jito: !!v.is_jito,
     /** Recent vote success percent from Stakewiz (not on-chain RPC). */
     vote_success_pct: Number.isFinite(voteSuccess) ? voteSuccess : null

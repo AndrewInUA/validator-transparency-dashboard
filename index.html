@@ -679,27 +679,6 @@
       font-weight: 600;
     }
 
-    /* Extra copy lives on native title of .delegator-native-tip — keep body text visually plain */
-    .delegator-native-tip {
-      display: inline-block;
-      margin-left: 0.35em;
-      font-size: 0.72em;
-      font-weight: 700;
-      line-height: 1;
-      color: var(--text2);
-      opacity: 0.5;
-      cursor: default;
-      vertical-align: super;
-      user-select: none;
-      letter-spacing: 0.02em;
-    }
-
-    .delegator-native-tip:hover,
-    .delegator-native-tip:focus-visible {
-      opacity: 0.88;
-      outline: none;
-    }
-
     .has-tip-spot[title]:not([title=""]) {
       cursor: default;
     }
@@ -2297,7 +2276,7 @@
         <div class="landing-kicker">Solana mainnet</div>
         <h1 class="landing-title">Find a validator</h1>
         <p class="landing-lead">
-          <strong>Browse the catalog below</strong> (search by name or vote key), or <strong>paste a vote account</strong> here if you already have one–same dashboard for every mainnet validator.
+          <strong>Browse the catalog below</strong> (search by name or vote key), or <strong>paste a vote account</strong> here if you already have one – same dashboard for every mainnet validator.
         </p>
         <div class="landing-search-row">
           <input type="text" id="landing-vote-input" class="share-input" placeholder="Paste a vote account" autocomplete="off" aria-label="Vote account" />
@@ -2333,7 +2312,7 @@
             </dd>
             <dt>Vote success (percentage)</dt>
             <dd>
-              Also from Stakewiz: their <strong>vote success score as a percentage</strong> — how reliably this validator landed votes in the window they use (~higher means fewer misses).
+              Also from Stakewiz: their <strong>vote success score as a percentage</strong> – how reliably this validator landed votes in the window they use (~higher means fewer misses).
               It is <strong>not</strong> the same field as “Recent voting %” on the validator profile page (that one comes from <strong>Solana RPC</strong> over recent epochs). Use both as context; they can differ slightly.
             </dd>
           </dl>
@@ -2344,7 +2323,7 @@
               <tr>
                 <th>Name</th>
                 <th>Vote account</th>
-                <th title="Commission—validator fee on staking rewards">Comm.</th>
+                <th title="Commission – validator fee on staking rewards">Comm.</th>
                 <th>Stake (SOL)</th>
                 <th scope="col" class="dir-th-split" title="Stakewiz: Jito-capable validator">
                   <span class="dir-th-title">Jito-capable</span>
@@ -2391,7 +2370,7 @@
       </div>
       <div>
         <strong>5 · Duplex summaries</strong><br />
-        <strong>Verdict</strong> = network-relative band plus snapshot depth. <strong>Signal breakdown</strong> below rolls the same telemetry into positives/cautions for <em>this</em> validator—orthogonal scoring paths.
+        <strong>Verdict</strong> = network-relative band plus snapshot depth. <strong>Signal breakdown</strong> below rolls the same telemetry into positives/cautions for <em>this</em> validator – orthogonal scoring paths.
       </div>
       <div>
         <strong>Tip · At a glance</strong><br />
@@ -2424,7 +2403,7 @@
       </div>
       <div class="delegator-snapshot-item">
         <span class="delegator-snapshot-label">Jito</span>
-        <span id="snapshot-jito" class="delegator-snapshot-value val-muted" title="From Jito public API — ON can mean extra reward upside vs baseline">–</span>
+        <span id="snapshot-jito" class="delegator-snapshot-value val-muted" title="From Jito public API – ON can mean extra reward upside vs baseline">–</span>
       </div>
       <div class="delegator-snapshot-item">
         <span class="delegator-snapshot-label">APY est.</span>
@@ -2439,7 +2418,7 @@
 
   <div id="verdict-card" class="card verdict-card" data-loaded="true" style="display:none">
     <p class="verdict-purpose">
-      Snapshot-informed network read — medians, live status, archived depth; not staking advice.
+      Snapshot-informed network read – medians, live status, archived depth; not staking advice.
     </p>
     <div class="verdict-row">
       <span id="verdict-tier" class="verdict-tier">Loading…</span>
@@ -2451,9 +2430,9 @@
       <summary>What do the colored labels mean?</summary>
       <p>
         Gray, mint, and lime only describe <strong>how long we’ve been saving daily snapshots</strong> for this validator inside this dashboard
-        &#8211; not whether staking &ldquo;works&rdquo; on Solana.
+        – not whether staking &ldquo;works&rdquo; on Solana.
         Lime means we&apos;ve tracked it longer with consistently healthy signals here; gray means our history is newer.
-        Orange means something flagged as risky &#8211; read the commission and stability sections above.
+        Orange means something flagged as risky – read the commission and stability sections above.
       </p>
     </details>
   </div>
@@ -2503,7 +2482,7 @@
                 <span class="info-dot" tabindex="0" data-tip="How much of their recent voting opportunities they actually used. Closer to 100% = more reliable. Below 90% in normal conditions is a yellow flag.">i</span>
               </div>
               <div id="uptime" class="stat-value">–%</div>
-              <p class="stat-hint">Average across the last few <strong>finished</strong> epochs. <strong>~99–100% is great.</strong> Drops below ~90% in normal conditions deserve a closer look (could be temporary, but worth checking).</p>
+              <p class="stat-hint">Average across the last few <strong>finished</strong> epochs. <strong>~99 – 100% is great.</strong> Drops below ~90% in normal conditions deserve a closer look (could be temporary, but worth checking).</p>
             </div>
           </div>
         </div>
@@ -2551,7 +2530,7 @@
         <ul class="stability-usage-list">
           <li>This score reflects full stored history for this vote account (same pipeline as every other validator).</li>
           <li>Higher is better for consistency (fewer delinquency events and fee changes).</li>
-          <li>New entries can look “early” until enough daily snapshots pile up–compare validators with similar history length when possible.</li>
+          <li>New entries can look “early” until enough daily snapshots pile up – compare validators with similar history length when possible.</li>
           <li>Use this as the main consistency signal; then check APY and pool context.</li>
         </ul>
       </div>
@@ -2671,10 +2650,7 @@
     <div class="card delegator-assessment-card" aria-label="Validator signal breakdown">
       <div class="card-title">
         Signal breakdown
-        <span class="info-dot" tabindex="0" data-tip="Each pill is one signal we surfaced for this validator; hover the pill—or the ℹ after a sentence—for full wording. Automated checklist, separate model from Verdict above.">i</span>
-      </div>
-      <div class="card-note">
-        Takes the same blended signals you already saw above—commission, health, voting, stability, pools, rewards—and lists what looks supportive versus what deserves a second look for <strong>this vote account</strong>. Verdict ranks against network medians; this block stays validator-centric.
+        <span id="delegator-assessment-info" class="info-dot" tabindex="0" data-tip="" aria-label="About this signal breakdown block">i</span>
       </div>
       <p id="delegator-summary" class="delegator-summary-note" aria-live="polite">Loading…</p>
       <div id="delegator-verdict" class="status-big">–</div>
@@ -2744,19 +2720,19 @@
         <div class="roadmap-block">
           <div class="card-title">Roadmap</div>
           <p class="roadmap-lead">
-            <strong>Direction</strong> &#8211; make every insight <em>actionable</em> for delegators (what to do next, not just charts),
-            then harden the same signals as <em>open infrastructure</em> so wallets, explorers, and teams can build on one transparent pipeline &#8211; not a one-off page.
+            <strong>Direction</strong> – make every insight <em>actionable</em> for delegators (what to do next, not just charts),
+            then harden the same signals as <em>open infrastructure</em> so wallets, explorers, and teams can build on one transparent pipeline – not a one-off page.
           </p>
           <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
             <div class="pill pill-ok">Done: All-time snapshot-based stability scoring</div>
             <div class="pill pill-ok">Done: Validator comparison on the same page</div>
             <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
-            <div class="pill pill-ok">Done: Directory on home &#8211; search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
+            <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
             <div class="pill pill-ok">Done: First-glance KPI strip + richer directory &amp; pickers (context before you open a profile)</div>
             <div class="pill">Next: Per-epoch detail page</div>
             <div class="pill">Next: Delinquency alerts &amp; proactive signals</div>
-            <div class="pill">Next: Actionable insight layer &#8211; clearer next steps, exports, and &ldquo;what changed&rdquo; across the page</div>
-            <div class="pill">Next: Builder-ready surface &#8211; documented HTTP APIs, stable metric definitions, embed / reuse patterns</div>
+            <div class="pill">Next: Actionable insight layer – clearer next steps, exports, and &ldquo;what changed&rdquo; across the page</div>
+            <div class="pill">Next: Builder-ready surface – documented HTTP APIs, stable metric definitions, embed / reuse patterns</div>
           </div>
         </div>
         <div id="system-signals" class="last-updated" style="margin-top:10px">System signals: checking…</div>
