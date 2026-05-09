@@ -1891,6 +1891,65 @@
       font-size: 13px;
     }
 
+    .delegator-snapshot-bar {
+      padding: 10px 14px 12px;
+      margin-bottom: var(--layout-gap);
+      animation: fadeUp .4s ease both;
+    }
+    .delegator-snapshot-bar .delegator-snapshot-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .delegator-snapshot-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .delegator-snapshot-sub {
+      font-size: 11px;
+      color: var(--text3);
+      letter-spacing: 0.02em;
+    }
+    .delegator-snapshot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+      gap: 10px 12px;
+    }
+    .delegator-snapshot-item {
+      min-width: 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .delegator-snapshot-label {
+      display: block;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 4px;
+    }
+    .delegator-snapshot-value {
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .delegator-snapshot-value.val-ok { color: var(--stat-green); }
+    .delegator-snapshot-value.val-warn { color: var(--warn); }
+    .delegator-snapshot-value.val-upside { color: var(--accent2); }
+    .delegator-snapshot-value.val-muted { color: var(--text2); }
+
     .verdict-card {
       display: none;
       border-width: 2px;
@@ -2105,6 +2164,47 @@
       <div>
         <strong>5 · Delegator takeaway</strong><br />
         A plain-English summary auto-generated from everything above, with “what looks good” and “what to watch”.
+      </div>
+      <div>
+        <strong>Tip · At a glance row</strong><br />
+        Directly under this guide, one compact row restates stability, commission, liveness, voting, Jito, APY estimates, and pool count before you scroll.
+      </div>
+    </div>
+  </div>
+
+  <div id="delegator-snapshot-bar" class="card delegator-snapshot-bar" aria-label="Key delegator metrics at a glance">
+    <div class="delegator-snapshot-head">
+      <span class="delegator-snapshot-title">At a glance</span>
+      <span class="delegator-snapshot-sub">Stability · trust · reward context — same numbers as the cards below</span>
+    </div>
+    <div class="delegator-snapshot-grid">
+      <div class="delegator-snapshot-item">
+        <span class="delegator-snapshot-label">Stability</span>
+        <span id="snapshot-stability" class="delegator-snapshot-value val-muted" title="All-time snapshot history score">–</span>
+      </div>
+      <div class="delegator-snapshot-item">
+        <span class="delegator-snapshot-label">Commission</span>
+        <span id="snapshot-commission" class="delegator-snapshot-value val-muted" title="Validator fee on staking rewards">–</span>
+      </div>
+      <div class="delegator-snapshot-item">
+        <span class="delegator-snapshot-label">Status</span>
+        <span id="snapshot-status" class="delegator-snapshot-value val-muted" title="Healthy vs delinquent (RPC snapshot)">–</span>
+      </div>
+      <div class="delegator-snapshot-item">
+        <span class="delegator-snapshot-label">Recent voting</span>
+        <span id="snapshot-voting" class="delegator-snapshot-value val-muted" title="Average voting use over recent finished epochs">–</span>
+      </div>
+      <div class="delegator-snapshot-item">
+        <span class="delegator-snapshot-label">Jito</span>
+        <span id="snapshot-jito" class="delegator-snapshot-value val-muted" title="From Jito public API — ON can mean extra reward upside vs baseline">–</span>
+      </div>
+      <div class="delegator-snapshot-item">
+        <span class="delegator-snapshot-label">APY est.</span>
+        <span id="snapshot-apy" class="delegator-snapshot-value val-muted" title="Blended APY estimate from public APIs; not a payout quote">–</span>
+      </div>
+      <div class="delegator-snapshot-item">
+        <span class="delegator-snapshot-label">Pools</span>
+        <span id="snapshot-pools" class="delegator-snapshot-value val-muted" title="Known staking pools delegating here">–</span>
       </div>
     </div>
   </div>

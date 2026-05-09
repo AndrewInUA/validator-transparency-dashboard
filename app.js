@@ -314,13 +314,8 @@ function renderRatings(r) {
   const trApy = pickTrilliumApy(r?.sources?.trillium);
 
   safeSetText(document.getElementById("apy-median"), fmtPct(median));
-  safeSetText(document.getElementById("apy-median-2"), fmtPct(median));
   safeSetText(
     document.getElementById("pools-count"),
-    pools.length ? String(pools.length) : "–"
-  );
-  safeSetText(
-    document.getElementById("pools-count-kpi"),
     pools.length ? String(pools.length) : "–"
   );
   safeSetText(
@@ -879,6 +874,107 @@ function renderStability(st) {
   }
 
   if (window.animateRing) window.animateRing(primaryScore);
+}
+
+/** One-row KPI strip under the reading guide: full delegator context before scroll. */
+function renderDelegatorSnapshotStrip({
+  live,
+  stability,
+  latestCom,
+  uptimeNum,
+  poolsCount,
+  apyMedian
+}) {
+  const stEl = document.getElementById("snapshot-stability");
+  if (stEl) {
+    if (stability) {
+      const hasAllTime = Number.isFinite(stability.allTimeScore);
+      const sc = hasAllTime ? stability.allTimeScore : stability.score;
+      if (Number.isFinite(sc)) {
+        stEl.textContent = `${Math.round(sc)}/100`;
+        stEl.className =
+          "delegator-snapshot-value " +
+          (sc >= 85 ? "val-ok" : sc >= 50 ? "val-muted" : "val-warn");
+      } else {
+        stEl.textContent = "–";
+        stEl.className = "delegator-snapshot-value val-muted";
+      }
+    } else {
+      stEl.textContent = "–";
+      stEl.className = "delegator-snapshot-value val-muted";
+    }
+  }
+
+  const comEl = document.getElementById("snapshot-commission");
+  if (comEl) {
+    if (Number.isFinite(latestCom)) {
+      comEl.textContent = `${latestCom.toFixed(0)}%`;
+      comEl.className =
+        "delegator-snapshot-value " +
+        (latestCom >= 50 ? "val-warn" : latestCom <= 5 ? "val-ok" : "val-muted");
+    } else {
+      comEl.textContent = "–";
+      comEl.className = "delegator-snapshot-value val-muted";
+    }
+  }
+
+  const statusVal = live?.status || "";
+  const statusEl = document.getElementById("snapshot-status");
+  if (statusEl) {
+    const label = statusVal
+      ? statusVal.charAt(0).toUpperCase() + statusVal.slice(1)
+      : "–";
+    statusEl.textContent = label;
+    statusEl.className =
+      "delegator-snapshot-value " +
+      (statusVal === "healthy" ? "val-ok" : statusVal ? "val-warn" : "val-muted");
+  }
+
+  const votEl = document.getElementById("snapshot-voting");
+  if (votEl) {
+    if (Number.isFinite(uptimeNum)) {
+      votEl.textContent = `${uptimeNum.toFixed(1)}%`;
+      votEl.className =
+        "delegator-snapshot-value " +
+        (uptimeNum >= 99 ? "val-ok" : uptimeNum >= 90 ? "val-muted" : "val-warn");
+    } else {
+      votEl.textContent = "–";
+      votEl.className = "delegator-snapshot-value val-muted";
+    }
+  }
+
+  const j = live?.jito;
+  const jEl = document.getElementById("snapshot-jito");
+  if (jEl) {
+    if (j === true) {
+      jEl.textContent = "ON";
+      jEl.className = "delegator-snapshot-value val-upside";
+    } else if (j === false) {
+      jEl.textContent = "OFF";
+      jEl.className = "delegator-snapshot-value val-muted";
+    } else {
+      jEl.textContent = "–";
+      jEl.className = "delegator-snapshot-value val-muted";
+    }
+  }
+
+  const apyEl = document.getElementById("snapshot-apy");
+  if (apyEl) {
+    apyEl.textContent = fmtPct(apyMedian);
+    apyEl.className = "delegator-snapshot-value val-muted";
+  }
+
+  const poolsEl = document.getElementById("snapshot-pools");
+  if (poolsEl) {
+    if (Number.isFinite(poolsCount)) {
+      poolsEl.textContent = String(poolsCount);
+      poolsEl.className =
+        "delegator-snapshot-value " + (poolsCount > 0 ? "val-ok" : "val-muted");
+    } else {
+      poolsEl.textContent = "–";
+      poolsEl.className = "delegator-snapshot-value val-muted";
+    }
+  }
 }
 
 function pushUnique(list, text) {
@@ -2616,6 +2712,15 @@ async function main() {
     : null;
   const apyMedian = Number(ratings?.derived?.apy_median);
 
+  renderDelegatorSnapshotStrip({
+    live,
+    stability: null,
+    latestCom,
+    uptimeNum,
+    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null,
+    apyMedian: Number.isFinite(apyMedian) ? apyMedian : null
+  });
+
   renderUpsideSignals({ live, latestCom, uptimeNum, poolsCount, apyMedian });
 
   const { snapshots: snaps, meta: snapshotMeta } = await loadSnapshotsFromDB(
@@ -2623,6 +2728,14 @@ async function main() {
   );
   const stability = computeStability({ live, ratings, poolsCount, snaps, snapshotMeta });
   renderStability(stability);
+  renderDelegatorSnapshotStrip({
+    live,
+    stability,
+    latestCom,
+    uptimeNum,
+    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null,
+    apyMedian: Number.isFinite(apyMedian) ? apyMedian : null
+  });
   renderDelegatorAssessment(
     computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stability })
   );
