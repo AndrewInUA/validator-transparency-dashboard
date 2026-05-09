@@ -2128,13 +2128,65 @@
       color: var(--text3);
     }
 
-    .verdict-hint {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed var(--border);
+    .verdict-purpose {
+      margin: 0 0 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text2);
+    }
+
+    .verdict-purpose strong,
+    .delegator-flow-kicker strong {
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .delegator-flow-kicker {
+      margin: -2px 0 8px;
       font-size: 12px;
       line-height: 1.45;
       color: var(--text2);
+      font-weight: 600;
+    }
+
+    .verdict-color-help {
+      margin-top: 12px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text2);
+    }
+
+    .verdict-color-help summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--text);
+      list-style: none;
+    }
+
+    .verdict-color-help summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .verdict-color-help summary::before {
+      content: "▸ ";
+      display: inline-block;
+      margin-right: 4px;
+      color: var(--text3);
+      font-size: 11px;
+    }
+
+    .verdict-color-help[open] summary::before {
+      content: "▾ ";
+    }
+
+    .verdict-color-help p {
+      margin: 8px 0 0;
+      padding-left: 2px;
     }
 
     .verdict-recommended {
@@ -2317,12 +2369,12 @@
         Short-term, live read from RPC. Helpful for spotting recent changes; the Stability score above is still your primary signal.
       </div>
       <div>
-        <strong>5 · Delegator takeaway</strong><br />
-        A plain-English summary auto-generated from everything above, with “what looks good” and “what to watch”.
+        <strong>5 · First, then slower</strong><br />
+        <strong>First</strong> ≈ the verdict box up top (<em>okay or cautious?</em>). <strong>Then</strong> ≈ bullets lower down (<em>what looks good vs what to watch</em>). You can ignore &ldquo;then&rdquo; your first time.
       </div>
       <div>
-        <strong>Tip · At a glance row</strong><br />
-        Directly under this guide, one compact row restates stability, commission, liveness, voting, Jito, APY estimates, and pool count before you scroll.
+        <strong>Tip · At a glance</strong><br />
+        Right under this box, the green row is a quick preview of the numbers below.
       </div>
     </div>
   </div>
@@ -2330,7 +2382,7 @@
   <div id="delegator-snapshot-bar" class="card delegator-snapshot-bar" aria-label="Key delegator metrics at a glance">
     <div class="delegator-snapshot-head">
       <span class="delegator-snapshot-title">At a glance</span>
-      <span class="delegator-snapshot-sub">Stability · trust · reward context — same numbers as the cards below</span>
+      <span class="delegator-snapshot-sub">The same key numbers you’ll see in the cards below, in one row</span>
     </div>
     <div class="delegator-snapshot-grid">
       <div class="delegator-snapshot-item">
@@ -2365,13 +2417,24 @@
   </div>
 
   <div id="verdict-card" class="card verdict-card" data-loaded="true" style="display:none">
+    <p class="verdict-purpose">
+      <strong>First</strong>, a quick take: broadly good sign or cautious, versus typical validators, from the numbers we save here.
+    </p>
     <div class="verdict-row">
       <span id="verdict-tier" class="verdict-tier">Loading…</span>
       <span id="verdict-label" class="verdict-label">Loading verdict…</span>
     </div>
     <div id="verdict-rationale" class="verdict-rationale">Computing recommendation…</div>
     <div id="verdict-meta" class="verdict-meta"></div>
-    <div id="verdict-hint" class="verdict-hint" hidden></div>
+    <details class="verdict-color-help">
+      <summary>What do the colored labels mean?</summary>
+      <p>
+        Gray, mint, and lime only describe <strong>how long we’ve been saving daily snapshots</strong> for this validator inside this dashboard
+        &#8211; not whether staking &ldquo;works&rdquo; on Solana.
+        Lime means we&apos;ve tracked it longer with consistently healthy signals here; gray means our history is newer.
+        Orange means something flagged as risky &#8211; read the commission and stability sections above.
+      </p>
+    </details>
   </div>
 
   <div class="row-hero">
@@ -2585,9 +2648,12 @@
     </div>
 
     <div class="card delegator-assessment-card">
+      <p class="delegator-flow-kicker">
+        <strong>Then</strong>, if you want the slower read: positives and cautions pulled from the same page.
+      </p>
       <div class="card-title">
-        Plain-English summary
-        <span class="info-dot" tabindex="0" data-tip="Auto summary based on what is shown above: commission, live status, recent voting, Stability score and history depth, APY, Jito and pools.">i</span>
+        Simple summary
+        <span class="info-dot" tabindex="0" data-tip="Short bullets—not a repeat of the top box; both are auto-generated, not advice.">i</span>
       </div>
       <p id="delegator-summary" class="delegator-summary-note">Loading assessment…</p>
       <div id="delegator-verdict" class="status-big">–</div>

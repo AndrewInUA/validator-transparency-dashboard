@@ -1181,7 +1181,7 @@ function renderDelegatorAssessment(assessment) {
   safeSetText(document.getElementById("delegator-summary"), assessment.summary);
   safeSetText(
     document.getElementById("delegator-confidence"),
-    `Confidence: ${assessment.confidence} (based on snapshot depth for this vote account and signal coverage; confidence grows as more history is recorded).`
+    `How sure we are: ${assessment.confidence} · grows as this site saves more daily snapshots for this validator.`
   );
 
   const verdictEl = document.getElementById("delegator-verdict");
@@ -1561,7 +1561,6 @@ function renderVerdictBadge(verdict) {
   const labelEl = document.getElementById("verdict-label");
   const rationaleEl = document.getElementById("verdict-rationale");
   const metaEl = document.getElementById("verdict-meta");
-  const hintEl = document.getElementById("verdict-hint");
   if (!root || !labelEl || !rationaleEl) return;
 
   const cls =
@@ -1576,27 +1575,12 @@ function renderVerdictBadge(verdict) {
             : "verdict-watch";
 
   const chipByTier = {
-    recommended: "Lime · strong track record",
-    promising: "Mint · healthy so far",
-    watch: "Yellow · compare a bit",
-    wait: "Gray · early read",
-    caution: "Orange · read carefully"
+    recommended: "Lime · long steady track here",
+    promising: "Mint · looking good so far",
+    watch: "Yellow · compare with others",
+    wait: "Gray · new in our charts",
+    caution: "Orange · check carefully"
   };
-
-  const hintByTier = {
-    recommended:
-      "Strong metrics vs the network and enough history stored here. Not financial advice – still verify commission and live status.",
-    promising:
-      "Same metrics idea as lime, with a shorter stored-history window so far. Your rewards are not reduced; confidence grows as snapshots add up.",
-    watch:
-      "One or two metrics are only average vs the network. Not a “no” – just compare Trust Card, commission, and APY.",
-    wait:
-      "This is an early read while stored history builds. The validator may still be fine — re-check as more days accumulate.",
-    caution:
-      "Red-flag signals (e.g. very high commission, delinquent now, or weak stability). Read the cards above."
-  };
-  const timingGuide =
-    "Timing guide: gray = under ~14 days of stored history; mint = ~14-59 days with healthy signals; lime = 60+ days with strong, consistent signals.";
 
   root.className = `card verdict-card ${cls}`;
   if (tierEl) {
@@ -1608,24 +1592,12 @@ function renderVerdictBadge(verdict) {
   if (metaEl) {
     const bits = [];
     if (Number.isFinite(verdict.historyDays)) {
-      bits.push(`${Math.round(verdict.historyDays)} days of stored history`);
+      bits.push(`~${Math.round(verdict.historyDays)} days of data tracked here`);
     }
     if (Number.isFinite(verdict.stabilityScore)) {
-      bits.push(`Stability ${Math.round(verdict.stabilityScore)}/100`);
+      bits.push(`Stability score ${Math.round(verdict.stabilityScore)}/100`);
     }
-    metaEl.textContent = bits.join("  ·  ");
-  }
-
-  if (hintEl) {
-    const base = hintByTier[verdict.tier] || "";
-    const text = base ? `${base} ${timingGuide}` : timingGuide;
-    if (text) {
-      hintEl.textContent = text;
-      hintEl.hidden = false;
-    } else {
-      hintEl.textContent = "";
-      hintEl.hidden = true;
-    }
+    metaEl.textContent = bits.join(" · ");
   }
 
   root.style.display = "";
