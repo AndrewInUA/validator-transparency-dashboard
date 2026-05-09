@@ -1232,13 +1232,9 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
   };
 }
 
-/** Short beginner copy for Signal breakdown header (i) tulip – details stay on the pills below */
-function signalBreakdownTooltipFor(_assessment) {
-  return (
-    "Easy read for this validator only: positives on the left, things to watch on the right. " +
-    "The Verdict block higher up compares to the wider network – this card does not. " +
-    "Hover a bullet for a longer note. \"How sure we are\" rises as we have more snapshots – not staking advice."
-  );
+/** Minimal copy for Signal breakdown header (i) tulip */
+function signalBreakdownTooltipFor() {
+  return "Positives on the left; things to watch on the right. Hover a bullet for more detail.";
 }
 
 function renderDelegatorAssessment(assessment) {
@@ -1265,7 +1261,7 @@ function renderDelegatorAssessment(assessment) {
 
   const breakdownInfoEl = document.getElementById("delegator-assessment-info");
   if (breakdownInfoEl) {
-    breakdownInfoEl.dataset.tip = signalBreakdownTooltipFor(assessment);
+    breakdownInfoEl.dataset.tip = signalBreakdownTooltipFor();
     breakdownInfoEl.setAttribute("aria-label", "What this checklist means");
   }
 
