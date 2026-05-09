@@ -1240,20 +1240,43 @@ function renderDelegatorAssessment(assessment) {
 
   const summaryEl = document.getElementById("delegator-summary");
   if (summaryEl) {
-    summaryEl.textContent = assessment.summary || "";
-    summaryEl.title = assessment.summaryTooltip || "";
     summaryEl.hidden = false;
     summaryEl.style.display = "";
+    summaryEl.removeAttribute("title");
     summaryEl.classList.toggle("delegator-summary-warn", assessment.summaryTone === "warn");
-    summaryEl.classList.toggle("delegator-has-tip", !!assessment.summaryTooltip);
+
+    const sumFrag = document.createDocumentFragment();
+    sumFrag.appendChild(document.createTextNode(assessment.summary || ""));
+    if (assessment.summaryTooltip) {
+      const sumHint = document.createElement("span");
+      sumHint.className = "delegator-native-tip";
+      sumHint.setAttribute("tabindex", "0");
+      sumHint.setAttribute("aria-label", assessment.summaryTooltip);
+      sumHint.title = assessment.summaryTooltip;
+      sumHint.textContent = "\u2139";
+      sumFrag.appendChild(sumHint);
+    }
+    summaryEl.replaceChildren(sumFrag);
   }
 
   const confEl = document.getElementById("delegator-confidence");
   if (confEl) {
-    confEl.textContent = `How sure we are: ${assessment.confidence}`;
-    confEl.title =
+    confEl.removeAttribute("title");
+    confEl.className = "last-updated";
+    const confTip =
       "Grows as this site saves more daily snapshots for this validator (deeper archival window → higher confidence in rollup math). Still not staking advice.";
-    confEl.className = "last-updated delegator-confidence-line";
+    const confFrag = document.createDocumentFragment();
+    confFrag.appendChild(
+      document.createTextNode(`How sure we are: ${assessment.confidence}`)
+    );
+    const confHint = document.createElement("span");
+    confHint.className = "delegator-native-tip";
+    confHint.setAttribute("tabindex", "0");
+    confHint.setAttribute("aria-label", confTip);
+    confHint.title = confTip;
+    confHint.textContent = "\u2139";
+    confFrag.appendChild(confHint);
+    confEl.replaceChildren(confFrag);
   }
 
   const verdictEl = document.getElementById("delegator-verdict");

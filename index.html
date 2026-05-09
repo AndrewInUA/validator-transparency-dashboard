@@ -679,22 +679,29 @@
       font-weight: 600;
     }
 
-    .delegator-summary-note.delegator-has-tip {
-      cursor: help;
-      text-decoration: underline;
-      text-decoration-style: dotted;
-      text-underline-offset: 3px;
+    /* Extra copy lives on native title of .delegator-native-tip — keep body text visually plain */
+    .delegator-native-tip {
+      display: inline-block;
+      margin-left: 0.35em;
+      font-size: 0.72em;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text2);
+      opacity: 0.5;
+      cursor: default;
+      vertical-align: super;
+      user-select: none;
+      letter-spacing: 0.02em;
     }
 
-    .delegator-confidence-line {
-      cursor: help;
-      text-decoration: underline;
-      text-decoration-style: dotted;
-      text-underline-offset: 2px;
+    .delegator-native-tip:hover,
+    .delegator-native-tip:focus-visible {
+      opacity: 0.88;
+      outline: none;
     }
 
     .has-tip-spot[title]:not([title=""]) {
-      cursor: help;
+      cursor: default;
     }
 
     .delegator-assessment-card .status-big {
@@ -2664,7 +2671,7 @@
     <div class="card delegator-assessment-card">
       <div class="card-title">
         Simple summary
-        <span class="info-dot" tabindex="0" data-tip="Short labels on pills; hover a pill—or this summary line—for the full sentence. Separate model from verdict above. Automated.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Short labels on pills; hover a pill—or the small ⓘ after a summary line—for the full sentence. Separate model from verdict above. Automated.">i</span>
       </div>
       <p id="delegator-summary" class="delegator-summary-note" aria-live="polite">Loading…</p>
       <div id="delegator-verdict" class="status-big">–</div>
