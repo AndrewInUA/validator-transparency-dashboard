@@ -674,6 +674,29 @@
       line-height: 1.55;
     }
 
+    .delegator-summary-note.delegator-summary-warn {
+      color: var(--warn);
+      font-weight: 600;
+    }
+
+    .delegator-summary-note.delegator-has-tip {
+      cursor: help;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 3px;
+    }
+
+    .delegator-confidence-line {
+      cursor: help;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 2px;
+    }
+
+    .has-tip-spot[title]:not([title=""]) {
+      cursor: help;
+    }
+
     .delegator-assessment-card .status-big {
       display: inline-flex;
       margin-bottom: 10px;
@@ -2135,19 +2158,10 @@
       color: var(--text2);
     }
 
-    .verdict-purpose strong,
-    .delegator-flow-kicker strong {
+    .verdict-purpose strong {
       color: var(--text);
       font-weight: 800;
       letter-spacing: 0.04em;
-    }
-
-    .delegator-flow-kicker {
-      margin: -2px 0 8px;
-      font-size: 12px;
-      line-height: 1.45;
-      color: var(--text2);
-      font-weight: 600;
     }
 
     .verdict-color-help {
@@ -2369,8 +2383,8 @@
         Short-term, live read from RPC. Helpful for spotting recent changes; the Stability score above is still your primary signal.
       </div>
       <div>
-        <strong>5 · First, then slower</strong><br />
-        <strong>First</strong> ≈ the verdict box up top (<em>okay or cautious?</em>). <strong>Then</strong> ≈ bullets lower down (<em>what looks good vs what to watch</em>). You can ignore &ldquo;then&rdquo; your first time.
+        <strong>5 · Duplex summaries</strong><br />
+        <strong>Verdict</strong> = network-relative band plus snapshot depth. <strong>Simple summary</strong> below = enumerated positives/cautions from the same telemetry—orthogonal scoring paths.
       </div>
       <div>
         <strong>Tip · At a glance</strong><br />
@@ -2418,7 +2432,7 @@
 
   <div id="verdict-card" class="card verdict-card" data-loaded="true" style="display:none">
     <p class="verdict-purpose">
-      <strong>First</strong>, a quick take: broadly good sign or cautious, versus typical validators, from the numbers we save here.
+      Snapshot-informed network read — medians, live status, archived depth; not staking advice.
     </p>
     <div class="verdict-row">
       <span id="verdict-tier" class="verdict-tier">Loading…</span>
@@ -2648,14 +2662,11 @@
     </div>
 
     <div class="card delegator-assessment-card">
-      <p class="delegator-flow-kicker">
-        <strong>Then</strong>, if you want the slower read: positives and cautions pulled from the same page.
-      </p>
       <div class="card-title">
         Simple summary
-        <span class="info-dot" tabindex="0" data-tip="Short bullets—not a repeat of the top box; both are auto-generated, not advice.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Short labels on pills; hover a pill—or this summary line—for the full sentence. Separate model from verdict above. Automated.">i</span>
       </div>
-      <p id="delegator-summary" class="delegator-summary-note">Loading assessment…</p>
+      <p id="delegator-summary" class="delegator-summary-note" aria-live="polite">Loading…</p>
       <div id="delegator-verdict" class="status-big">–</div>
       <div class="delegator-assessment-grid">
         <div>

@@ -982,6 +982,12 @@ function pushUnique(list, text) {
   if (!list.includes(text)) list.push(text);
 }
 
+/** `{ pill, tip }` — short on-card copy; explanation in tooltip (`title`). */
+function pushUniqueInsight(list, entry) {
+  if (!entry || typeof entry.pill !== "string" || !entry.pill.trim()) return;
+  if (!list.some(x => x.pill === entry.pill)) list.push(entry);
+}
+
 function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stability }) {
   const positives = [];
   const cautions = [];
@@ -1005,129 +1011,165 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
   if (Number.isFinite(latestCommission)) {
     if (latestCommission === 0) {
       signalPoints += 2;
-      pushUnique(
-        positives,
-        "0% validator commission: delegators keep more baseline staking rewards."
-      );
+      pushUniqueInsight(positives, {
+        pill: "0% commission",
+        tip: "Validator commission is 0%; delegators keep the full staking-reward slice on this commission line. Liquid-staking programs or wallets may still charge their own fees."
+      });
     } else if (latestCommission <= 5) {
       signalPoints += 1;
-      pushUnique(
-        positives,
-        `Low validator commission (${latestCommission.toFixed(0)}%) supports net yield.`
-      );
+      pushUniqueInsight(positives, {
+        pill: `${latestCommission.toFixed(0)}% commission`,
+        tip: "Low validator commission improves net staking yield versus higher-fee operators; always compare totals with pool or wallet fees."
+      });
     } else if (latestCommission >= 100) {
       signalPoints -= 6;
       commissionCriticalRisk = true;
-      pushUnique(
-        cautions,
-        "Validator commission is 100%: direct delegators typically receive near-zero net staking rewards."
-      );
+      pushUniqueInsight(cautions, {
+        pill: "100% commission",
+        tip: "Validator keeps the entire staking-reward allocation; delegators routed through standard staking typically realize near-zero net yield—do not delegate here unless intentional."
+      });
     } else if (latestCommission >= 50) {
       signalPoints -= 3;
-      pushUnique(
-        cautions,
-        `Very high validator commission (${latestCommission.toFixed(0)}%) heavily reduces delegator net rewards.`
-      );
+      pushUniqueInsight(cautions, {
+        pill: `${latestCommission.toFixed(0)}% commission`,
+        tip: "Very high commission removes most staking rewards—treat this as a severe yield drag versus network norms."
+      });
     } else if (latestCommission > 10) {
       signalPoints -= 2;
-      pushUnique(
-        cautions,
-        `High validator commission (${latestCommission.toFixed(0)}%) reduces delegator net rewards.`
-      );
+      pushUniqueInsight(cautions, {
+        pill: `${latestCommission.toFixed(0)}% commission`,
+        tip: "High commission materially trims net staking yield; compare alternatives before locking stake."
+      });
     } else {
       signalPoints -= 1;
-      pushUnique(
-        cautions,
-        `Higher validator commission (${latestCommission.toFixed(0)}%) reduces net delegator rewards.`
-      );
+      pushUniqueInsight(cautions, {
+        pill: `${latestCommission.toFixed(0)}% commission`,
+        tip: "Commission above baseline still reduces rewards relative to 0%-fee validators; quantify impact before delegating."
+      });
     }
   }
 
   if (status === "healthy") {
     signalPoints += 2;
-    pushUnique(positives, "Live status is healthy right now.");
+    pushUniqueInsight(positives, {
+      pill: "Healthy status",
+      tip: "RPC vote-account status is Healthy right now—that is a live snapshot, not proof of eternal uptime."
+    });
   } else if (status === "delinquent") {
     signalPoints -= 3;
-    pushUnique(cautions, "Live status is delinquent right now.");
+    pushUniqueInsight(cautions, {
+      pill: "Delinquent status",
+      tip: "Network currently marks this vote account delinquent—missed consensus participation in the measured window."
+    });
   } else if (status !== "unknown") {
     signalPoints -= 1;
-    pushUnique(cautions, `Live status is ${status}.`);
+    pushUniqueInsight(cautions, {
+      pill: `Status: ${status}`,
+      tip: "Non-healthy/non-delinquent response from RPC aggregation—verify upstream health before staking."
+    });
   }
 
   if (Number.isFinite(uptime)) {
     if (uptime >= 95) {
       signalPoints += 2;
-      pushUnique(positives, `Recent voting consistency is strong (${uptime.toFixed(1)}%).`);
+      pushUniqueInsight(positives, {
+        pill: `Recent voting ${uptime.toFixed(1)}%`,
+        tip: `Recent voting consistency is strong (${uptime.toFixed(1)}%), averaged across the last finished epochs queried from RPC.`
+      });
     } else if (uptime >= 90) {
       signalPoints += 1;
-      pushUnique(positives, `Recent voting consistency is solid (${uptime.toFixed(1)}%).`);
+      pushUniqueInsight(positives, {
+        pill: `Recent voting ${uptime.toFixed(1)}%`,
+        tip: "Recent epochs show acceptable—but not flawless—vote credit usage; corroborate with Trust card + stability history."
+      });
     } else {
       signalPoints -= 2;
-      pushUnique(cautions, `Recent voting consistency is weaker (${uptime.toFixed(1)}%).`);
+      pushUniqueInsight(cautions, {
+        pill: `Recent voting ${uptime.toFixed(1)}%`,
+        tip: `Recent voting materially below typical ~99%+ norms (${uptime.toFixed(1)}%)—stress-test before delegating.`
+      });
     }
   }
 
   if (Number.isFinite(stabilityScore)) {
     if (stabilityScore >= 85) {
       signalPoints += 2;
-      pushUnique(positives, `Stability score is strong (${stabilityScore}/100).`);
+      pushUniqueInsight(positives, {
+        pill: `Stability ${Math.round(stabilityScore)}/100`,
+        tip: `Stability score is strong (${stabilityScore}/100) inside this dashboard's archived snapshots (delinquency + commission churn signals).`
+      });
     } else if (stabilityScore >= 70) {
       signalPoints += 1;
-      pushUnique(positives, `Stability score is good (${stabilityScore}/100).`);
+      pushUniqueInsight(positives, {
+        pill: `Stability ${Math.round(stabilityScore)}/100`,
+        tip: `Moderate-but-healthy stability score (${stabilityScore}/100)—compare depth of snapshots before treating as airtight.`
+      });
     } else if (stabilityScore < 50) {
       signalPoints -= 2;
-      pushUnique(cautions, `Stability score is low (${stabilityScore}/100).`);
+      pushUniqueInsight(cautions, {
+        pill: `Stability ${Math.round(stabilityScore)}/100`,
+        tip: `Stability reads low (${stabilityScore}/100)—historical churn or downtime signal in stored snapshots warrants manual review.`
+      });
     } else {
       signalPoints -= 1;
-      pushUnique(cautions, `Stability score is mixed (${stabilityScore}/100).`);
+      pushUniqueInsight(cautions, {
+        pill: `Stability ${Math.round(stabilityScore)}/100`,
+        tip: `Mixed stability read (${stabilityScore}/100); pair with Stability card narrative before deciding.`
+      });
     }
   }
 
   if (snapCount >= 24) {
     signalPoints += 1;
-    pushUnique(
-      positives,
-      `History depth is meaningful (${snapCount} recent snapshots in this assessment window).`
-    );
+    pushUniqueInsight(positives, {
+      pill: `${snapCount} snapshots on file`,
+      tip: `${snapCount} recent snapshots underpin this rollup—confidence improves as more archival days accumulate.`
+    });
   } else if (snapCount < 8) {
     signalPoints -= 1;
-    pushUnique(
-      cautions,
-      `History is still short (${snapCount} recent snapshots), so confidence is lower.`
-    );
+    pushUniqueInsight(cautions, {
+      pill: `${snapCount} snapshots on file`,
+      tip: "Snapshot history still thin inside this dashboard; interpret checklist outputs as early reads, not longitudinally airtight."
+    });
   }
 
   if (jito === true) {
     signalPoints += 1;
-    pushUnique(
-      positives,
-      "Jito signal is ON, so additional reward upside may be possible."
-    );
+    pushUniqueInsight(positives, {
+      pill: "Jito on",
+      tip: "Jito flag is ON in live telemetry—potential for supplemental MEV / bundle-mediated rewards versus vanilla consensus yield (not guaranteed)."
+    });
   } else if (jito === false) {
-    pushUnique(
-      cautions,
-      "Jito signal is OFF, so rewards are likely closer to baseline staking yield."
-    );
+    pushUniqueInsight(cautions, {
+      pill: "Jito off",
+      tip: "Public Jito feed reports OFF—staking yield likely tracks baseline staking economics without incremental Jito-related upside."
+    });
   }
 
   if (Number.isFinite(apyMedian)) {
-    pushUnique(
-      positives,
-      `Estimated APY context is available (~${apyMedian.toFixed(2)}%).`
-    );
+    pushUniqueInsight(positives, {
+      pill: `Blended APY ~${apyMedian.toFixed(2)}%`,
+      tip: `Blended APY estimate (~${apyMedian.toFixed(2)}%) from third-party endpoints (Stakewiz + Trillium); illustrative, never a contractual quote.`
+    });
   } else {
-    pushUnique(cautions, "APY estimate is unavailable right now.");
+    pushUniqueInsight(cautions, {
+      pill: "No APY figure",
+      tip: "Median APY rollup unavailable—defer yield comparisons until public feeds recover."
+    });
   }
 
   if (Number.isFinite(poolsCount) && poolsCount > 0) {
     signalPoints += 1;
-    pushUnique(
-      positives,
-      `${poolsCount} stake pools delegate here, showing broader ecosystem usage.`
-    );
+    pushUniqueInsight(positives, {
+      pill: `${poolsCount} pools staking`,
+      tip: `${poolsCount} recognized stake pools expose liquidity to this vote account—a soft trust signal but not endorsement of future performance.`
+    });
   } else {
     signalPoints -= 1;
-    pushUnique(cautions, "No current stake pool presence was detected.");
+    pushUniqueInsight(cautions, {
+      pill: "Pools not detected",
+      tip: "No labeled stake-pool exposures detected via current catalog feed—solo stake or unrecognized pools remain possible."
+    });
   }
 
   const verdict = commissionCriticalRisk
@@ -1153,22 +1195,40 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
         ? "Medium"
         : "Low";
 
-  const summary =
-    commissionCriticalRisk
-      ? "Commission is critically high for direct delegation, so this validator is currently a caution case despite other positive signals."
-      : verdict.label === "Attractive"
-      ? "Most displayed signals currently support this validator for delegator consideration."
-      : verdict.label === "Balanced"
-        ? "Signals are mixed to positive; reasonable option, but review the watch list before delegating."
-        : "Several warning signals are active; review carefully before delegating.";
+  let summaryDisplay = "";
+  let summaryTooltip = "";
+
+  if (commissionCriticalRisk) {
+    summaryDisplay =
+      "100% commission makes ordinary delegation pointless—manual due diligence strongly advised.";
+    summaryTooltip =
+      "Validator charges the maximum commission; staking through default delegations typically yields negligible rewards. Institutional carve-outs notwithstanding, treat this as a stop sign unless you knowingly accept economics.";
+  } else if (verdict.label === "Attractive") {
+    summaryDisplay =
+      "Most displayed signals currently support this validator for delegator consideration.";
+    summaryTooltip =
+      "Short-list posture from on-page telemetry (commission tier, RPC health, recent epochs, archival stability reads, staking-pool linkage, blended APYs). Automated synthesis—still cross-check verdict card + primary sources.";
+  } else if (verdict.label === "Balanced") {
+    summaryDisplay =
+      "Signals read mixed-positive—pair attractors with cautions below before sizing stake.";
+    summaryTooltip =
+      "Balanced heuristics imply nothing catastrophic yet nothing pristine; scan Watch bullets for asymmetric risks.";
+  } else {
+    summaryDisplay =
+      "Caution flagged—audit Trust + Stability narratives before staking here.";
+    summaryTooltip =
+      "Multiple guardrails breached in this rollup; investigate commission, uptime, archival stability depth, liquidity signals, APY stubs until comfortable.";
+  }
 
   return {
     verdict,
     tone,
-    summary,
-    confidence,
+    summary: summaryDisplay,
+    summaryTooltip,
+    summaryTone: commissionCriticalRisk || verdict.label === "Caution" ? "warn" : "neutral",
     positives: positives.slice(0, 4),
-    cautions: cautions.slice(0, 4)
+    cautions: cautions.slice(0, 4),
+    confidence
   };
 }
 
@@ -1178,45 +1238,71 @@ function renderDelegatorAssessment(assessment) {
     card.dataset.delegatorTone = assessment.tone;
   }
 
-  safeSetText(document.getElementById("delegator-summary"), assessment.summary);
-  safeSetText(
-    document.getElementById("delegator-confidence"),
-    `How sure we are: ${assessment.confidence} · grows as this site saves more daily snapshots for this validator.`
-  );
+  const summaryEl = document.getElementById("delegator-summary");
+  if (summaryEl) {
+    summaryEl.textContent = assessment.summary || "";
+    summaryEl.title = assessment.summaryTooltip || "";
+    summaryEl.hidden = false;
+    summaryEl.style.display = "";
+    summaryEl.classList.toggle("delegator-summary-warn", assessment.summaryTone === "warn");
+    summaryEl.classList.toggle("delegator-has-tip", !!assessment.summaryTooltip);
+  }
+
+  const confEl = document.getElementById("delegator-confidence");
+  if (confEl) {
+    confEl.textContent = `How sure we are: ${assessment.confidence}`;
+    confEl.title =
+      "Grows as this site saves more daily snapshots for this validator (deeper archival window → higher confidence in rollup math). Still not staking advice.";
+    confEl.className = "last-updated delegator-confidence-line";
+  }
 
   const verdictEl = document.getElementById("delegator-verdict");
   if (verdictEl) {
     verdictEl.textContent = assessment.verdict.label;
+    verdictEl.removeAttribute("title");
     verdictEl.className = `status-big ${assessment.verdict.className}`;
   }
 
-  const goodEl = document.getElementById("delegator-good");
-  if (goodEl) {
-    goodEl.innerHTML = "";
-    const items = assessment.positives.length
-      ? assessment.positives
-      : ["No strong positive signals yet."];
-    for (const text of items) {
-      const pill = document.createElement("span");
-      pill.className = "pill pill-ok";
-      pill.textContent = text;
-      goodEl.appendChild(pill);
+  const appendInsightRows = (container, rows, polarity) => {
+    if (!container) return;
+    container.innerHTML = "";
+    container.className = "pills-col";
+    let list =
+      rows && rows.length
+        ? rows
+        : polarity === "good"
+          ? [
+              {
+                pill: "No positives synthesized",
+                tip: "Insufficient positive flags met threshold—could be telemetry gaps or genuinely weak signals."
+              }
+            ]
+          : [];
+    const isClearWatch = polarity === "watch" && !(rows && rows.length);
+    if (isClearWatch) {
+      list = [
+        {
+          pill: "No major warning signals right now.",
+          tip: "No caution rows fired in this rollup. Still skim Trust + Stability + charts—they carry raw context this checklist compresses."
+        }
+      ];
     }
-  }
+    for (const raw of list) {
+      const entry =
+        raw && typeof raw === "object" && "pill" in raw
+          ? raw
+          : { pill: String(raw || "–"), tip: "" };
+      const pill = document.createElement("span");
+      const warnStyle = polarity === "watch" && rows && rows.length;
+      pill.className = warnStyle ? "pill pill-warn has-tip-spot" : "pill pill-ok has-tip-spot";
+      pill.textContent = entry.pill;
+      if (entry.tip) pill.title = entry.tip;
+      container.appendChild(pill);
+    }
+  };
 
-  const watchEl = document.getElementById("delegator-watch");
-  if (watchEl) {
-    watchEl.innerHTML = "";
-    const items = assessment.cautions.length
-      ? assessment.cautions
-      : ["No major warning signals right now."];
-    for (const text of items) {
-      const pill = document.createElement("span");
-      pill.className = assessment.cautions.length ? "pill pill-warn" : "pill pill-ok";
-      pill.textContent = text;
-      watchEl.appendChild(pill);
-    }
-  }
+  appendInsightRows(document.getElementById("delegator-good"), assessment.positives, "good");
+  appendInsightRows(document.getElementById("delegator-watch"), assessment.cautions, "watch");
 }
 
 function renderCommissionCriticalAlert(commissionPct) {
