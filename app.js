@@ -1234,7 +1234,7 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
 
 /** Minimal copy for Signal breakdown header (i) tulip */
 function signalBreakdownTooltipFor() {
-  return "Positives on the left; things to watch on the right. Hover a bullet for more detail.";
+  return "Positives on the left; things to watch on the right.";
 }
 
 function renderDelegatorAssessment(assessment) {
