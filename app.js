@@ -2294,9 +2294,14 @@ async function initValidatorDirectoryEmbed() {
         ? '<span class="dir-pill dir-pill-warn">Delinquent</span>'
         : '<span class="dir-pill dir-pill-ok">Active</span>';
       const jitoCell =
-        r.is_jito === true ? '<span class="dir-pill dir-pill-jito">Yes</span>' : "–";
-      const vsCell =
-        Number.isFinite(r.vote_success_pct) ? `${r.vote_success_pct.toFixed(1)}%` : "–";
+        r.is_jito === true
+          ? `<span class="dir-pill dir-pill-jito" title="Stakewiz: Jito-capable (Jito-enabled client in catalog)">Yes</span>`
+          : `<span class="dir-pill-muted" title="Stakewiz: not flagged as Jito-capable">No</span>`;
+      const vsCell = Number.isFinite(r.vote_success_pct)
+        ? `<span title="Stakewiz vote success — share of votes landed in Stakewiz’s window (not the same as RPC recent voting % on the profile)">${r.vote_success_pct.toFixed(
+            1
+          )}%</span>`
+        : `<span title="No vote-success figure from Stakewiz for this row">–</span>`;
       const tr = document.createElement("tr");
       tr.innerHTML =
         `<td class="dir-name">` +
@@ -2312,7 +2317,7 @@ async function initValidatorDirectoryEmbed() {
         `<td>${Number.isFinite(r.commission) ? `${r.commission}%` : "–"}</td>` +
         `<td>${fmtStakeDirectory(r.stake_sol)}</td>` +
         `<td class="dir-narrow">${jitoCell}</td>` +
-        `<td class="dir-narrow">${escapeHtmlDirectory(vsCell)}</td>` +
+        `<td class="dir-narrow">${vsCell}</td>` +
         `<td><a class="dir-open" href="${buildDashboardHrefLocal(r.vote)}">Open →</a></td>`;
       tbody.appendChild(tr);
     }

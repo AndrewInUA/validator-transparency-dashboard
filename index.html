@@ -1693,6 +1693,75 @@
       min-height: 1.3em;
     }
     #directory-meta.err { color: var(--warn); }
+
+    .directory-column-legend {
+      margin: 10px 0 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.55;
+    }
+    .directory-column-legend strong.leg-title {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .directory-column-legend dl {
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+    .directory-column-legend dt {
+      margin: 0;
+      font-weight: 700;
+      color: var(--text);
+      font-size: 12px;
+    }
+    .directory-column-legend dd {
+      margin: 2px 0 0;
+    }
+    .dir-table th.dir-th-split {
+      vertical-align: bottom;
+      min-width: 7.5rem;
+    }
+    .dir-th-split .dir-th-title {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text2);
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .dir-th-split .dir-th-hint {
+      display: block;
+      margin-top: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      color: var(--text3);
+      line-height: 1.35;
+      white-space: normal;
+    }
+
+    .dir-pill-muted {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 4px;
+      background: var(--surface2);
+      color: var(--text3);
+      border: 1px solid var(--border);
+    }
     .landing-kicker {
       font-size: 11px;
       font-weight: 700;
@@ -2172,16 +2241,39 @@
           <button type="button" id="directory-clear" class="copy-btn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">Clear</button>
         </div>
         <div id="directory-meta">Loading catalog…</div>
+        <div class="directory-column-legend" role="note">
+          <strong class="leg-title">What the last two columns mean</strong>
+          <dl>
+            <dt>Jito-capable (“Yes” / “No”)</dt>
+            <dd>
+              From the <strong>Stakewiz</strong> public catalog only.
+              <strong>Yes</strong> means Stakewiz lists this validator as running <strong>Jito-related software</strong>
+              (on-chain paths that can participate in bundle / MEV-style rewards). That can mean extra yield for delegators versus a plain validator, but it is <strong>not</strong> a guaranteed boost.
+              <strong>No</strong> means the catalog does not flag them as Jito-capable. Open a profile to see the dashboard’s separate live check (Sources: Jito API + RPC).
+            </dd>
+            <dt>Vote success (percentage)</dt>
+            <dd>
+              Also from Stakewiz: their <strong>vote success score as a percentage</strong> — how reliably this validator landed votes in the window they use (~higher means fewer misses).
+              It is <strong>not</strong> the same field as “Recent voting %” on the validator profile page (that one comes from <strong>Solana RPC</strong> over recent epochs). Use both as context; they can differ slightly.
+            </dd>
+          </dl>
+        </div>
         <div class="dir-table-wrap">
           <table class="dir-table">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Vote account</th>
-                <th>Comm.</th>
+                <th title="Commission—validator fee on staking rewards">Comm.</th>
                 <th>Stake (SOL)</th>
-                <th title="Stakewiz catalog · Jito-enabled">Jito</th>
-                <th title="Stakewiz vote success %">Votes %</th>
+                <th scope="col" class="dir-th-split" title="Stakewiz: Jito-capable validator">
+                  <span class="dir-th-title">Jito-capable</span>
+                  <span class="dir-th-hint">“Yes” = Jito-enabled in Stakewiz catalog</span>
+                </th>
+                <th scope="col" class="dir-th-split" title="Stakewiz vote success score as a percent">
+                  <span class="dir-th-title">Vote success</span>
+                  <span class="dir-th-hint">Stakewiz % · not the profile’s RPC chart</span>
+                </th>
                 <th></th>
               </tr>
             </thead>
