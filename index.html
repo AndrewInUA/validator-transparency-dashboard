@@ -2391,7 +2391,7 @@
       </div>
       <div>
         <strong>5 · Duplex summaries</strong><br />
-        <strong>Verdict</strong> = network-relative band plus snapshot depth. <strong>Simple summary</strong> below = enumerated positives/cautions from the same telemetry—orthogonal scoring paths.
+        <strong>Verdict</strong> = network-relative band plus snapshot depth. <strong>Signal breakdown</strong> below rolls the same telemetry into positives/cautions for <em>this</em> validator—orthogonal scoring paths.
       </div>
       <div>
         <strong>Tip · At a glance</strong><br />
@@ -2668,10 +2668,13 @@
     </div>
     </div>
 
-    <div class="card delegator-assessment-card">
+    <div class="card delegator-assessment-card" aria-label="Validator signal breakdown">
       <div class="card-title">
-        Simple summary
-        <span class="info-dot" tabindex="0" data-tip="Short labels on pills; hover a pill—or the small ⓘ after a summary line—for the full sentence. Separate model from verdict above. Automated.">i</span>
+        Signal breakdown
+        <span class="info-dot" tabindex="0" data-tip="Each pill is one signal we surfaced for this validator; hover the pill—or the ℹ after a sentence—for full wording. Automated checklist, separate model from Verdict above.">i</span>
+      </div>
+      <div class="card-note">
+        Takes the same blended signals you already saw above—commission, health, voting, stability, pools, rewards—and lists what looks supportive versus what deserves a second look for <strong>this vote account</strong>. Verdict ranks against network medians; this block stays validator-centric.
       </div>
       <p id="delegator-summary" class="delegator-summary-note" aria-live="polite">Loading…</p>
       <div id="delegator-verdict" class="status-big">–</div>
