@@ -999,6 +999,13 @@
       margin-top: 14px;
     }
 
+    .roadmap-lead {
+      margin: 8px 0 10px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text2);
+    }
+
     .open-validator-blurb {
       font-size: 14px;
       color: var(--text2);
@@ -2649,13 +2656,20 @@
         <div class="open-validator-help">This link saves your current view. If comparison is active, it also includes <code class="inline-code">vote2</code> so others open the same A vs B comparison.</div>
         <div class="roadmap-block">
           <div class="card-title">Roadmap</div>
+          <p class="roadmap-lead">
+            <strong>Direction</strong> &#8211; make every insight <em>actionable</em> for delegators (what to do next, not just charts),
+            then harden the same signals as <em>open infrastructure</em> so wallets, explorers, and teams can build on one transparent pipeline &#8211; not a one-off page.
+          </p>
           <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
             <div class="pill pill-ok">Done: All-time snapshot-based stability scoring</div>
             <div class="pill pill-ok">Done: Validator comparison on the same page</div>
             <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
-            <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
+            <div class="pill pill-ok">Done: Directory on home &#8211; search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
+            <div class="pill pill-ok">Done: First-glance KPI strip + richer directory &amp; pickers (context before you open a profile)</div>
             <div class="pill">Next: Per-epoch detail page</div>
-            <div class="pill">Next: Delinquency alerts</div>
+            <div class="pill">Next: Delinquency alerts &amp; proactive signals</div>
+            <div class="pill">Next: Actionable insight layer &#8211; clearer next steps, exports, and &ldquo;what changed&rdquo; across the page</div>
+            <div class="pill">Next: Builder-ready surface &#8211; documented HTTP APIs, stable metric definitions, embed / reuse patterns</div>
           </div>
         </div>
         <div id="system-signals" class="last-updated" style="margin-top:10px">System signals: checking…</div>
