@@ -1232,18 +1232,13 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
   };
 }
 
-/** Copy for Signal breakdown header (i) tulip – static framing plus tier-specific elaboration */
-function signalBreakdownTooltipFor(assessment) {
-  const intro =
-    "Takes the same blended signals you already saw above – commission, health, voting, stability, pools, rewards – and lists what looks supportive versus what deserves a second look for this vote account. Verdict ranks against network medians; this block stays validator-centric.";
-  const how =
-    " Hover any pill below for the full sentence behind that label. Automated checklist – separate model from Verdict above.";
-  const conf =
-    " How sure we are: grows as more daily snapshots accumulate for this validator (deeper archival window – higher confidence in rollup math here). Still not staking advice.";
-  const band = assessment.summaryTooltip
-    ? ` Elaborating on the one-line recap under the band: ${assessment.summaryTooltip}`
-    : "";
-  return `${intro}${how}${conf}${band}`;
+/** Short beginner copy for Signal breakdown header (i) tulip – details stay on the pills below */
+function signalBreakdownTooltipFor(_assessment) {
+  return (
+    "Easy read for this validator only: positives on the left, things to watch on the right. " +
+    "The Verdict block higher up compares to the wider network – this card does not. " +
+    "Hover a bullet for a longer note. \"How sure we are\" rises as we have more snapshots – not staking advice."
+  );
 }
 
 function renderDelegatorAssessment(assessment) {
@@ -1271,10 +1266,7 @@ function renderDelegatorAssessment(assessment) {
   const breakdownInfoEl = document.getElementById("delegator-assessment-info");
   if (breakdownInfoEl) {
     breakdownInfoEl.dataset.tip = signalBreakdownTooltipFor(assessment);
-    breakdownInfoEl.setAttribute(
-      "aria-label",
-      "Signal breakdown: what this card is"
-    );
+    breakdownInfoEl.setAttribute("aria-label", "What this checklist means");
   }
 
   const verdictEl = document.getElementById("delegator-verdict");
