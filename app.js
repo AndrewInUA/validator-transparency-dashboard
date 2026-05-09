@@ -2087,7 +2087,53 @@ function typeaheadAvatarHtml(row) {
   return `<span class="typeahead-avatar-fallback">${initials}</span>`;
 }
 
-function setupValidatorTypeahead({ input, resultsBox, onPick, excludeVote, limit = 8 }) {
+/** Rich meta line for directory typeahead (Stakewiz catalog fields). */
+function typeaheadDirectoryMetaHtml(r) {
+  if (!r) return "";
+  const chips = [];
+  if (r.delinquent) {
+    chips.push('<span class="ta-chip ta-chip-warn">Delinquent</span>');
+  }
+  if (Number.isFinite(r.rank) && r.rank > 0) {
+    chips.push(
+      `<span class="ta-chip ta-chip-muted" title="Stakewiz rank by stake">#${escapeHtmlDirectory(String(r.rank))}</span>`
+    );
+  }
+  if (Number.isFinite(r.commission)) {
+    const band =
+      r.commission >= 50 ? " ta-chip-warn" : r.commission <= 5 ? " ta-chip-ok" : "";
+    chips.push(
+      `<span class="ta-chip ta-chip-muted${band}" title="Validator commission">${escapeHtmlDirectory(
+        String(r.commission)
+      )}% fee</span>`
+    );
+  }
+  if (Number.isFinite(r.stake_sol)) {
+    chips.push(
+      `<span class="ta-chip ta-chip-muted" title="Activated stake (Stakewiz)">${escapeHtmlDirectory(
+        fmtStakeDirectory(r.stake_sol)
+      )} SOL</span>`
+    );
+  }
+  if (r.is_jito) {
+    chips.push(
+      '<span class="ta-chip ta-chip-jito" title="Stakewiz: Jito-enabled validator">Jito</span>'
+    );
+  }
+  if (Number.isFinite(r.vote_success_pct)) {
+    const vs = r.vote_success_pct;
+    const band = vs >= 99 ? " ta-chip-ok" : vs >= 90 ? "" : " ta-chip-warn";
+    chips.push(
+      `<span class="ta-chip ta-chip-muted${band}" title="Stakewiz vote success">${vs.toFixed(
+        1
+      )}% votes</span>`
+    );
+  }
+  if (!chips.length) return "";
+  return `<div class="typeahead-meta">${chips.join("")}</div>`;
+}
+
+function setupValidatorTypeahead({ input, resultsBox, onPick, excludeVote, limit = 48 }) {
   if (!input || !resultsBox) return null;
 
   let debounceTimer = null;
@@ -2114,13 +2160,15 @@ function setupValidatorTypeahead({ input, resultsBox, onPick, excludeVote, limit
     resultsBox.innerHTML = rows
       .map((r, i) => {
         const name = r.name || "(unnamed)";
-        const shortVote = r.vote ? `${r.vote.slice(0, 6)}…${r.vote.slice(-4)}` : "";
+        const shortVote = r.vote ? `${r.vote.slice(0, 8)}…${r.vote.slice(-5)}` : "";
+        const meta = typeaheadDirectoryMetaHtml(r);
         return (
           `<div class="typeahead-row${i === activeIdx ? " is-active" : ""}" data-idx="${i}">` +
             typeaheadAvatarHtml(r) +
-            `<div class="typeahead-text">` +
+            `<div class="typeahead-main">` +
               `<span class="typeahead-name">${escapeHtmlDirectory(name)}</span>` +
-              `<span class="typeahead-vote">${escapeHtmlDirectory(shortVote)}</span>` +
+              `<span class="typeahead-vote" title="${escapeHtmlDirectory(r.vote || "")}">${escapeHtmlDirectory(shortVote)}</span>` +
+              meta +
             `</div>` +
           `</div>`
         );
@@ -2235,7 +2283,7 @@ async function initValidatorDirectoryEmbed() {
     if (!rows.length) {
       const tr = document.createElement("tr");
       tr.innerHTML =
-        '<td colspan="5" style="color:var(--text3)">No matches. Try another search.</td>';
+        '<td colspan="7" style="color:var(--text3)">No matches. Try another search.</td>';
       tbody.appendChild(tr);
       return;
     }
@@ -2245,6 +2293,10 @@ async function initValidatorDirectoryEmbed() {
       const del = r.delinquent
         ? '<span class="dir-pill dir-pill-warn">Delinquent</span>'
         : '<span class="dir-pill dir-pill-ok">Active</span>';
+      const jitoCell =
+        r.is_jito === true ? '<span class="dir-pill dir-pill-jito">Yes</span>' : "–";
+      const vsCell =
+        Number.isFinite(r.vote_success_pct) ? `${r.vote_success_pct.toFixed(1)}%` : "–";
       const tr = document.createElement("tr");
       tr.innerHTML =
         `<td class="dir-name">` +
@@ -2259,6 +2311,8 @@ async function initValidatorDirectoryEmbed() {
         `<td class="dir-vote">${escapeHtmlDirectory(r.vote)}</td>` +
         `<td>${Number.isFinite(r.commission) ? `${r.commission}%` : "–"}</td>` +
         `<td>${fmtStakeDirectory(r.stake_sol)}</td>` +
+        `<td class="dir-narrow">${jitoCell}</td>` +
+        `<td class="dir-narrow">${escapeHtmlDirectory(vsCell)}</td>` +
         `<td><a class="dir-open" href="${buildDashboardHrefLocal(r.vote)}">Open →</a></td>`;
       tbody.appendChild(tr);
     }
@@ -2270,7 +2324,7 @@ async function initValidatorDirectoryEmbed() {
     meta.classList.remove("err");
     meta.textContent = "Searching…";
     try {
-      const url = `${API_BASE}/api/validators-directory?q=${encodeURIComponent(q)}&limit=60`;
+      const url = `${API_BASE}/api/validators-directory?q=${encodeURIComponent(q)}&limit=100`;
       const res = await fetch(url);
       const j = await res.json();
       if (!j.ok) throw new Error(j.error || "Request failed");

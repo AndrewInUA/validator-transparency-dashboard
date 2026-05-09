@@ -1,6 +1,6 @@
 /**
  * GET /api/validators-directory?q=&limit=
- * Proxies Stakewiz full validator list (names + vote accounts) with short server cache.
+ * Proxies Stakewiz full validator list (catalog fields for search / picker UIs).
  * Lets users search without pasting a full vote key.
  */
 
@@ -17,6 +17,7 @@ function safeImageUrl(v) {
 function normalizeRow(v) {
   const vote = String(v.vote_identity || "").trim();
   const stake = Number(v.activated_stake);
+  const voteSuccess = Number(v.vote_success);
   return {
     vote,
     name: typeof v.name === "string" ? v.name.trim() : "",
@@ -24,7 +25,11 @@ function normalizeRow(v) {
     commission: Number.isFinite(Number(v.commission)) ? Number(v.commission) : null,
     stake_sol: Number.isFinite(stake) ? stake : null,
     delinquent: !!v.delinquent,
-    rank: Number.isFinite(Number(v.rank)) ? Number(v.rank) : null
+    rank: Number.isFinite(Number(v.rank)) ? Number(v.rank) : null,
+    /** Stakewiz catalog flag — same feed that powers stakewiz.com */
+    is_jito: !!v.is_jito,
+    /** Recent vote success percent from Stakewiz (not on-chain RPC). */
+    vote_success_pct: Number.isFinite(voteSuccess) ? voteSuccess : null
   };
 }
 
@@ -86,7 +91,7 @@ export default async function handler(req, res) {
 
   const q = String(req.query.q || "").trim();
   const limitRaw = Number(req.query.limit || 50);
-  const limit = Math.min(100, Math.max(1, Number.isFinite(limitRaw) ? limitRaw : 50));
+  const limit = Math.min(150, Math.max(1, Number.isFinite(limitRaw) ? limitRaw : 50));
 
   try {
     const all = await loadStakewizList();
@@ -102,7 +107,7 @@ export default async function handler(req, res) {
       returned: results.length,
       source: "stakewiz",
       note:
-        "Directory names and stake come from Stakewiz; open a profile to use this dashboard’s snapshot + RPC pipeline.",
+        "Directory rows (name, stake, commission, Jito flag, voting % from Stakewiz) refresh on cache; opening a profile uses this dashboard’s RPC + snapshots.",
       results
     });
   } catch (e) {

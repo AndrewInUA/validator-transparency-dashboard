@@ -1670,6 +1670,15 @@
     }
     .dir-pill-warn { background: rgba(243, 107, 107, 0.12); color: var(--warn); }
     .dir-pill-ok { background: var(--pill-ok-bg); color: var(--pill-ok-fg); border: 1px solid var(--pill-ok-border); }
+    .dir-pill-jito {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent2);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .dir-table .dir-narrow {
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
     .dir-open {
       font-weight: 600;
       color: var(--accent2);
@@ -1830,16 +1839,22 @@
       border: 1px solid var(--border);
       border-radius: var(--card-radius);
       box-shadow: var(--shadow-float);
-      max-height: 320px;
+      max-height: min(70vh, 520px);
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 6px;
+    }
+    .compare-block .typeahead-results {
+      width: max(100%, min(560px, calc(100vw - 36px)));
+      max-width: none;
+      right: auto;
     }
     .typeahead-results[hidden] { display: none !important; }
     .typeahead-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
-      padding: 8px 10px;
+      padding: 9px 10px;
       border-radius: 12px;
       cursor: pointer;
       color: var(--text);
@@ -1849,8 +1864,8 @@
       background: var(--surface2);
     }
     .typeahead-avatar {
-      width: 26px;
-      height: 26px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       object-fit: cover;
       background: var(--surface2);
@@ -1858,8 +1873,8 @@
       flex-shrink: 0;
     }
     .typeahead-avatar-fallback {
-      width: 26px;
-      height: 26px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -1872,18 +1887,57 @@
       text-transform: uppercase;
       flex-shrink: 0;
     }
-    .typeahead-text {
+    .typeahead-main {
+      flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
-    .typeahead-name { font-weight: 600; }
+    .typeahead-name { font-weight: 600; line-height: 1.25; }
     .typeahead-vote {
       font-family: ui-monospace, monospace;
       font-size: 11px;
       color: var(--text2);
       word-break: break-all;
+      line-height: 1.3;
+    }
+    .typeahead-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .ta-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text2);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .ta-chip-muted { opacity: 0.95; }
+    .ta-chip-ok {
+      border-color: var(--pill-ok-border);
+      background: var(--pill-ok-bg);
+      color: var(--pill-ok-fg);
+    }
+    .ta-chip-warn {
+      border-color: rgba(243, 107, 107, 0.45);
+      background: rgba(243, 107, 107, 0.1);
+      color: var(--warn);
+    }
+    .ta-chip-jito {
+      border-color: rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent2);
     }
     .typeahead-empty {
       padding: 10px 12px;
@@ -2126,11 +2180,13 @@
                 <th>Vote account</th>
                 <th>Comm.</th>
                 <th>Stake (SOL)</th>
+                <th title="Stakewiz catalog · Jito-enabled">Jito</th>
+                <th title="Stakewiz vote success %">Votes %</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="directory-tbody">
-              <tr><td colspan="5" style="color:var(--text3)">Loading…</td></tr>
+              <tr><td colspan="7" style="color:var(--text3)">Loading…</td></tr>
             </tbody>
           </table>
         </div>
