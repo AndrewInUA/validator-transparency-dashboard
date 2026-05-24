@@ -342,6 +342,24 @@ function renderRatings(r) {
   safeSetText(document.getElementById("stake-other"), `${fmtSol(nonPoolStake)} SOL`);
   safeSetText(document.getElementById("stake-total"), `${fmtSol(totalStakeContext)} SOL`);
 
+  const trOkForPools =
+    r?.sources?.trillium &&
+    !r?.sources?.trillium?.error &&
+    knownPoolsStake !== null &&
+    nonPoolStake !== null;
+  let stakeSplitNote =
+    "Pool vs non-pool split is reported by Trillium. Hover the (i) icons for how to read each number.";
+  if (!trOkForPools) {
+    stakeSplitNote =
+      "Stake breakdown unavailable – Trillium did not return pool data for this validator.";
+  } else if (nonPoolStake === 0) {
+    stakeSplitNote =
+      "Trillium classifies all stake here as pool-sourced (0.00 SOL non-pool). That is their mapping, not an independent wallet audit.";
+  } else if (nonPoolStake !== null && nonPoolStake > 0) {
+    stakeSplitNote = `Trillium reports ${fmtSol(nonPoolStake)} SOL as non-pool stake (often direct native delegations). Source: Trillium API.`;
+  }
+  safeSetText(document.getElementById("stake-split-note"), stakeSplitNote);
+
   const poolList = document.getElementById("pools-list");
   if (poolList) {
     poolList.innerHTML = "";

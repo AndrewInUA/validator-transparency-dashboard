@@ -622,6 +622,37 @@
       letter-spacing: 0.01em;
     }
 
+    .stake-split-header {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.35;
+    }
+
+    .stake-split-source {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text3);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: var(--surface2);
+    }
+
+    .stake-split-note {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.45;
+    }
+
     @media (max-width: 860px) {
       .stake-split-grid {
         grid-template-columns: 1fr;
@@ -2525,10 +2556,28 @@
           <div id="pools-count" class="apy-value blue">–</div>
         </div>
       </div>
+      <div class="stake-split-header">
+        Stake breakdown
+        <span class="info-dot" tabindex="0" data-tip="These three numbers come from Trillium’s validator rewards API. Trillium maps each stake account to a known pool program or to ‘not from a pool.’ This is their classification – not a wallet-by-wallet audit of who owns the SOL.">i</span>
+        <span class="stake-split-source">Trillium API</span>
+      </div>
+      <p class="stake-split-note" id="stake-split-note">Pool vs non-pool split is reported by Trillium. Hover the (i) icons for how to read each number.</p>
       <div class="stake-split-grid">
-        <div class="stake-split-item">Stake from known pools<strong id="stake-known">– SOL</strong></div>
-        <div class="stake-split-item">Other / untagged stake<strong id="stake-other">– SOL</strong></div>
-        <div class="stake-split-item">Total active stake<strong id="stake-total">– SOL</strong></div>
+        <div class="stake-split-item">
+          Stake from known pools
+          <span class="info-dot" tabindex="0" data-tip="SOL Trillium attributes to named on-chain stake pools (Foundation, Jito, Marinade, etc.). Listed pool badges below use the same source.">i</span>
+          <strong id="stake-known">– SOL</strong>
+        </div>
+        <div class="stake-split-item">
+          Other / non-pool stake
+          <span class="info-dot" tabindex="0" data-tip="SOL Trillium does not attribute to a known stake pool – often direct native delegations from individual wallets. 0.00 SOL here means Trillium currently reports none for this validator, not that we verified every delegator ourselves.">i</span>
+          <strong id="stake-other">– SOL</strong>
+        </div>
+        <div class="stake-split-item">
+          Total in this split
+          <span class="info-dot" tabindex="0" data-tip="Sum of known-pool stake plus non-pool stake from Trillium. May differ slightly from live activated stake elsewhere on the page if sources update at different times.">i</span>
+          <strong id="stake-total">– SOL</strong>
+        </div>
       </div>
       <div class="pool-badges" id="pools-list"></div>
       <div class="last-updated" id="apy-sources-note" style="margin-top:8px">Public API status: –</div>
