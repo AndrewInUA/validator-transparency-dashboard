@@ -1634,24 +1634,24 @@ function computeVerdict({
 
   const meta = {
     recommended: {
-      label: "Strong pick (longer track record here)",
-      blurbPrefix: "Looks strong for delegators –"
+      label: "Strong signals, longer track record here",
+      blurbPrefix: "Tracked metrics read strong –"
     },
     promising: {
-      label: "Healthy signs so far",
-      blurbPrefix: "Nothing here blocks normal staking rewards –"
+      label: "Steady signals so far",
+      blurbPrefix: "No major flags in tracked metrics –"
     },
     watch: {
-      label: "OK to consider – compare a few numbers",
-      blurbPrefix: "Not a warning –"
+      label: "Mixed signals – compare with others",
+      blurbPrefix: "Neutral read –"
     },
     wait: {
       label: "Early read on our charts",
       blurbPrefix: "History is still building in this dashboard –"
     },
     caution: {
-      label: "High risk to skip or read carefully",
-      blurbPrefix: "Serious concern –"
+      label: "Risk flags – read carefully",
+      blurbPrefix: "Notable concerns in tracked metrics –"
     }
   };
   const m = meta[tier];
@@ -1689,10 +1689,10 @@ function renderVerdictBadge(verdict) {
 
   const chipByTier = {
     recommended: "Lime · long steady track here",
-    promising: "Mint · looking good so far",
+    promising: "Mint · steady signals so far",
     watch: "Yellow · compare with others",
     wait: "Gray · new in our charts",
-    caution: "Orange · check carefully"
+    caution: "Orange · risk flags present"
   };
 
   root.className = `card verdict-card ${cls}`;

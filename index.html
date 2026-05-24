@@ -2353,7 +2353,7 @@
       </div>
       <div>
         <strong>5 · Duplex summaries</strong><br />
-        <strong>Verdict</strong> = network-relative band plus snapshot depth. <strong>Signal breakdown</strong> below rolls the same telemetry into positives/cautions for <em>this</em> validator – orthogonal scoring paths.
+        <strong>Network read</strong> = network-relative band plus snapshot depth. <strong>Signal breakdown</strong> below rolls the same telemetry into positives/cautions for <em>this</em> validator – orthogonal scoring paths.
       </div>
       <div>
         <strong>Tip · At a glance</strong><br />
@@ -2401,21 +2401,19 @@
 
   <div id="verdict-card" class="card verdict-card" data-loaded="true" style="display:none">
     <p class="verdict-purpose">
-      Snapshot-informed network read – medians, live status, archived depth; not staking advice.
+      <strong>Network-relative read</strong> – how this validator compares on medians, live status, and snapshot depth tracked here.
     </p>
     <div class="verdict-row">
       <span id="verdict-tier" class="verdict-tier">Loading…</span>
-      <span id="verdict-label" class="verdict-label">Loading verdict…</span>
+      <span id="verdict-label" class="verdict-label">Loading summary…</span>
     </div>
-    <div id="verdict-rationale" class="verdict-rationale">Computing recommendation…</div>
+    <div id="verdict-rationale" class="verdict-rationale">Summarizing tracked signals…</div>
     <div id="verdict-meta" class="verdict-meta"></div>
     <details class="verdict-color-help">
       <summary>What do the colored labels mean?</summary>
       <p>
-        Gray, mint, and lime only describe <strong>how long we’ve been saving daily snapshots</strong> for this validator inside this dashboard
-        – not whether staking &ldquo;works&rdquo; on Solana.
-        Lime means we&apos;ve tracked it longer with consistently healthy signals here; gray means our history is newer.
-        Orange means something flagged as risky – read the commission and stability sections above.
+        Color bands group <strong>metrics tracked in this dashboard</strong> – snapshot depth plus stability, commission, and voting signals – so you can compare validators at a glance.
+        Lime = longer steady history here; mint = healthy signals but newer here; gray = chart still filling in; yellow = mixed or average vs network; orange = risk flag – read commission and stability above.
       </p>
     </details>
   </div>
