@@ -693,7 +693,32 @@ function formatSnapshotDate(iso) {
 function snapshotDayKey(iso) {
   if (!iso) return "";
   const d = new Date(iso);
-  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function trackingPeriodFromMeta(snapshotMeta) {
+  const oldest = snapshotMeta?.oldest_captured_at;
+  const newest = snapshotMeta?.newest_captured_at;
+  if (!oldest || !newest) return null;
+  const oMs = new Date(oldest).getTime();
+  const nMs = new Date(newest).getTime();
+  if (!Number.isFinite(oMs) || !Number.isFinite(nMs) || nMs < oMs) return null;
+  const firstDate = formatSnapshotDate(oldest);
+  const lastDate = formatSnapshotDate(newest);
+  return {
+    periodRange: formatDateRange(firstDate, lastDate),
+    spanDays: Math.max(1, Math.round((nMs - oMs) / (24 * 60 * 60 * 1000))),
+    firstDate,
+    lastDate
+  };
+}
+
+function pluralDays(n) {
+  return `${n} day${n === 1 ? "" : "s"}`;
 }
 
 function formatDateRange(fromDate, toDate) {
@@ -819,13 +844,22 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
     };
   }
 
-  const firstDate = formatSnapshotDate(dailySnaps[0].captured_at);
-  const lastDate = formatSnapshotDate(dailySnaps[n - 1].captured_at);
-  const periodRange = formatDateRange(firstDate, lastDate);
-  const spanDays = Math.max(1, Math.round(snapshotSpanDays(dailySnaps[0], dailySnaps[n - 1])));
+  const fullPeriod = trackingPeriodFromMeta(snapshotMeta);
+  const windowFirstDate = formatSnapshotDate(dailySnaps[0].captured_at);
+  const windowLastDate = formatSnapshotDate(dailySnaps[n - 1].captured_at);
+  const windowRange = formatDateRange(windowFirstDate, windowLastDate);
+  const periodRange = fullPeriod?.periodRange ?? windowRange;
+  const spanDays =
+    fullPeriod?.spanDays ??
+    Math.max(1, Math.round(snapshotSpanDays(dailySnaps[0], dailySnaps[n - 1])));
   const totalAll = Number.isFinite(Number(snapshotMeta?.total_count))
     ? Number(snapshotMeta.total_count)
     : snaps.length;
+  const windowStartsAtOldest =
+    snapshotMeta?.oldest_captured_at &&
+    snapshotDayKey(dailySnaps[0].captured_at) ===
+      snapshotDayKey(snapshotMeta.oldest_captured_at);
+  const hasPartialWindow = !windowStartsAtOldest || dailySnaps.length < totalAll;
   const allTime = snapshotMeta?.all_time;
   const events = buildTrackingPeriodEvents(dailySnaps);
 
@@ -838,24 +872,54 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
 
   const latest = dailySnaps[n - 1];
   const latestCom = Number(latest.commission);
+  const lastDate = fullPeriod?.lastDate ?? windowLastDate;
 
   let headline =
     events.length === 0
-      ? `Steady over ${spanDays} days of stored snapshots (${periodRange}).`
-      : `${events.length} recorded change${events.length === 1 ? "" : "s"} over ${spanDays} days (${periodRange}).`;
+      ? `Steady over ${pluralDays(spanDays)} of stored snapshots (${periodRange}).`
+      : `${events.length} recorded change${events.length === 1 ? "" : "s"} over ${pluralDays(spanDays)} (${periodRange}).`;
 
-  const sub = `${totalAll.toLocaleString("en-US")} daily snapshots in storage ${EN_DASH} scanned for commission, status, and voting shifts day by day. Not staking advice.`;
+  let sub = `${totalAll.toLocaleString("en-US")} snapshots in storage (${periodRange}).`;
+  if (hasPartialWindow) {
+    sub += ` Change log scans loaded daily readings (${windowRange}); pattern summary uses full history.`;
+  } else {
+    sub += ` Scanned day by day across stored history.`;
+  }
+  sub += ` Not staking advice.`;
 
-  const historyItems =
-    events.length > 0
-      ? events
-      : [
-          {
-            tone: "ok",
-            label: "Change log",
-            text: `No commission or status changes between daily snapshots across ${periodRange}.`
-          }
-        ];
+  let historyItems;
+  if (events.length > 0) {
+    historyItems = events;
+  } else if (commissionChanges > 0 || (delinquentDays > 0 && hasPartialWindow)) {
+    const parts = [];
+    if (commissionChanges > 0) {
+      parts.push(
+        `${commissionChanges} commission change${commissionChanges === 1 ? "" : "s"}`
+      );
+    }
+    if (delinquentDays > 0) {
+      parts.push(
+        `${delinquentDays} delinquent snapshot day${delinquentDays === 1 ? "" : "s"}`
+      );
+    }
+    historyItems = [
+      {
+        tone: commissionChanges > 0 ? "neutral" : "warn",
+        label: "Full history",
+        text: `${parts.join("; ")} on record across ${periodRange}${
+          hasPartialWindow ? ` ${EN_DASH} recent loaded window is ${windowRange}` : ""
+        }.`
+      }
+    ];
+  } else {
+    historyItems = [
+      {
+        tone: "ok",
+        label: "Change log",
+        text: `No commission or status changes across ${periodRange}.`
+      }
+    ];
+  }
 
   const patternItems = [];
   if (Number.isFinite(latestCom)) {
