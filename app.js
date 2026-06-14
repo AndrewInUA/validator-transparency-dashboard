@@ -348,7 +348,7 @@ function renderRatings(r) {
     knownPoolsStake !== null &&
     nonPoolStake !== null;
   let stakeSplitNote =
-    "Pool vs non-pool split is reported by Trillium. Hover the (i) icons for how to read each number.";
+    "Pool vs non-pool split uses Trillium API data. Hover the (i) icons for how to read each number.";
   if (!trOkForPools) {
     stakeSplitNote =
       "Stake breakdown unavailable – Trillium did not return pool data for this validator.";
@@ -356,7 +356,7 @@ function renderRatings(r) {
     stakeSplitNote =
       "Trillium classifies all stake here as pool-sourced (0.00 SOL non-pool). That is their mapping, not an independent wallet audit.";
   } else if (nonPoolStake !== null && nonPoolStake > 0) {
-    stakeSplitNote = `Trillium reports ${fmtSol(nonPoolStake)} SOL as non-pool stake (often direct native delegations). Source: Trillium API.`;
+    stakeSplitNote = `Per Trillium data, ${fmtSol(nonPoolStake)} SOL is classified as non-pool stake (often direct native delegations).`;
   }
   safeSetText(document.getElementById("stake-split-note"), stakeSplitNote);
 
