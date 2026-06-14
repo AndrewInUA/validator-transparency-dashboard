@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v48
+ * Validator Transparency Dashboard – app.js v49
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -29,6 +29,8 @@ const SNAPSHOT_WINDOW = 240;
  */
 const TRACK_TOUCH_TTL_MS = 6 * 60 * 60 * 1000;
 const WHAT_CHANGED_LOOKBACK_DAYS = 7;
+const EN_DASH = "–";
+const MIN_WEEK_SPAN_DAYS = 6;
 
 function getParam(name) {
   const qs = new URLSearchParams(window.location.search);
@@ -708,27 +710,38 @@ function findLatestAndPreviousDaySnapshots(snaps) {
   return { latest, baseline: null };
 }
 
-function findSnapshotBaselineDaysAgo(snaps, days) {
-  if (!snaps.length) return { latest: null, baseline: null };
+function formatDateRange(fromDate, toDate) {
+  return `${fromDate} ${EN_DASH} ${toDate}`;
+}
+
+function snapshotSpanDays(baseline, latest) {
+  const a = new Date(baseline?.captured_at).getTime();
+  const b = new Date(latest?.captured_at).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return 0;
+  return (b - a) / (24 * 60 * 60 * 1000);
+}
+
+function findSnapshotBaselineDaysAgo(snaps, minDays) {
+  if (!snaps.length) return { latest: null, baseline: null, spanDays: 0 };
   const latest = snaps[snaps.length - 1];
   const latestTs = new Date(latest.captured_at).getTime();
-  if (!Number.isFinite(latestTs)) return { latest, baseline: null };
-  const targetTs = latestTs - days * 24 * 60 * 60 * 1000;
+  if (!Number.isFinite(latestTs)) return { latest, baseline: null, spanDays: 0 };
+
+  const cutoffTs = latestTs - minDays * 24 * 60 * 60 * 1000;
   let baseline = null;
-  let bestDiff = Infinity;
   for (let i = 0; i < snaps.length - 1; i++) {
     const ts = new Date(snaps[i].captured_at).getTime();
-    if (!Number.isFinite(ts) || ts >= latestTs) continue;
-    const diff = Math.abs(ts - targetTs);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      baseline = snaps[i];
-    }
+    if (Number.isFinite(ts) && ts <= cutoffTs) baseline = snaps[i];
   }
-  if (!baseline) return { latest, baseline: null };
-  const spanDays = (latestTs - new Date(baseline.captured_at).getTime()) / (24 * 60 * 60 * 1000);
-  if (spanDays < Math.max(2, days - 2)) return { latest, baseline: null };
-  return { latest, baseline };
+
+  if (!baseline) return { latest, baseline: null, spanDays: 0 };
+
+  const spanDays = snapshotSpanDays(baseline, latest);
+  if (spanDays < MIN_WEEK_SPAN_DAYS) {
+    return { latest, baseline: null, spanDays: 0 };
+  }
+
+  return { latest, baseline, spanDays };
 }
 
 function snapshotStatusLabel(status) {
@@ -758,7 +771,7 @@ function buildSnapshotDiffItems(baseline, latest) {
       pushChangeItem(items, {
         tone: cLatest > cPrev ? "warn" : "ok",
         label: "Commission",
-        text: `${cPrev}% → ${cLatest}% (${fromDate} → ${toDate})`,
+        text: `${cPrev}% ${EN_DASH} ${cLatest}% (${formatDateRange(fromDate, toDate)})`,
         isChange: true
       });
     } else {
@@ -777,7 +790,7 @@ function buildSnapshotDiffItems(baseline, latest) {
     pushChangeItem(items, {
       tone: String(latest.status || "").toLowerCase() === "delinquent" ? "warn" : "ok",
       label: "Snapshot status",
-      text: `${sPrev} → ${sLatest} (${fromDate} → ${toDate})`,
+      text: `${sPrev} ${EN_DASH} ${sLatest} (${formatDateRange(fromDate, toDate)})`,
       isChange: true
     });
   } else {
@@ -797,7 +810,7 @@ function buildSnapshotDiffItems(baseline, latest) {
       pushChangeItem(items, {
         tone: diff < -2 ? "warn" : diff > 2 ? "ok" : "neutral",
         label: "Voting consistency",
-        text: `${uPrev.toFixed(1)}% → ${uLatest.toFixed(1)}% in stored snapshots`,
+        text: `${uPrev.toFixed(1)}% ${EN_DASH} ${uLatest.toFixed(1)}% in stored snapshots`,
         isChange: true
       });
     } else {
@@ -822,7 +835,7 @@ function computeEpochVotingLine(live) {
     return `Recent epochs: voting consistency steady at ~${last.toFixed(1)}% (last two finished epochs, live RPC).`;
   }
   const direction = diff > 0 ? "up" : "down";
-  return `Recent epochs: voting consistency ${direction} from ${prev.toFixed(1)}% to ${last.toFixed(1)}% (last two finished epochs, live RPC).`;
+  return `Recent epochs: voting consistency ${direction} from ${prev.toFixed(1)}% ${EN_DASH} ${last.toFixed(1)}% (last two finished epochs, live RPC).`;
 }
 
 function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
@@ -844,25 +857,33 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
   let dayWindow = null;
   if (dayPair.latest && dayPair.baseline) {
     const diff = buildSnapshotDiffItems(dayPair.baseline, dayPair.latest);
+    const daySpan = snapshotSpanDays(dayPair.baseline, dayPair.latest);
     dayWindow = {
       ...diff,
       title: "Since previous snapshot day",
-      range: `${diff.fromDate} → ${diff.toDate}`
+      range: formatDateRange(diff.fromDate, diff.toDate),
+      spanDays: daySpan
     };
   }
 
   let weekWindow = null;
-  if (
-    weekPair.latest &&
-    weekPair.baseline &&
-    snapshotDayKey(weekPair.baseline.captured_at) !== snapshotDayKey(weekPair.latest.captured_at)
-  ) {
-    const diff = buildSnapshotDiffItems(weekPair.baseline, weekPair.latest);
-    weekWindow = {
-      ...diff,
-      title: `Last ${WHAT_CHANGED_LOOKBACK_DAYS} days`,
-      range: `${diff.fromDate} → ${diff.toDate}`
-    };
+  if (weekPair.latest && weekPair.baseline && weekPair.spanDays >= MIN_WEEK_SPAN_DAYS) {
+    const sameAsDay =
+      dayPair.baseline &&
+      dayPair.latest &&
+      weekPair.baseline.captured_at === dayPair.baseline.captured_at &&
+      weekPair.latest.captured_at === dayPair.latest.captured_at;
+    if (!sameAsDay) {
+      const diff = buildSnapshotDiffItems(weekPair.baseline, weekPair.latest);
+      const spanRounded = Math.round(weekPair.spanDays);
+      weekWindow = {
+        ...diff,
+        title: `${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison`,
+        range: formatDateRange(diff.fromDate, diff.toDate),
+        spanDays: weekPair.spanDays,
+        spanLabel: `${spanRounded}-day span`
+      };
+    }
   }
 
   const stabilityScore = Number.isFinite(stability?.allTimeScore)
@@ -871,13 +892,16 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
   const epochLine = computeEpochVotingLine(live);
 
   if (!dayWindow && !weekWindow) {
+    const needsWeekHistory = n >= 2 && !weekPair.baseline;
     return {
       ready: false,
       headline:
         n === 1
-          ? "Only one daily snapshot so far — check back after the next collection run."
-          : "Not enough distinct snapshot days yet for a day-over-day or weekly comparison.",
-      sub: "Snapshots are collected once per day. Multiple runs on the same day are treated as one reading.",
+          ? `Only one daily snapshot so far ${EN_DASH} check back after the next collection run.`
+          : "Not enough distinct snapshot days yet for a day-over-day comparison.",
+      sub: needsWeekHistory
+        ? `Snapshots are collected once per day. A ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison appears after at least ${MIN_WEEK_SPAN_DAYS + 1} days of stored history.`
+        : "Snapshots are collected once per day. Multiple runs on the same day count as one reading.",
       dayWindow: null,
       weekWindow: null,
       epochLine
@@ -885,16 +909,17 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
   }
 
   const primary = dayWindow || weekWindow;
+  const primaryLabel = dayWindow ? "previous snapshot day" : `${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison`;
   const headline =
     primary.changeCount === 0
-      ? `No material changes in stored snapshots (${primary.range}).`
-      : `${primary.changeCount} change${primary.changeCount === 1 ? "" : "s"} in stored snapshots (${primary.range}).`;
+      ? `No material changes since ${primaryLabel} (${primary.range}).`
+      : `${primary.changeCount} change${primary.changeCount === 1 ? "" : "s"} since ${primaryLabel} (${primary.range}).`;
 
   if (Number.isFinite(stabilityScore) && dayWindow) {
     dayWindow.items.push({
       tone: "neutral",
       label: "Stability score",
-      text: `${stabilityScore}/100 now (all-time snapshot history — updates as new days are stored)`
+      text: `${stabilityScore}/100 now (all-time snapshot history ${EN_DASH} updates as new days are stored)`
     });
   }
 
@@ -915,7 +940,7 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
   return {
     ready: true,
     headline,
-    sub: "Fixed windows from stored daily snapshots and live epoch reads — same for every visitor. Not staking advice.",
+    sub: `Fixed windows from stored daily snapshots and live epoch reads ${EN_DASH} same for every visitor. Not staking advice.`,
     dayWindow,
     weekWindow: weekWindow && dayWindow ? weekWindow : weekWindow,
     epochLine
@@ -949,9 +974,13 @@ function renderWhatChangedWindow(wrapEl, listEl, windowData) {
   wrapEl.hidden = false;
   const titleEl = wrapEl.querySelector(".what-changed-section-title");
   if (titleEl) {
-    titleEl.textContent = windowData.range
-      ? `${windowData.title} (${windowData.range})`
-      : windowData.title;
+    if (windowData.spanLabel && windowData.title.includes("comparison")) {
+      titleEl.textContent = `${windowData.title} (${windowData.range}, ${windowData.spanLabel})`;
+    } else if (windowData.range) {
+      titleEl.textContent = `${windowData.title} (${windowData.range})`;
+    } else {
+      titleEl.textContent = windowData.title;
+    }
   }
   renderWhatChangedList(listEl, windowData.items);
 }
@@ -1080,7 +1109,7 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   ) {
     const o = fmtSnapshotDate(snapshotMeta.oldest_captured_at);
     const ne = fmtSnapshotDate(snapshotMeta.newest_captured_at);
-    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots (${o} - ${ne}).`;
+    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots (${o} ${EN_DASH} ${ne}).`;
   } else if (totalAll !== null && totalAll > 0) {
     allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots.`;
   }
