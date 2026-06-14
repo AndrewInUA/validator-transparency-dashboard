@@ -1118,6 +1118,17 @@
       color: var(--text2);
     }
 
+    .what-changed-epoch-line {
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text2);
+    }
+
     .open-validator-blurb {
       font-size: 14px;
       color: var(--text2);
@@ -2474,18 +2485,19 @@
   <div id="what-changed-card" class="card what-changed-card" style="display:none" aria-label="What changed">
     <div class="card-title">
       What changed
-      <span class="info-dot" tabindex="0" data-tip="Factual differences from stored daily snapshots and, when available, since you last opened this validator page in this browser. Not staking advice.">i</span>
+      <span class="info-dot" tabindex="0" data-tip="Factual differences over fixed time windows: previous snapshot day, last 7 days, and recent finished epochs from live RPC. Same for every visitor — not staking advice.">i</span>
     </div>
     <p id="what-changed-headline" class="what-changed-headline">Checking snapshot history…</p>
     <p id="what-changed-sub" class="what-changed-sub"></p>
     <div id="what-changed-daily-wrap" hidden>
-      <div class="what-changed-section-title">Since previous daily snapshot</div>
+      <div class="what-changed-section-title">Since previous snapshot day</div>
       <ul id="what-changed-daily-list" class="what-changed-list"></ul>
     </div>
-    <div id="what-changed-visit-wrap" hidden>
-      <div class="what-changed-section-title">Since your last visit</div>
-      <ul id="what-changed-visit-list" class="what-changed-list"></ul>
+    <div id="what-changed-week-wrap" hidden>
+      <div class="what-changed-section-title">Last 7 days</div>
+      <ul id="what-changed-week-list" class="what-changed-list"></ul>
     </div>
+    <p id="what-changed-epoch-line" class="what-changed-epoch-line" hidden></p>
   </div>
 
   <div id="verdict-card" class="card verdict-card" data-loaded="true" style="display:none">
@@ -2817,7 +2829,7 @@
             <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
             <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
             <div class="pill pill-ok">Done: First-glance KPI strip + richer directory &amp; pickers (context before you open a profile)</div>
-            <div class="pill pill-ok">Done: &ldquo;What changed&rdquo; summary – daily snapshot diff + since your last visit</div>
+            <div class="pill pill-ok">Done: &ldquo;What changed&rdquo; summary – snapshot day, 7-day window, recent epochs</div>
             <div class="pill">Next: Per-epoch detail page</div>
             <div class="pill">Next: Delinquency alerts &amp; proactive signals</div>
             <div class="pill">Next: Actionable insight layer – exports and broader &ldquo;what changed&rdquo; across the page</div>
