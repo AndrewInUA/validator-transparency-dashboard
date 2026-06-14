@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v49
+ * Validator Transparency Dashboard – app.js v50
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -860,7 +860,7 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
     const daySpan = snapshotSpanDays(dayPair.baseline, dayPair.latest);
     dayWindow = {
       ...diff,
-      title: "Since previous snapshot day",
+      title: "Day-over-day",
       range: formatDateRange(diff.fromDate, diff.toDate),
       spanDays: daySpan
     };
@@ -908,12 +908,28 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
     };
   }
 
-  const primary = dayWindow || weekWindow;
-  const primaryLabel = dayWindow ? "previous snapshot day" : `${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison`;
-  const headline =
-    primary.changeCount === 0
-      ? `No material changes since ${primaryLabel} (${primary.range}).`
-      : `${primary.changeCount} change${primary.changeCount === 1 ? "" : "s"} since ${primaryLabel} (${primary.range}).`;
+  let headline = "";
+  let sub = "";
+
+  if (dayWindow && weekWindow) {
+    headline =
+      dayWindow.changeCount === 0
+        ? "No material changes day-over-day."
+        : `${dayWindow.changeCount} change${dayWindow.changeCount === 1 ? "" : "s"} day-over-day.`;
+    sub = `Day-over-day: ${dayWindow.range} (UTC). ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison: ${weekWindow.range} (${weekWindow.spanLabel}). Not staking advice.`;
+  } else if (dayWindow) {
+    headline =
+      dayWindow.changeCount === 0
+        ? "No material changes day-over-day."
+        : `${dayWindow.changeCount} change${dayWindow.changeCount === 1 ? "" : "s"} day-over-day.`;
+    sub = `Compared stored snapshots on ${dayWindow.range} (UTC, one day apart). Not staking advice.`;
+  } else if (weekWindow) {
+    headline =
+      weekWindow.changeCount === 0
+        ? `No material changes in the ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison.`
+        : `${weekWindow.changeCount} change${weekWindow.changeCount === 1 ? "" : "s"} in the ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison.`;
+    sub = `Compared stored snapshots on ${weekWindow.range} (${weekWindow.spanLabel}, UTC). Not staking advice.`;
+  }
 
   if (Number.isFinite(stabilityScore) && dayWindow) {
     dayWindow.items.push({
@@ -940,7 +956,7 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
   return {
     ready: true,
     headline,
-    sub: `Fixed windows from stored daily snapshots and live epoch reads ${EN_DASH} same for every visitor. Not staking advice.`,
+    sub,
     dayWindow,
     weekWindow: weekWindow && dayWindow ? weekWindow : weekWindow,
     epochLine
@@ -974,10 +990,8 @@ function renderWhatChangedWindow(wrapEl, listEl, windowData) {
   wrapEl.hidden = false;
   const titleEl = wrapEl.querySelector(".what-changed-section-title");
   if (titleEl) {
-    if (windowData.spanLabel && windowData.title.includes("comparison")) {
-      titleEl.textContent = `${windowData.title} (${windowData.range}, ${windowData.spanLabel})`;
-    } else if (windowData.range) {
-      titleEl.textContent = `${windowData.title} (${windowData.range})`;
+    if (windowData.spanLabel) {
+      titleEl.textContent = `${windowData.title} (${windowData.spanLabel})`;
     } else {
       titleEl.textContent = windowData.title;
     }

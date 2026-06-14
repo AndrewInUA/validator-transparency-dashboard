@@ -2440,7 +2440,7 @@
       </div>
       <div>
         <strong>Tip · At a glance</strong><br />
-        Right under this box, the green row is a quick preview of the numbers below.
+        Right under this box: the KPI row, then the network-relative summary, then profile details.
       </div>
     </div>
   </div>
@@ -2448,7 +2448,7 @@
   <div id="delegator-snapshot-bar" class="card delegator-snapshot-bar" aria-label="Key delegator metrics at a glance">
     <div class="delegator-snapshot-head">
       <span class="delegator-snapshot-title">At a glance</span>
-      <span class="delegator-snapshot-sub">The same key numbers you’ll see in the cards below, in one row</span>
+      <span class="delegator-snapshot-sub">Key numbers first; network-relative summary right below</span>
     </div>
     <div class="delegator-snapshot-grid">
       <div class="delegator-snapshot-item">
@@ -2480,24 +2480,6 @@
         <span id="snapshot-pools" class="delegator-snapshot-value val-muted" title="Known staking pools delegating here">–</span>
       </div>
     </div>
-  </div>
-
-  <div id="what-changed-card" class="card what-changed-card" style="display:none" aria-label="What changed">
-    <div class="card-title">
-      What changed
-      <span class="info-dot" tabindex="0" data-tip="Factual differences over fixed time windows: previous snapshot day, 7-day comparison (only when 7+ days of history exist), and recent finished epochs from live RPC. Same for every visitor. Not staking advice.">i</span>
-    </div>
-    <p id="what-changed-headline" class="what-changed-headline">Checking snapshot history…</p>
-    <p id="what-changed-sub" class="what-changed-sub"></p>
-    <div id="what-changed-daily-wrap" hidden>
-      <div class="what-changed-section-title">Since previous snapshot day</div>
-      <ul id="what-changed-daily-list" class="what-changed-list"></ul>
-    </div>
-    <div id="what-changed-week-wrap" hidden>
-      <div class="what-changed-section-title">7-day comparison</div>
-      <ul id="what-changed-week-list" class="what-changed-list"></ul>
-    </div>
-    <p id="what-changed-epoch-line" class="what-changed-epoch-line" hidden></p>
   </div>
 
   <div id="verdict-card" class="card verdict-card" data-loaded="true" style="display:none">
@@ -2769,6 +2751,24 @@
         </div>
       </div>
       <div id="delegator-confidence" class="last-updated">Confidence: –</div>
+    </div>
+
+    <div id="what-changed-card" class="card what-changed-card" style="display:none" aria-label="What changed">
+      <div class="card-title">
+        What changed
+        <span class="info-dot" tabindex="0" data-tip="Day-over-day snapshot diff, optional 7-day comparison when enough history exists, and recent finished epochs from live RPC. Same for every visitor. Not staking advice.">i</span>
+      </div>
+      <p id="what-changed-headline" class="what-changed-headline">Checking snapshot history…</p>
+      <p id="what-changed-sub" class="what-changed-sub"></p>
+      <div id="what-changed-daily-wrap" hidden>
+        <div class="what-changed-section-title">Day-over-day</div>
+        <ul id="what-changed-daily-list" class="what-changed-list"></ul>
+      </div>
+      <div id="what-changed-week-wrap" hidden>
+        <div class="what-changed-section-title">7-day comparison</div>
+        <ul id="what-changed-week-list" class="what-changed-list"></ul>
+      </div>
+      <p id="what-changed-epoch-line" class="what-changed-epoch-line" hidden></p>
     </div>
 
     <div class="card">
