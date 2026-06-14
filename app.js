@@ -874,16 +874,27 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
   const latestCom = Number(latest.commission);
   const lastDate = fullPeriod?.lastDate ?? windowLastDate;
 
+  const windowSpanDays = Math.max(
+    1,
+    Math.round(snapshotSpanDays(dailySnaps[0], dailySnaps[n - 1]))
+  );
+
   let headline =
     events.length === 0
       ? `Steady over ${pluralDays(spanDays)} of stored snapshots (${periodRange}).`
       : `${events.length} recorded change${events.length === 1 ? "" : "s"} over ${pluralDays(spanDays)} (${periodRange}).`;
 
   let sub = `${totalAll.toLocaleString("en-US")} snapshots in storage (${periodRange}).`;
-  if (hasPartialWindow) {
-    sub += ` Change log scans loaded daily readings (${windowRange}); pattern summary uses full history.`;
+  const eventCommissionCount = events.filter(e => e.label === "Commission").length;
+  const needsWindowNote =
+    hasPartialWindow &&
+    (events.length > 0 || commissionChanges > eventCommissionCount);
+  if (needsWindowNote) {
+    sub += ` Day-by-day list below covers the most recent ${pluralDays(windowSpanDays)} loaded in this view (${windowRange}); pattern rows use full history.`;
+  } else if (!hasPartialWindow) {
+    sub += ` Checked day by day across full stored history.`;
   } else {
-    sub += ` Scanned day by day across stored history.`;
+    sub += ` Commission, delinquency, and stability use full stored history.`;
   }
   sub += ` Not staking advice.`;
 
