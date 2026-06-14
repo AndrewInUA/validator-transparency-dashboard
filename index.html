@@ -2755,18 +2755,18 @@
 
     <div id="what-changed-card" class="card what-changed-card" style="display:none" aria-label="What changed">
       <div class="card-title">
-        What changed
-        <span class="info-dot" tabindex="0" data-tip="Day-over-day snapshot diff, optional 7-day comparison when enough history exists, and recent finished epochs from live RPC. Same for every visitor. Not staking advice.">i</span>
+        Change history
+        <span class="info-dot" tabindex="0" data-tip="Full log of commission, status, and voting shifts across all daily snapshots stored for this validator. Same for every visitor. Not staking advice.">i</span>
       </div>
       <p id="what-changed-headline" class="what-changed-headline">Checking snapshot history…</p>
       <p id="what-changed-sub" class="what-changed-sub"></p>
-      <div id="what-changed-daily-wrap" hidden>
-        <div class="what-changed-section-title">Day-over-day</div>
-        <ul id="what-changed-daily-list" class="what-changed-list"></ul>
+      <div id="what-changed-history-wrap" hidden>
+        <div class="what-changed-section-title">Recorded changes</div>
+        <ul id="what-changed-history-list" class="what-changed-list"></ul>
       </div>
-      <div id="what-changed-week-wrap" hidden>
-        <div class="what-changed-section-title">7-day comparison</div>
-        <ul id="what-changed-week-list" class="what-changed-list"></ul>
+      <div id="what-changed-pattern-wrap" hidden>
+        <div class="what-changed-section-title">Pattern over tracking period</div>
+        <ul id="what-changed-pattern-list" class="what-changed-list"></ul>
       </div>
       <p id="what-changed-epoch-line" class="what-changed-epoch-line" hidden></p>
     </div>
@@ -2829,7 +2829,7 @@
             <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
             <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
             <div class="pill pill-ok">Done: First-glance KPI strip + richer directory &amp; pickers (context before you open a profile)</div>
-            <div class="pill pill-ok">Done: &ldquo;What changed&rdquo; summary – snapshot day, 7-day window, recent epochs</div>
+            <div class="pill pill-ok">Done: Change history log across full snapshot tracking period</div>
             <div class="pill">Next: Per-epoch detail page</div>
             <div class="pill">Next: Delinquency alerts &amp; proactive signals</div>
             <div class="pill">Next: Actionable insight layer – exports and broader &ldquo;what changed&rdquo; across the page</div>
@@ -3123,7 +3123,7 @@
   });
 </script>
 
-<script src="./app.js?v=81" defer></script>
+<script src="./app.js?v=82" defer></script>
 
 </body>
 </html>

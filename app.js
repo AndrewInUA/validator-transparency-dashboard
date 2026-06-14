@@ -28,9 +28,7 @@ const SNAPSHOT_WINDOW = 240;
  * One browser will re-touch the same validator at most once per 6 hours.
  */
 const TRACK_TOUCH_TTL_MS = 6 * 60 * 60 * 1000;
-const WHAT_CHANGED_LOOKBACK_DAYS = 7;
 const EN_DASH = "–";
-const MIN_WEEK_SPAN_DAYS = 6;
 
 function getParam(name) {
   const qs = new URLSearchParams(window.location.search);
@@ -698,18 +696,6 @@ function snapshotDayKey(iso) {
   return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
 }
 
-function findLatestAndPreviousDaySnapshots(snaps) {
-  if (!snaps.length) return { latest: null, baseline: null };
-  const latest = snaps[snaps.length - 1];
-  const latestDay = snapshotDayKey(latest.captured_at);
-  for (let i = snaps.length - 2; i >= 0; i--) {
-    if (snapshotDayKey(snaps[i].captured_at) !== latestDay) {
-      return { latest, baseline: snaps[i] };
-    }
-  }
-  return { latest, baseline: null };
-}
-
 function formatDateRange(fromDate, toDate) {
   return `${fromDate} ${EN_DASH} ${toDate}`;
 }
@@ -721,29 +707,6 @@ function snapshotSpanDays(baseline, latest) {
   return (b - a) / (24 * 60 * 60 * 1000);
 }
 
-function findSnapshotBaselineDaysAgo(snaps, minDays) {
-  if (!snaps.length) return { latest: null, baseline: null, spanDays: 0 };
-  const latest = snaps[snaps.length - 1];
-  const latestTs = new Date(latest.captured_at).getTime();
-  if (!Number.isFinite(latestTs)) return { latest, baseline: null, spanDays: 0 };
-
-  const cutoffTs = latestTs - minDays * 24 * 60 * 60 * 1000;
-  let baseline = null;
-  for (let i = 0; i < snaps.length - 1; i++) {
-    const ts = new Date(snaps[i].captured_at).getTime();
-    if (Number.isFinite(ts) && ts <= cutoffTs) baseline = snaps[i];
-  }
-
-  if (!baseline) return { latest, baseline: null, spanDays: 0 };
-
-  const spanDays = snapshotSpanDays(baseline, latest);
-  if (spanDays < MIN_WEEK_SPAN_DAYS) {
-    return { latest, baseline: null, spanDays: 0 };
-  }
-
-  return { latest, baseline, spanDays };
-}
-
 function snapshotStatusLabel(status) {
   const v = String(status || "").toLowerCase();
   if (v === "healthy") return "Healthy";
@@ -751,78 +714,69 @@ function snapshotStatusLabel(status) {
   return status ? String(status) : "Unknown";
 }
 
-function pushChangeItem(items, { tone, label, text, isChange }) {
-  items.push({ tone: tone || "neutral", label, text, isChange: !!isChange });
+function collapseSnapshotsByDay(snaps) {
+  const byDay = new Map();
+  for (const s of snaps) {
+    const key = snapshotDayKey(s.captured_at);
+    if (!key) continue;
+    byDay.set(key, s);
+  }
+  return [...byDay.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, row]) => row);
 }
 
-function buildSnapshotDiffItems(baseline, latest) {
-  const items = [];
-  let changeCount = 0;
-  if (!baseline || !latest) return { items, changeCount: 0 };
+function buildTrackingPeriodEvents(dailySnaps) {
+  const events = [];
+  for (let i = 1; i < dailySnaps.length; i++) {
+    const prev = dailySnaps[i - 1];
+    const cur = dailySnaps[i];
+    const date = formatSnapshotDate(cur.captured_at);
 
-  const fromDate = formatSnapshotDate(baseline.captured_at);
-  const toDate = formatSnapshotDate(latest.captured_at);
-
-  const cPrev = Number(baseline.commission);
-  const cLatest = Number(latest.commission);
-  if (Number.isFinite(cPrev) && Number.isFinite(cLatest)) {
-    if (cPrev !== cLatest) {
-      changeCount++;
-      pushChangeItem(items, {
-        tone: cLatest > cPrev ? "warn" : "ok",
+    const cPrev = Number(prev.commission);
+    const cCur = Number(cur.commission);
+    if (Number.isFinite(cPrev) && Number.isFinite(cCur) && cPrev !== cCur) {
+      events.push({
+        tone: cCur > cPrev ? "warn" : "ok",
         label: "Commission",
-        text: `${cPrev}% ${EN_DASH} ${cLatest}% (${formatDateRange(fromDate, toDate)})`,
+        text: `${cPrev}% ${EN_DASH} ${cCur}% (recorded ${date})`,
+        sortKey: cur.captured_at,
         isChange: true
       });
-    } else {
-      pushChangeItem(items, {
-        tone: "neutral",
-        label: "Commission",
-        text: `Unchanged at ${cLatest}%`
+    }
+
+    if (
+      String(prev.status || "").toLowerCase() !== String(cur.status || "").toLowerCase()
+    ) {
+      events.push({
+        tone: String(cur.status || "").toLowerCase() === "delinquent" ? "warn" : "ok",
+        label: "Status",
+        text: `${snapshotStatusLabel(prev.status)} ${EN_DASH} ${snapshotStatusLabel(cur.status)} (recorded ${date})`,
+        sortKey: cur.captured_at,
+        isChange: true
+      });
+    }
+
+    const uPrev = Number(prev.uptime);
+    const uCur = Number(cur.uptime);
+    if (
+      Number.isFinite(uPrev) &&
+      Number.isFinite(uCur) &&
+      uPrev > 1 &&
+      uCur > 1 &&
+      Math.abs(uCur - uPrev) >= 5
+    ) {
+      events.push({
+        tone: uCur < uPrev - 5 ? "warn" : "neutral",
+        label: "Voting consistency",
+        text: `${uPrev.toFixed(1)}% ${EN_DASH} ${uCur.toFixed(1)}% (recorded ${date})`,
+        sortKey: cur.captured_at,
+        isChange: true
       });
     }
   }
 
-  const sPrev = snapshotStatusLabel(baseline.status);
-  const sLatest = snapshotStatusLabel(latest.status);
-  if (String(baseline.status || "").toLowerCase() !== String(latest.status || "").toLowerCase()) {
-    changeCount++;
-    pushChangeItem(items, {
-      tone: String(latest.status || "").toLowerCase() === "delinquent" ? "warn" : "ok",
-      label: "Snapshot status",
-      text: `${sPrev} ${EN_DASH} ${sLatest} (${formatDateRange(fromDate, toDate)})`,
-      isChange: true
-    });
-  } else {
-    pushChangeItem(items, {
-      tone: "neutral",
-      label: "Snapshot status",
-      text: `Still ${sLatest} in stored snapshots`
-    });
-  }
-
-  const uPrev = Number(baseline.uptime);
-  const uLatest = Number(latest.uptime);
-  if (Number.isFinite(uPrev) && Number.isFinite(uLatest)) {
-    const diff = uLatest - uPrev;
-    if (Math.abs(diff) >= 1) {
-      changeCount++;
-      pushChangeItem(items, {
-        tone: diff < -2 ? "warn" : diff > 2 ? "ok" : "neutral",
-        label: "Voting consistency",
-        text: `${uPrev.toFixed(1)}% ${EN_DASH} ${uLatest.toFixed(1)}% in stored snapshots`,
-        isChange: true
-      });
-    } else {
-      pushChangeItem(items, {
-        tone: "neutral",
-        label: "Voting consistency",
-        text: `Steady at ~${uLatest.toFixed(1)}% in stored snapshots`
-      });
-    }
-  }
-
-  return { items, changeCount, fromDate, toDate };
+  return events.sort((a, b) => String(b.sortKey).localeCompare(String(a.sortKey)));
 }
 
 function computeEpochVotingLine(live) {
@@ -838,118 +792,113 @@ function computeEpochVotingLine(live) {
   return `Recent epochs: voting consistency ${direction} from ${prev.toFixed(1)}% ${EN_DASH} ${last.toFixed(1)}% (last two finished epochs, live RPC).`;
 }
 
-function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
-  const n = snaps.length;
+function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
+  const dailySnaps = collapseSnapshotsByDay(snaps);
+  const n = dailySnaps.length;
+  const epochLine = computeEpochVotingLine(live);
+
   if (n === 0) {
     return {
       ready: false,
       headline: "No stored snapshots yet for this validator.",
-      sub: "Snapshots are collected once per day for all mainnet validators.",
-      dayWindow: null,
-      weekWindow: null,
-      epochLine: computeEpochVotingLine(live)
-    };
-  }
-
-  const dayPair = findLatestAndPreviousDaySnapshots(snaps);
-  const weekPair = findSnapshotBaselineDaysAgo(snaps, WHAT_CHANGED_LOOKBACK_DAYS);
-
-  let dayWindow = null;
-  if (dayPair.latest && dayPair.baseline) {
-    const diff = buildSnapshotDiffItems(dayPair.baseline, dayPair.latest);
-    const daySpan = snapshotSpanDays(dayPair.baseline, dayPair.latest);
-    dayWindow = {
-      ...diff,
-      title: "Day-over-day",
-      range: formatDateRange(diff.fromDate, diff.toDate),
-      spanDays: daySpan
-    };
-  }
-
-  let weekWindow = null;
-  if (weekPair.latest && weekPair.baseline && weekPair.spanDays >= MIN_WEEK_SPAN_DAYS) {
-    const sameAsDay =
-      dayPair.baseline &&
-      dayPair.latest &&
-      weekPair.baseline.captured_at === dayPair.baseline.captured_at &&
-      weekPair.latest.captured_at === dayPair.latest.captured_at;
-    if (!sameAsDay) {
-      const diff = buildSnapshotDiffItems(weekPair.baseline, weekPair.latest);
-      const spanRounded = Math.round(weekPair.spanDays);
-      weekWindow = {
-        ...diff,
-        title: `${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison`,
-        range: formatDateRange(diff.fromDate, diff.toDate),
-        spanDays: weekPair.spanDays,
-        spanLabel: `${spanRounded}-day span`
-      };
-    }
-  }
-
-  const stabilityScore = Number.isFinite(stability?.allTimeScore)
-    ? stability.allTimeScore
-    : stability?.score;
-  const epochLine = computeEpochVotingLine(live);
-
-  if (!dayWindow && !weekWindow) {
-    const needsWeekHistory = n >= 2 && !weekPair.baseline;
-    return {
-      ready: false,
-      headline:
-        n === 1
-          ? `Only one daily snapshot so far ${EN_DASH} check back after the next collection run.`
-          : "Not enough distinct snapshot days yet for a day-over-day comparison.",
-      sub: needsWeekHistory
-        ? `Snapshots are collected once per day. A ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison appears after at least ${MIN_WEEK_SPAN_DAYS + 1} days of stored history.`
-        : "Snapshots are collected once per day. Multiple runs on the same day count as one reading.",
-      dayWindow: null,
-      weekWindow: null,
+      sub: "Daily snapshots are collected for all mainnet validators. A change log appears once history builds.",
+      historyWindow: null,
+      patternWindow: null,
       epochLine
     };
   }
 
-  let headline = "";
-  let sub = "";
-
-  if (dayWindow && weekWindow) {
-    headline =
-      dayWindow.changeCount === 0
-        ? "No material changes day-over-day."
-        : `${dayWindow.changeCount} change${dayWindow.changeCount === 1 ? "" : "s"} day-over-day.`;
-    sub = `Day-over-day: ${dayWindow.range} (UTC). ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison: ${weekWindow.range} (${weekWindow.spanLabel}). Not staking advice.`;
-  } else if (dayWindow) {
-    headline =
-      dayWindow.changeCount === 0
-        ? "No material changes day-over-day."
-        : `${dayWindow.changeCount} change${dayWindow.changeCount === 1 ? "" : "s"} day-over-day.`;
-    sub = `Compared stored snapshots on ${dayWindow.range} (UTC, one day apart). Not staking advice.`;
-  } else if (weekWindow) {
-    headline =
-      weekWindow.changeCount === 0
-        ? `No material changes in the ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison.`
-        : `${weekWindow.changeCount} change${weekWindow.changeCount === 1 ? "" : "s"} in the ${WHAT_CHANGED_LOOKBACK_DAYS}-day comparison.`;
-    sub = `Compared stored snapshots on ${weekWindow.range} (${weekWindow.spanLabel}, UTC). Not staking advice.`;
+  if (n === 1) {
+    return {
+      ready: false,
+      headline: "Tracking just started for this validator.",
+      sub: `First stored snapshot: ${formatSnapshotDate(dailySnaps[0].captured_at)} (UTC). Check back after more daily runs for a change log.`,
+      historyWindow: null,
+      patternWindow: null,
+      epochLine
+    };
   }
 
-  if (Number.isFinite(stabilityScore) && dayWindow) {
-    dayWindow.items.push({
+  const firstDate = formatSnapshotDate(dailySnaps[0].captured_at);
+  const lastDate = formatSnapshotDate(dailySnaps[n - 1].captured_at);
+  const periodRange = formatDateRange(firstDate, lastDate);
+  const spanDays = Math.max(1, Math.round(snapshotSpanDays(dailySnaps[0], dailySnaps[n - 1])));
+  const totalAll = Number.isFinite(Number(snapshotMeta?.total_count))
+    ? Number(snapshotMeta.total_count)
+    : snaps.length;
+  const allTime = snapshotMeta?.all_time;
+  const events = buildTrackingPeriodEvents(dailySnaps);
+
+  const commissionChanges = Number.isFinite(Number(allTime?.commission_changes))
+    ? Number(allTime.commission_changes)
+    : events.filter(e => e.label === "Commission").length;
+  const delinquentDays = Number.isFinite(Number(allTime?.delinquent_count))
+    ? Number(allTime.delinquent_count)
+    : snaps.filter(s => String(s.status || "").toLowerCase() === "delinquent").length;
+
+  const latest = dailySnaps[n - 1];
+  const latestCom = Number(latest.commission);
+
+  let headline =
+    events.length === 0
+      ? `Steady over ${spanDays} days of stored snapshots (${periodRange}).`
+      : `${events.length} recorded change${events.length === 1 ? "" : "s"} over ${spanDays} days (${periodRange}).`;
+
+  const sub = `${totalAll.toLocaleString("en-US")} daily snapshots in storage ${EN_DASH} scanned for commission, status, and voting shifts day by day. Not staking advice.`;
+
+  const historyItems =
+    events.length > 0
+      ? events
+      : [
+          {
+            tone: "ok",
+            label: "Change log",
+            text: `No commission or status changes between daily snapshots across ${periodRange}.`
+          }
+        ];
+
+  const patternItems = [];
+  if (Number.isFinite(latestCom)) {
+    patternItems.push({
+      tone: commissionChanges > 0 ? "neutral" : "ok",
+      label: "Commission pattern",
+      text:
+        commissionChanges === 0
+          ? `Unchanged at ${latestCom}% across the full tracking period`
+          : `${commissionChanges} commission change${commissionChanges === 1 ? "" : "s"} recorded ${EN_DASH} currently ${latestCom}%`
+    });
+  }
+
+  patternItems.push({
+    tone: delinquentDays === 0 ? "ok" : "warn",
+    label: "Delinquency in snapshots",
+    text:
+      delinquentDays === 0
+        ? `No delinquent days in ${totalAll.toLocaleString("en-US")} stored snapshots`
+        : `${delinquentDays} delinquent snapshot day${delinquentDays === 1 ? "" : "s"} out of ${totalAll.toLocaleString("en-US")}`
+  });
+
+  const stabilityScore = Number.isFinite(stability?.allTimeScore)
+    ? stability.allTimeScore
+    : stability?.score;
+  if (Number.isFinite(stabilityScore)) {
+    patternItems.push({
       tone: "neutral",
       label: "Stability score",
-      text: `${stabilityScore}/100 now (all-time snapshot history ${EN_DASH} updates as new days are stored)`
+      text: `${stabilityScore}/100 from full snapshot history`
     });
   }
 
   if (
     live?.status &&
-    dayPair.latest?.status &&
-    String(live.status).toLowerCase() !== String(dayPair.latest.status).toLowerCase()
+    latest?.status &&
+    String(live.status).toLowerCase() !== String(latest.status).toLowerCase()
   ) {
     const liveStatus = normalizeStatusForCompare(live?.status);
-    dayWindow?.items.push({
+    patternItems.push({
       tone: String(live.status).toLowerCase() === "delinquent" ? "warn" : "neutral",
       label: "Live status now",
-      text: `${liveStatus.label || "Unknown"} on RPC now; latest stored snapshot is ${snapshotStatusLabel(dayPair.latest.status)} (${formatSnapshotDate(dayPair.latest.captured_at)})`,
-      isChange: true
+      text: `${liveStatus.label || "Unknown"} on RPC now ${EN_DASH} latest stored snapshot is ${snapshotStatusLabel(latest.status)} (${lastDate})`
     });
   }
 
@@ -957,8 +906,14 @@ function computeWhatChanged({ snaps, live, stability, latestCom, uptimeNum }) {
     ready: true,
     headline,
     sub,
-    dayWindow,
-    weekWindow: weekWindow && dayWindow ? weekWindow : weekWindow,
+    historyWindow: {
+      title: events.length ? "Recorded changes (newest first)" : "Recorded changes",
+      items: historyItems
+    },
+    patternWindow: {
+      title: "Pattern over tracking period",
+      items: patternItems
+    },
     epochLine
   };
 }
@@ -1003,10 +958,10 @@ function renderWhatChanged(summary) {
   const card = document.getElementById("what-changed-card");
   const headlineEl = document.getElementById("what-changed-headline");
   const subEl = document.getElementById("what-changed-sub");
-  const dayWrap = document.getElementById("what-changed-daily-wrap");
-  const weekWrap = document.getElementById("what-changed-week-wrap");
-  const dayList = document.getElementById("what-changed-daily-list");
-  const weekList = document.getElementById("what-changed-week-list");
+  const historyWrap = document.getElementById("what-changed-history-wrap");
+  const patternWrap = document.getElementById("what-changed-pattern-wrap");
+  const historyList = document.getElementById("what-changed-history-list");
+  const patternList = document.getElementById("what-changed-pattern-list");
   const epochEl = document.getElementById("what-changed-epoch-line");
 
   if (!card) return;
@@ -1015,8 +970,8 @@ function renderWhatChanged(summary) {
   safeSetText(headlineEl, summary.headline || "–");
   safeSetText(subEl, summary.sub || "");
 
-  renderWhatChangedWindow(dayWrap, dayList, summary.dayWindow);
-  renderWhatChangedWindow(weekWrap, weekList, summary.weekWindow);
+  renderWhatChangedWindow(historyWrap, historyList, summary.historyWindow);
+  renderWhatChangedWindow(patternWrap, patternList, summary.patternWindow);
 
   if (epochEl) {
     if (summary.epochLine) {
@@ -1029,10 +984,10 @@ function renderWhatChanged(summary) {
   }
 
   if (!summary.ready) {
-    if (dayWrap) dayWrap.hidden = true;
-    if (weekWrap) weekWrap.hidden = true;
-    if (dayList) dayList.innerHTML = "";
-    if (weekList) weekList.innerHTML = "";
+    if (historyWrap) historyWrap.hidden = true;
+    if (patternWrap) patternWrap.hidden = true;
+    if (historyList) historyList.innerHTML = "";
+    if (patternList) patternList.innerHTML = "";
   }
 }
 
@@ -3248,9 +3203,8 @@ async function main() {
   const whatChanged = computeWhatChanged({
     snaps,
     live,
-    latestCom,
-    uptimeNum,
-    stability
+    stability,
+    snapshotMeta
   });
   renderWhatChanged(whatChanged);
 

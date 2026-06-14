@@ -168,7 +168,7 @@ Share link on the profile page copies the current URL including compare state.
 
 **Recently shipped**
 
-- “What changed” summary on validator profiles – previous snapshot day, 7-day window, and recent epoch voting (fixed windows; not browser-dependent)
+- “What changed” / change history on validator profiles – full snapshot tracking period with pattern summary
 
 ---
 
