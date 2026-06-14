@@ -1047,6 +1047,77 @@
       color: var(--text2);
     }
 
+    .what-changed-card {
+      margin-bottom: var(--layout-gap);
+    }
+
+    .what-changed-headline {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--heading);
+      line-height: 1.45;
+    }
+
+    .what-changed-sub {
+      margin: 0 0 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text2);
+    }
+
+    .what-changed-section-title {
+      margin: 12px 0 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    .what-changed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .what-changed-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .what-changed-item[data-tone="warn"] {
+      border-color: rgba(243, 107, 107, 0.35);
+      background: rgba(243, 107, 107, 0.08);
+    }
+
+    .what-changed-item[data-tone="ok"] {
+      border-color: rgba(185, 240, 0, 0.32);
+      background: rgba(185, 240, 0, 0.07);
+    }
+
+    .what-changed-label {
+      flex-shrink: 0;
+      min-width: 7.5rem;
+      font-weight: 600;
+      color: var(--heading);
+    }
+
+    .what-changed-text {
+      color: var(--text2);
+    }
+
     .open-validator-blurb {
       font-size: 14px;
       color: var(--text2);
@@ -2400,6 +2471,23 @@
     </div>
   </div>
 
+  <div id="what-changed-card" class="card what-changed-card" style="display:none" aria-label="What changed">
+    <div class="card-title">
+      What changed
+      <span class="info-dot" tabindex="0" data-tip="Factual differences from stored daily snapshots and, when available, since you last opened this validator page in this browser. Not staking advice.">i</span>
+    </div>
+    <p id="what-changed-headline" class="what-changed-headline">Checking snapshot history…</p>
+    <p id="what-changed-sub" class="what-changed-sub"></p>
+    <div id="what-changed-daily-wrap" hidden>
+      <div class="what-changed-section-title">Since previous daily snapshot</div>
+      <ul id="what-changed-daily-list" class="what-changed-list"></ul>
+    </div>
+    <div id="what-changed-visit-wrap" hidden>
+      <div class="what-changed-section-title">Since your last visit</div>
+      <ul id="what-changed-visit-list" class="what-changed-list"></ul>
+    </div>
+  </div>
+
   <div id="verdict-card" class="card verdict-card" data-loaded="true" style="display:none">
     <p class="verdict-purpose">
       <strong>Network-relative read</strong> – how this validator compares on medians, live status, and snapshot depth tracked here.
@@ -2729,9 +2817,10 @@
             <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
             <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
             <div class="pill pill-ok">Done: First-glance KPI strip + richer directory &amp; pickers (context before you open a profile)</div>
+            <div class="pill pill-ok">Done: &ldquo;What changed&rdquo; summary – daily snapshot diff + since your last visit</div>
             <div class="pill">Next: Per-epoch detail page</div>
             <div class="pill">Next: Delinquency alerts &amp; proactive signals</div>
-            <div class="pill">Next: Actionable insight layer – clearer next steps, exports, and &ldquo;what changed&rdquo; across the page</div>
+            <div class="pill">Next: Actionable insight layer – exports and broader &ldquo;what changed&rdquo; across the page</div>
             <div class="pill">Next: Builder-ready surface – documented HTTP APIs, stable metric definitions, embed / reuse patterns</div>
           </div>
         </div>

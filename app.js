@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v46
+ * Validator Transparency Dashboard – app.js v47
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -28,6 +28,7 @@ const SNAPSHOT_WINDOW = 240;
  * One browser will re-touch the same validator at most once per 6 hours.
  */
 const TRACK_TOUCH_TTL_MS = 6 * 60 * 60 * 1000;
+const LAST_VISIT_PREFIX = "vtd-last-visit:";
 
 function getParam(name) {
   const qs = new URLSearchParams(window.location.search);
@@ -673,6 +674,345 @@ function renderRecentPerformance(perf) {
   safeSetText(document.getElementById("perf-var-sub"), perf.variability.sub);
   safeSetText(document.getElementById("perf-reward-value"), perf.reward.value);
   safeSetText(document.getElementById("perf-reward-sub"), perf.reward.sub);
+}
+
+function formatSnapshotDate(iso) {
+  if (!iso) return "–";
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  } catch {
+    return "–";
+  }
+}
+
+function formatVisitDate(ts) {
+  if (!Number.isFinite(ts)) return "your last visit";
+  try {
+    return new Date(ts).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return "your last visit";
+  }
+}
+
+function snapshotStatusLabel(status) {
+  const v = String(status || "").toLowerCase();
+  if (v === "healthy") return "Healthy";
+  if (v === "delinquent") return "Delinquent";
+  return status ? String(status) : "Unknown";
+}
+
+function loadLastVisit(voteKey) {
+  try {
+    const raw = localStorage.getItem(`${LAST_VISIT_PREFIX}${voteKey}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLastVisit(voteKey, state) {
+  try {
+    localStorage.setItem(
+      `${LAST_VISIT_PREFIX}${voteKey}`,
+      JSON.stringify({ ...state, visitedAt: Date.now() })
+    );
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function pushChangeItem(items, { tone, label, text, isChange }) {
+  items.push({ tone: tone || "neutral", label, text, isChange: !!isChange });
+}
+
+function computeWhatChanged({
+  snaps,
+  live,
+  latestCom,
+  uptimeNum,
+  stability,
+  poolsCount,
+  apyMedian,
+  lastVisit
+}) {
+  const n = snaps.length;
+  const latest = n > 0 ? snaps[n - 1] : null;
+  const previous = n > 1 ? snaps[n - 2] : null;
+  const dailyItems = [];
+  let changeCount = 0;
+
+  if (!latest || !previous) {
+    return {
+      ready: false,
+      headline:
+        n === 0
+          ? "No stored snapshots yet for this validator."
+          : "Only one daily snapshot so far — check back after the next collection run.",
+      sub: "Snapshots are collected once per day for all mainnet validators.",
+      dailyItems: [],
+      visitItems: [],
+      visitHeadline: null
+    };
+  }
+
+  const prevDate = formatSnapshotDate(previous.captured_at);
+  const latestDate = formatSnapshotDate(latest.captured_at);
+
+  const cPrev = Number(previous.commission);
+  const cLatest = Number(latest.commission);
+  if (Number.isFinite(cPrev) && Number.isFinite(cLatest)) {
+    if (cPrev !== cLatest) {
+      changeCount++;
+      pushChangeItem(dailyItems, {
+        tone: cLatest > cPrev ? "warn" : "ok",
+        label: "Commission",
+        text: `${cPrev}% → ${cLatest}% between ${prevDate} and ${latestDate}`,
+        isChange: true
+      });
+    } else {
+      pushChangeItem(dailyItems, {
+        tone: "neutral",
+        label: "Commission",
+        text: `Unchanged at ${cLatest}%`
+      });
+    }
+  }
+
+  const sPrev = snapshotStatusLabel(previous.status);
+  const sLatest = snapshotStatusLabel(latest.status);
+  if (String(previous.status || "").toLowerCase() !== String(latest.status || "").toLowerCase()) {
+    changeCount++;
+    pushChangeItem(dailyItems, {
+      tone: String(latest.status || "").toLowerCase() === "delinquent" ? "warn" : "ok",
+      label: "Snapshot status",
+      text: `${sPrev} → ${sLatest} between ${prevDate} and ${latestDate}`,
+      isChange: true
+    });
+  } else {
+    pushChangeItem(dailyItems, {
+      tone: "neutral",
+      label: "Snapshot status",
+      text: `Still ${sLatest} in stored snapshots`
+    });
+  }
+
+  const liveStatus = normalizeStatusForCompare(live?.status);
+  const liveLabel = liveStatus.label || "Unknown";
+  if (
+    live?.status &&
+    latest.status &&
+    String(live.status).toLowerCase() !== String(latest.status).toLowerCase()
+  ) {
+    pushChangeItem(dailyItems, {
+      tone: String(live.status).toLowerCase() === "delinquent" ? "warn" : "neutral",
+      label: "Live status now",
+      text: `${liveLabel} on RPC now; last daily snapshot recorded ${sLatest} (${latestDate})`,
+      isChange: true
+    });
+  }
+
+  const uPrev = Number(previous.uptime);
+  const uLatest = Number(latest.uptime);
+  if (Number.isFinite(uPrev) && Number.isFinite(uLatest)) {
+    const diff = uLatest - uPrev;
+    if (Math.abs(diff) >= 1) {
+      changeCount++;
+      pushChangeItem(dailyItems, {
+        tone: diff < -2 ? "warn" : diff > 2 ? "ok" : "neutral",
+        label: "Voting consistency",
+        text: `${uPrev.toFixed(1)}% → ${uLatest.toFixed(1)}% in stored snapshots (${prevDate} → ${latestDate})`,
+        isChange: true
+      });
+    } else {
+      pushChangeItem(dailyItems, {
+        tone: "neutral",
+        label: "Voting consistency",
+        text: `Steady at ~${uLatest.toFixed(1)}% in stored snapshots`
+      });
+    }
+  }
+
+  const stabilityScore = Number.isFinite(stability?.allTimeScore)
+    ? stability.allTimeScore
+    : stability?.score;
+  if (Number.isFinite(stabilityScore)) {
+    pushChangeItem(dailyItems, {
+      tone: "neutral",
+      label: "Stability score",
+      text: `${stabilityScore}/100 today (all-time snapshot history — updates as new days are stored)`
+    });
+  }
+
+  const headline =
+    changeCount === 0
+      ? `No material changes between the last two daily snapshots (${prevDate} → ${latestDate}).`
+      : `${changeCount} change${changeCount === 1 ? "" : "s"} between the last two daily snapshots (${prevDate} → ${latestDate}).`;
+
+  const visitItems = [];
+  let visitChangeCount = 0;
+  let visitHeadline = null;
+
+  if (lastVisit && Number.isFinite(Number(lastVisit.visitedAt))) {
+    const since = formatVisitDate(Number(lastVisit.visitedAt));
+    const visitCurrent = {
+      commission: Number.isFinite(latestCom) ? latestCom : null,
+      status: live?.status || latest.status || null,
+      uptime: Number.isFinite(uptimeNum) ? uptimeNum : null,
+      stabilityScore: Number.isFinite(stabilityScore) ? stabilityScore : null,
+      poolsCount: Number.isFinite(poolsCount) ? poolsCount : null,
+      apyMedian: Number.isFinite(apyMedian) ? apyMedian : null
+    };
+
+    if (
+      Number.isFinite(lastVisit.commission) &&
+      Number.isFinite(visitCurrent.commission) &&
+      lastVisit.commission !== visitCurrent.commission
+    ) {
+      visitChangeCount++;
+      pushChangeItem(visitItems, {
+        tone: visitCurrent.commission > lastVisit.commission ? "warn" : "ok",
+        label: "Commission",
+        text: `${lastVisit.commission}% → ${visitCurrent.commission}% since ${since}`,
+        isChange: true
+      });
+    }
+
+    if (
+      lastVisit.status &&
+      visitCurrent.status &&
+      String(lastVisit.status).toLowerCase() !== String(visitCurrent.status).toLowerCase()
+    ) {
+      visitChangeCount++;
+      pushChangeItem(visitItems, {
+        tone: String(visitCurrent.status).toLowerCase() === "delinquent" ? "warn" : "ok",
+        label: "Status",
+        text: `${snapshotStatusLabel(lastVisit.status)} → ${snapshotStatusLabel(visitCurrent.status)} since ${since}`,
+        isChange: true
+      });
+    }
+
+    if (
+      Number.isFinite(lastVisit.uptime) &&
+      Number.isFinite(visitCurrent.uptime) &&
+      Math.abs(visitCurrent.uptime - lastVisit.uptime) >= 1
+    ) {
+      visitChangeCount++;
+      pushChangeItem(visitItems, {
+        tone: visitCurrent.uptime < lastVisit.uptime - 2 ? "warn" : "neutral",
+        label: "Recent voting",
+        text: `${lastVisit.uptime.toFixed(1)}% → ${visitCurrent.uptime.toFixed(1)}% since ${since}`,
+        isChange: true
+      });
+    }
+
+    if (
+      Number.isFinite(lastVisit.stabilityScore) &&
+      Number.isFinite(visitCurrent.stabilityScore) &&
+      lastVisit.stabilityScore !== visitCurrent.stabilityScore
+    ) {
+      visitChangeCount++;
+      pushChangeItem(visitItems, {
+        tone: "neutral",
+        label: "Stability score",
+        text: `${lastVisit.stabilityScore} → ${visitCurrent.stabilityScore} since ${since}`,
+        isChange: true
+      });
+    }
+
+    if (
+      Number.isFinite(lastVisit.poolsCount) &&
+      Number.isFinite(visitCurrent.poolsCount) &&
+      lastVisit.poolsCount !== visitCurrent.poolsCount
+    ) {
+      visitChangeCount++;
+      pushChangeItem(visitItems, {
+        tone: "neutral",
+        label: "Pools delegating",
+        text: `${lastVisit.poolsCount} → ${visitCurrent.poolsCount} since ${since}`,
+        isChange: true
+      });
+    }
+
+    if (visitChangeCount > 0) {
+      visitHeadline = `${visitChangeCount} change${visitChangeCount === 1 ? "" : "s"} since you last opened this page (${since}).`;
+    } else {
+      visitHeadline = `No changes since you last opened this page (${since}).`;
+    }
+  }
+
+  return {
+    ready: true,
+    headline,
+    sub: "Factual differences from stored daily snapshots — not staking advice.",
+    dailyItems,
+    visitItems,
+    visitHeadline,
+    changeCount
+  };
+}
+
+function renderWhatChangedList(el, items) {
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = "";
+    return;
+  }
+  el.innerHTML = items
+    .map(
+      item =>
+        `<li class="what-changed-item" data-tone="${escapeHtmlDirectory(item.tone || "neutral")}">` +
+        `<span class="what-changed-label">${escapeHtmlDirectory(item.label)}</span>` +
+        `<span class="what-changed-text">${escapeHtmlDirectory(item.text)}</span>` +
+        `</li>`
+    )
+    .join("");
+}
+
+function renderWhatChanged(summary) {
+  const card = document.getElementById("what-changed-card");
+  const headlineEl = document.getElementById("what-changed-headline");
+  const subEl = document.getElementById("what-changed-sub");
+  const dailyWrap = document.getElementById("what-changed-daily-wrap");
+  const visitWrap = document.getElementById("what-changed-visit-wrap");
+  const dailyList = document.getElementById("what-changed-daily-list");
+  const visitList = document.getElementById("what-changed-visit-list");
+
+  if (!card) return;
+
+  card.style.display = "block";
+  safeSetText(headlineEl, summary.headline || "–");
+  safeSetText(subEl, summary.sub || "");
+
+  if (!summary.ready) {
+    if (dailyWrap) dailyWrap.hidden = true;
+    if (visitWrap) visitWrap.hidden = true;
+    if (dailyList) dailyList.innerHTML = "";
+    if (visitList) visitList.innerHTML = "";
+    return;
+  }
+
+  if (dailyWrap) dailyWrap.hidden = !summary.dailyItems?.length;
+  renderWhatChangedList(dailyList, summary.dailyItems || []);
+
+  const hasVisit = !!(summary.visitItems?.length && summary.visitHeadline);
+  if (visitWrap) visitWrap.hidden = !hasVisit;
+  if (hasVisit) {
+    renderWhatChangedList(visitList, summary.visitItems);
+    safeSetText(subEl, `${summary.sub} ${summary.visitHeadline}`);
+  } else if (visitList) {
+    visitList.innerHTML = "";
+  }
 }
 
 // ── STABILITY ─────────────────────────────────────
@@ -2883,6 +3223,32 @@ async function main() {
   renderDelegatorAssessment(
     computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stability })
   );
+
+  const lastVisit = loadLastVisit(CURRENT.voteKey);
+  const whatChanged = computeWhatChanged({
+    snaps,
+    live,
+    latestCom,
+    uptimeNum,
+    stability,
+    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null,
+    apyMedian: Number.isFinite(apyMedian) ? apyMedian : null,
+    lastVisit
+  });
+  renderWhatChanged(whatChanged);
+
+  const stabilityScoreForVisit = Number.isFinite(stability.allTimeScore)
+    ? stability.allTimeScore
+    : stability.score;
+  saveLastVisit(CURRENT.voteKey, {
+    commission: Number.isFinite(latestCom) ? latestCom : null,
+    status: live?.status || null,
+    uptime: Number.isFinite(uptimeNum) ? uptimeNum : null,
+    stabilityScore: Number.isFinite(stabilityScoreForVisit) ? stabilityScoreForVisit : null,
+    poolsCount: Number.isFinite(poolsCount) ? poolsCount : null,
+    apyMedian: Number.isFinite(apyMedian) ? apyMedian : null,
+    snapshotDate: snaps.length ? snaps[snaps.length - 1]?.captured_at : null
+  });
 
   const baseStatus = normalizeStatusForCompare(live?.status);
   const baseMetrics = {

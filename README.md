@@ -163,8 +163,12 @@ Share link on the profile page copies the current URL including compare state.
 
 - Per-epoch detail page
 - Delinquency alerts and proactive signals
-- Actionable insight layer – exports and “what changed” summaries
+- Actionable insight layer – exports and broader “what changed” summaries
 - Builder-ready surface – documented metric definitions and embed patterns
+
+**Recently shipped**
+
+- “What changed” summary on validator profiles – daily snapshot diff plus changes since your last visit (browser-local)
 
 ---
 
