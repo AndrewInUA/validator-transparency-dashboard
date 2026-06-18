@@ -980,7 +980,7 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
     : stability?.score;
   if (Number.isFinite(stabilityScore)) {
     patternItems.push({
-      tone: "neutral",
+      tone: stabilityScore >= 85 ? "ok" : stabilityScore >= 50 ? "neutral" : "warn",
       label: "Stability score",
       text: `${stabilityScore}/100 from full snapshot history`
     });
