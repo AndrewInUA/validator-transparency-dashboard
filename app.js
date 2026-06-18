@@ -411,7 +411,8 @@ async function fetchLive(voteKey) {
     votePubkey: null,
     nodePubkey: null,
     epochCreditsLen: 0,
-    epochConsistencySeries: []
+    epochConsistencySeries: [],
+    epochHistory: []
   };
 
   try {
@@ -427,35 +428,33 @@ async function fetchLive(voteKey) {
 
     let uptimePct = 0;
     let epochConsistencySeries = [];
+    let epochHistory = [];
 
     try {
       // Each epochCredits row maps to one chart point (normalized vs max delta in window).
       // The LAST row is usually the *current* epoch: credits are still accumulating, so
       // consistency looks artificially low – exclude it from chart + headline uptime.
-      const deltas = credits
+      const recentRows = credits.slice(-30);
+      const deltas = recentRows
         .map(epochEarnedCredits)
         .filter(v => Number.isFinite(v));
+      const maxD = deltas.length ? Math.max(...deltas, 1) : 1;
+      const finishedRows = recentRows.length > 1 ? recentRows.slice(0, -1) : [];
 
-      const recent = deltas.slice(-30);
-      let fullSeries = [];
-      if (recent.length) {
-        const maxD = Math.max(...recent, 1);
-        fullSeries = recent.map(
-          d => Math.round((d / maxD) * 10000) / 100
-        );
-      }
+      epochHistory = finishedRows
+        .map(row => {
+          const epoch = Number(row[0]);
+          const d = epochEarnedCredits(row);
+          const consistencyPct = Number.isFinite(d)
+            ? Math.round((d / maxD) * 10000) / 100
+            : null;
+          return { epoch, consistencyPct };
+        })
+        .filter(h => Number.isFinite(h.epoch) && Number.isFinite(h.consistencyPct));
 
-      if (fullSeries.length > 1) {
-        epochConsistencySeries = fullSeries.slice(0, -1);
-      } else if (fullSeries.length === 1) {
-        epochConsistencySeries = [];
-      } else {
-        epochConsistencySeries = [];
-      }
+      epochConsistencySeries = epochHistory.map(h => h.consistencyPct);
 
-      const completedForUptime =
-        fullSeries.length > 1 ? fullSeries.slice(0, -1) : [];
-      const last5 = completedForUptime.slice(-5);
+      const last5 = epochConsistencySeries.slice(-5);
       uptimePct = last5.length
         ? Math.round((last5.reduce((s, x) => s + x, 0) / last5.length) * 100) /
           100
@@ -479,7 +478,8 @@ async function fetchLive(voteKey) {
       votePubkey: me.votePubkey,
       nodePubkey: me.nodePubkey || null,
       epochCreditsLen: credits.length,
-      epochConsistencySeries
+      epochConsistencySeries,
+      epochHistory
     };
   } catch (err) {
     console.warn("RPC proxy failed:", err?.message || err);
@@ -804,23 +804,45 @@ function buildTrackingPeriodEvents(dailySnaps) {
   return events.sort((a, b) => String(b.sortKey).localeCompare(String(a.sortKey)));
 }
 
-function computeEpochVotingLine(live) {
-  const series = (live?.epochConsistencySeries || []).filter(x => Number.isFinite(x));
-  if (series.length < 2) return null;
-  const prev = series[series.length - 2];
-  const last = series[series.length - 1];
-  const diff = last - prev;
-  if (Math.abs(diff) < 0.5) {
-    return `Recent epochs: voting consistency steady at ~${last.toFixed(1)}% (last two finished epochs, live RPC).`;
-  }
-  const direction = diff > 0 ? "up" : "down";
-  return `Recent epochs: voting consistency ${direction} from ${prev.toFixed(1)}% ${EN_DASH} ${last.toFixed(1)}% (last two finished epochs, live RPC).`;
+function computeEpochHistoryWindow(live) {
+  const history = (live?.epochHistory || []).filter(
+    h => Number.isFinite(h.epoch) && Number.isFinite(h.consistencyPct)
+  );
+  if (!history.length) return null;
+
+  const values = history.map(h => h.consistencyPct);
+  const avg = average(values);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const first = history[0];
+  const last = history[history.length - 1];
+
+  const items = [
+    {
+      tone: min >= 95 ? "ok" : min >= 85 ? "neutral" : "warn",
+      label: "Epoch summary",
+      text: `${history.length} finished epochs in RPC window (epoch ${first.epoch} ${EN_DASH} ${last.epoch}): ~${avg.toFixed(1)}% avg, ${min.toFixed(1)}%${EN_DASH}${max.toFixed(1)}% range. In-progress epoch excluded.`
+    },
+    ...history
+      .slice()
+      .reverse()
+      .map(h => ({
+        tone: h.consistencyPct >= 95 ? "ok" : h.consistencyPct >= 85 ? "neutral" : "warn",
+        label: `Epoch ${h.epoch}`,
+        text: `~${h.consistencyPct.toFixed(1)}% voting consistency`
+      }))
+  ];
+
+  return {
+    title: "Epoch voting (live RPC)",
+    items
+  };
 }
 
 function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
   const dailySnaps = collapseSnapshotsByDay(snaps);
   const n = dailySnaps.length;
-  const epochLine = computeEpochVotingLine(live);
+  const epochWindow = computeEpochHistoryWindow(live);
 
   if (n === 0) {
     return {
@@ -829,7 +851,7 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
       sub: "Daily snapshots are collected for all mainnet validators. A change log appears once history builds.",
       historyWindow: null,
       patternWindow: null,
-      epochLine
+      epochWindow
     };
   }
 
@@ -840,7 +862,7 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
       sub: `First stored snapshot: ${formatSnapshotDate(dailySnaps[0].captured_at)} (UTC). Check back after more daily runs for a change log.`,
       historyWindow: null,
       patternWindow: null,
-      epochLine
+      epochWindow
     };
   }
 
@@ -989,7 +1011,7 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
       title: "Pattern over tracking period",
       items: patternItems
     },
-    epochLine
+    epochWindow
   };
 }
 
@@ -1037,7 +1059,8 @@ function renderWhatChanged(summary) {
   const patternWrap = document.getElementById("what-changed-pattern-wrap");
   const historyList = document.getElementById("what-changed-history-list");
   const patternList = document.getElementById("what-changed-pattern-list");
-  const epochEl = document.getElementById("what-changed-epoch-line");
+  const epochWrap = document.getElementById("what-changed-epoch-wrap");
+  const epochList = document.getElementById("what-changed-epoch-list");
 
   if (!card) return;
 
@@ -1047,22 +1070,15 @@ function renderWhatChanged(summary) {
 
   renderWhatChangedWindow(historyWrap, historyList, summary.historyWindow);
   renderWhatChangedWindow(patternWrap, patternList, summary.patternWindow);
-
-  if (epochEl) {
-    if (summary.epochLine) {
-      epochEl.hidden = false;
-      epochEl.textContent = summary.epochLine;
-    } else {
-      epochEl.hidden = true;
-      epochEl.textContent = "";
-    }
-  }
+  renderWhatChangedWindow(epochWrap, epochList, summary.epochWindow);
 
   if (!summary.ready) {
     if (historyWrap) historyWrap.hidden = true;
     if (patternWrap) patternWrap.hidden = true;
     if (historyList) historyList.innerHTML = "";
     if (patternList) patternList.innerHTML = "";
+    if (epochWrap) epochWrap.hidden = true;
+    if (epochList) epochList.innerHTML = "";
   }
 }
 
@@ -1095,8 +1111,12 @@ function buildChangeHistorySummaryText(ctx) {
     }
   }
 
-  if (ctx.whatChanged?.epochLine) {
-    lines.push("", ctx.whatChanged.epochLine);
+  const epochItems = ctx.whatChanged?.epochWindow?.items || [];
+  if (epochItems.length) {
+    lines.push("", "Epoch voting (live RPC):");
+    for (const item of epochItems) {
+      lines.push(`• ${item.label}: ${item.text}`);
+    }
   }
 
   lines.push(

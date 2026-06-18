@@ -2768,7 +2768,7 @@
     <div id="what-changed-card" class="card what-changed-card" style="display:none" aria-label="What changed">
       <div class="card-title">
         Change history
-        <span class="info-dot" tabindex="0" data-tip="Commission, delinquency, and stability use every snapshot in storage. If individual shift rows appear, they come from day-by-day comparison in the loaded window. Same for every visitor. Not staking advice.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Snapshot rows use full stored history. Epoch list uses every finished epoch in the live RPC vote-account window (~30 epochs max on-chain). In-progress epoch excluded. Not staking advice.">i</span>
       </div>
       <p id="what-changed-headline" class="what-changed-headline">Checking snapshot history…</p>
       <p id="what-changed-sub" class="what-changed-sub"></p>
@@ -2784,7 +2784,10 @@
         <div class="what-changed-section-title">Pattern over tracking period</div>
         <ul id="what-changed-pattern-list" class="what-changed-list"></ul>
       </div>
-      <p id="what-changed-epoch-line" class="what-changed-epoch-line" hidden></p>
+      <div id="what-changed-epoch-wrap" hidden>
+        <div class="what-changed-section-title">Epoch voting (live RPC)</div>
+        <ul id="what-changed-epoch-list" class="what-changed-list"></ul>
+      </div>
     </div>
 
     <div class="card">
@@ -3140,7 +3143,7 @@
   });
 </script>
 
-<script src="./app.js?v=85" defer></script>
+<script src="./app.js?v=86" defer></script>
 
 </body>
 </html>
