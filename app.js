@@ -835,6 +835,8 @@ function computeEpochHistoryWindow(live) {
 
   return {
     title: "Epoch voting (live RPC)",
+    intro:
+      "Solana epochs are voting periods (~2 days each), numbered on-chain. This list is live network data – separate from daily snapshots above.",
     items
   };
 }
@@ -923,7 +925,7 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
   let historyItems;
   if (events.length > 0) {
     historyItems = events;
-  } else if (commissionChanges > 0 || (delinquentDays > 0 && hasPartialWindow)) {
+  } else if (commissionChanges > 0 || delinquentDays > 0) {
     const parts = [];
     if (commissionChanges > 0) {
       parts.push(
@@ -938,10 +940,8 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
     historyItems = [
       {
         tone: commissionChanges > 0 ? "neutral" : "warn",
-        label: "Full history",
-        text: `${parts.join("; ")} on record across ${periodRange}${
-          hasPartialWindow ? ` ${EN_DASH} recent loaded window is ${windowRange}` : ""
-        }.`
+        label: "Change log",
+        text: `${parts.join("; ")} on record across ${periodRange}.`
       }
     ];
   } else {
@@ -1042,6 +1042,8 @@ function renderWhatChangedWindow(wrapEl, listEl, windowData) {
   if (!windowData?.items?.length) {
     wrapEl.hidden = true;
     listEl.innerHTML = "";
+    const introEl = wrapEl.querySelector(".what-changed-section-intro");
+    if (introEl) introEl.textContent = "";
     return;
   }
   wrapEl.hidden = false;
@@ -1051,6 +1053,16 @@ function renderWhatChangedWindow(wrapEl, listEl, windowData) {
       titleEl.textContent = `${windowData.title} (${windowData.spanLabel})`;
     } else {
       titleEl.textContent = windowData.title;
+    }
+  }
+  const introEl = wrapEl.querySelector(".what-changed-section-intro");
+  if (introEl) {
+    if (windowData.intro) {
+      introEl.hidden = false;
+      introEl.textContent = windowData.intro;
+    } else {
+      introEl.hidden = true;
+      introEl.textContent = "";
     }
   }
   renderWhatChangedList(listEl, windowData.items);
@@ -1119,6 +1131,9 @@ function buildChangeHistorySummaryText(ctx) {
   const epochItems = ctx.whatChanged?.epochWindow?.items || [];
   if (epochItems.length) {
     lines.push("", "Epoch voting (live RPC):");
+    if (ctx.whatChanged?.epochWindow?.intro) {
+      lines.push(ctx.whatChanged.epochWindow.intro);
+    }
     for (const item of epochItems) {
       lines.push(`• ${item.label}: ${item.text}`);
     }

@@ -1093,6 +1093,13 @@
       color: var(--text3);
     }
 
+    .what-changed-section-intro {
+      margin: -4px 0 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text2);
+    }
+
     .what-changed-list {
       display: flex;
       flex-direction: column;
@@ -2792,6 +2799,7 @@
       </div>
       <div id="what-changed-epoch-wrap" hidden>
         <div class="what-changed-section-title">Epoch voting (live RPC)</div>
+        <p class="what-changed-section-intro" hidden></p>
         <ul id="what-changed-epoch-list" class="what-changed-list"></ul>
       </div>
     </div>
@@ -3149,7 +3157,7 @@
   });
 </script>
 
-<script src="./app.js?v=89" defer></script>
+<script src="./app.js?v=90" defer></script>
 
 </body>
 </html>
