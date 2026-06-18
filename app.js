@@ -957,11 +957,14 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
   const patternItems = [];
   if (Number.isFinite(latestCom)) {
     patternItems.push({
-      tone: commissionChanges > 0 ? "neutral" : "ok",
+      tone:
+        commissionChanges > 0 ? "neutral" : commissionLevelTone(latestCom),
       label: "Commission pattern",
       text:
         commissionChanges === 0
-          ? `Unchanged at ${latestCom}% across the full tracking period`
+          ? latestCom >= 50
+            ? `Unchanged at ${latestCom}% across the full tracking period (high fee)`
+            : `Unchanged at ${latestCom}% across the full tracking period`
           : `${commissionChanges} commission change${commissionChanges === 1 ? "" : "s"} recorded ${EN_DASH} currently ${latestCom}%`
     });
   }
@@ -1209,6 +1212,13 @@ function wireChangeHistoryExports() {
 }
 
 // ── STABILITY ─────────────────────────────────────
+function commissionLevelTone(commissionPct) {
+  if (!Number.isFinite(commissionPct)) return "neutral";
+  if (commissionPct >= 50) return "warn";
+  if (commissionPct <= 5) return "ok";
+  return "neutral";
+}
+
 function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   const n = snaps.length;
   const totalAll =
@@ -1237,12 +1247,17 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     }
   }
 
-  function scoreFromRecentSignals(sampleCount, delinquent, commissionShift) {
+  function scoreFromRecentSignals(sampleCount, delinquent, commissionShift, latestCommission) {
     // Recent score: hybrid signal (history window + current/live context).
     let s = 100;
     if (nowStatus === "delinquent") s -= 40;
     s -= (sampleCount ? (delinquent / sampleCount) * 40 : 0);
     s -= clamp(commissionShift * 5, 0, 20);
+    if (Number.isFinite(latestCommission)) {
+      if (latestCommission >= 100) s -= 40;
+      else if (latestCommission >= 50) s -= 30;
+      else if (latestCommission > 10) s -= clamp((latestCommission - 10) * 1.5, 0, 15);
+    }
     if (Number.isFinite(nowUptime) && nowUptime < 95) {
       s -= clamp((95 - nowUptime) * 1.5, 0, 20);
     }
@@ -1253,15 +1268,25 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     return clamp(Math.round(s), 0, 100);
   }
 
-  function scoreFromAllTimeSnapshots(sampleCount, delinquent, commissionShift) {
+  function scoreFromAllTimeSnapshots(sampleCount, delinquent, commissionShift, latestCommission) {
     // All-time score: snapshot-history only (no live/API side inputs).
     let s = 100;
     s -= (sampleCount ? (delinquent / sampleCount) * 40 : 0);
     s -= clamp(commissionShift * 5, 0, 20);
+    if (Number.isFinite(latestCommission)) {
+      if (latestCommission >= 100) s -= 40;
+      else if (latestCommission >= 50) s -= 30;
+      else if (latestCommission > 10) s -= clamp((latestCommission - 10) * 1.5, 0, 15);
+    }
     return clamp(Math.round(s), 0, 100);
   }
 
-  let score = scoreFromRecentSignals(n, delinquentCount, commissionChanges);
+  const latestSnapshotCom = n ? Number(snaps[n - 1].commission) : NaN;
+  const liveComHistory = live?.commissionHistory || [];
+  const liveCom = liveComHistory.length ? Number(liveComHistory[liveComHistory.length - 1]) : NaN;
+  const latestCommission = Number.isFinite(liveCom) ? liveCom : latestSnapshotCom;
+
+  let score = scoreFromRecentSignals(n, delinquentCount, commissionChanges, latestCommission);
 
   let label =
     score >= 85 ? "Strong" :
@@ -1342,14 +1367,22 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   });
 
   pills.push({
-    ok: signalSample >= 2 ? signalCommissionChanges === 0 : false,
+    ok:
+      signalSample >= 2 &&
+      signalCommissionChanges === 0 &&
+      (!Number.isFinite(latestCommission) || latestCommission < 50),
     text:
       signalSample >= 2
         ? signalCommissionChanges === 0
-          ? `Commission stable in ${signalScope}`
+          ? Number.isFinite(latestCommission) && latestCommission >= 50
+            ? `Commission at ${latestCommission}% in ${signalScope} (unchanged)`
+            : `Commission stable in ${signalScope}`
           : `Commission changes in ${signalScope}: ${signalCommissionChanges}`
         : "Commission-change signal waiting for more snapshots",
-    tip: "Snapshot-only signal from stored commission history."
+    tip:
+      Number.isFinite(latestCommission) && latestCommission >= 50
+        ? "High commission level – unchanged still means delegators earn little or nothing."
+        : "Snapshot-only signal from stored commission history."
   });
 
   pills.push({
@@ -1367,7 +1400,8 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     allTimeScore = scoreFromAllTimeSnapshots(
       allTimeSample,
       allTimeDelinquent,
-      allTimeCommissionChanges
+      allTimeCommissionChanges,
+      latestCommission
     );
     allTimeLabel =
       allTimeScore >= 85 ? "Strong" :
