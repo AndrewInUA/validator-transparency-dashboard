@@ -213,6 +213,12 @@
       color: #ffeaea;
     }
 
+    .commission-hint-critical {
+      color: #ffc9c9;
+      border-left: 3px solid rgba(243, 107, 107, 0.55);
+      padding-left: 10px;
+    }
+
     .row-hero {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
@@ -2469,7 +2475,7 @@
       </div>
       <div class="delegator-snapshot-item">
         <span class="delegator-snapshot-label">Commission</span>
-        <span id="snapshot-commission" class="delegator-snapshot-value val-muted" title="Validator fee on staking rewards">–</span>
+        <span id="snapshot-commission" class="delegator-snapshot-value val-muted" title="Validator fee on staking rewards – 100% means stakers earn nothing">–</span>
       </div>
       <div class="delegator-snapshot-item">
         <span class="delegator-snapshot-label">Status</span>
@@ -2539,10 +2545,10 @@
             <div class="trust-stat-col">
               <div class="stat-label">
                 Commission (validator fee)
-                <span class="info-dot" tabindex="0" data-tip="Slice of staking rewards the validator keeps. Lower usually = more for you, but 100% is a red flag.">i</span>
+                <span class="info-dot" tabindex="0" data-tip="Slice of staking rewards the validator keeps. Lower is better for stakers. 100% is extreme – the validator keeps everything; stakers normally earn nothing.">i</span>
               </div>
               <div id="commission" class="stat-value green">–%</div>
-              <p class="stat-hint">Lower is usually better for your net yield. 0% means the validator takes no fee here (pool/program fees may still apply). 100% means delegators effectively earn nothing – avoid.</p>
+              <p id="commission-staker-hint" class="stat-hint">Lower is usually better for your net yield. 0% means the validator takes no fee here (pool/program fees may still apply). <strong>100% is a stop sign for stakers</strong> – the validator keeps all rewards; delegators normally earn nothing.</p>
               <div class="trust-status-block">
                 <div class="stat-label">
                   Status (alive right now?)
@@ -2569,10 +2575,10 @@
     <div class="card stability-card-sidebar">
       <div class="card-title">
         Stability score (all-time snapshot history)
-        <span class="info-dot" tabindex="0" data-tip="How to read this block: this score is snapshot-only. It uses stored snapshot history (all-time delinquency share + commission-change history) with no live/API context mixed into the ring value.">i</span>
+        <span class="info-dot" tabindex="0" data-tip="Snapshot-only score from stored history: delinquency share, commission changes, and commission level. 100% commission heavily lowers the score because stakers keep none of the rewards.">i</span>
       </div>
       <div class="card-note">
-        Snapshot-only block. 100 means no delinquency and no commission changes in stored history. Coverage is network-wide; confidence still rises as more snapshots accumulate for <em>this</em> vote account over time.
+        Snapshot-only block. Score reflects delinquency, commission changes, and <strong>commission level</strong>. <strong>100% commission is treated as severe</strong> – stakers earn nothing even if the rate never changed. Coverage is network-wide; confidence still rises as more snapshots accumulate for <em>this</em> vote account over time.
       </div>
       <div class="stability-layout">
         <div class="ring-wrap">
@@ -3143,7 +3149,7 @@
   });
 </script>
 
-<script src="./app.js?v=88" defer></script>
+<script src="./app.js?v=89" defer></script>
 
 </body>
 </html>

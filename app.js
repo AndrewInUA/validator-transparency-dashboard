@@ -962,9 +962,11 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
       label: "Commission pattern",
       text:
         commissionChanges === 0
-          ? latestCom >= 50
-            ? `Unchanged at ${latestCom}% across the full tracking period (high fee)`
-            : `Unchanged at ${latestCom}% across the full tracking period`
+          ? latestCom >= 100
+            ? `Unchanged at 100% – validator keeps all rewards; stakers earn nothing`
+            : latestCom >= 50
+              ? `Unchanged at ${latestCom}% across the full tracking period (high fee for stakers)`
+              : `Unchanged at ${latestCom}% across the full tracking period`
           : `${commissionChanges} commission change${commissionChanges === 1 ? "" : "s"} recorded ${EN_DASH} currently ${latestCom}%`
     });
   }
@@ -1374,14 +1376,18 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     text:
       signalSample >= 2
         ? signalCommissionChanges === 0
-          ? Number.isFinite(latestCommission) && latestCommission >= 50
-            ? `Commission at ${latestCommission}% in ${signalScope} (unchanged)`
-            : `Commission stable in ${signalScope}`
+          ? Number.isFinite(latestCommission) && latestCommission >= 100
+            ? `Commission at 100% in ${signalScope} (stakers earn nothing)`
+            : Number.isFinite(latestCommission) && latestCommission >= 50
+              ? `Commission at ${latestCommission}% in ${signalScope} (unchanged; high fee)`
+              : `Commission stable in ${signalScope}`
           : `Commission changes in ${signalScope}: ${signalCommissionChanges}`
         : "Commission-change signal waiting for more snapshots",
     tip:
       Number.isFinite(latestCommission) && latestCommission >= 50
-        ? "High commission level – unchanged still means delegators earn little or nothing."
+        ? latestCommission >= 100
+          ? "100% commission – stakers earn nothing even when the rate is unchanged."
+          : "High commission level – unchanged still means most rewards go to the validator, not stakers."
         : "Snapshot-only signal from stored commission history."
   });
 
@@ -1497,6 +1503,12 @@ function renderDelegatorSnapshotStrip({
       comEl.className =
         "delegator-snapshot-value " +
         (latestCom >= 50 ? "val-warn" : latestCom <= 5 ? "val-ok" : "val-muted");
+      comEl.title =
+        latestCom >= 100
+          ? "100% commission – validator keeps all rewards; stakers earn nothing"
+          : latestCom >= 50
+            ? "High commission – most rewards go to the validator, not stakers"
+            : "Validator fee on staking rewards – lower is better for stakers";
     } else {
       comEl.textContent = "–";
       comEl.className = "delegator-snapshot-value val-muted";
@@ -1611,7 +1623,7 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
       commissionCriticalRisk = true;
       pushUniqueInsight(cautions, {
         pill: "100% commission",
-        tip: "Validator keeps the entire staking-reward allocation; delegators routed through standard staking typically realize near-zero net yield – do not delegate here unless intentional."
+        tip: "Stop sign for stakers: the validator keeps 100% of staking rewards – delegators routed through ordinary staking normally earn nothing. Do not stake here unless you fully intend that."
       });
     } else if (latestCommission >= 50) {
       signalPoints -= 3;
@@ -1785,9 +1797,9 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
 
   if (commissionCriticalRisk) {
     summaryDisplay =
-      "100% commission makes ordinary delegation pointless – manual due diligence strongly advised.";
+      "100% commission – stop sign for stakers. Ordinary delegation earns nothing.";
     summaryTooltip =
-      "Validator charges the maximum commission; staking through default delegations typically yields negligible rewards. Institutional carve-outs notwithstanding, treat this as a stop sign unless you knowingly accept economics.";
+      "The validator keeps every staking reward. Unless you explicitly accept zero yield for delegators, do not stake here.";
   } else if (verdict.label === "Attractive") {
     summaryDisplay =
       "Most displayed signals currently support this validator for delegator consideration.";
@@ -1899,6 +1911,28 @@ function renderDelegatorAssessment(assessment) {
   appendInsightRows(document.getElementById("delegator-watch"), assessment.cautions, "watch");
 }
 
+function renderCommissionStakerHint(latestCom) {
+  const el = document.getElementById("commission-staker-hint");
+  if (!el) return;
+
+  if (Number.isFinite(latestCom) && latestCom >= 100) {
+    el.innerHTML =
+      "<strong>Stop sign for stakers:</strong> 100% commission means the validator keeps <em>every</em> staking reward – delegators normally earn <strong>nothing</strong>. Do not stake here unless you fully intend that.";
+    el.classList.add("commission-hint-critical");
+    return;
+  }
+
+  el.classList.remove("commission-hint-critical");
+  if (Number.isFinite(latestCom) && latestCom >= 50) {
+    el.innerHTML =
+      `<strong>High fee warning:</strong> ${latestCom.toFixed(0)}% commission means most staking rewards go to the validator, not stakers. Compare carefully before delegating.`;
+    return;
+  }
+
+  el.innerHTML =
+    "Lower is usually better for your net yield. 0% means the validator takes no fee here (pool/program fees may still apply). <strong>100% is a stop sign for stakers</strong> – the validator keeps all rewards; delegators normally earn nothing.";
+}
+
 function renderCommissionCriticalAlert(commissionPct) {
   const el = document.getElementById("commission-critical-alert");
   if (!el) return;
@@ -1906,9 +1940,9 @@ function renderCommissionCriticalAlert(commissionPct) {
   if (Number.isFinite(commissionPct) && commissionPct >= 100) {
     el.style.display = "block";
     el.innerHTML =
-      "<strong>Critical delegator warning:</strong> this validator currently has 100% commission. " +
-      "For direct delegation, this usually means near-zero net staking rewards for delegators. " +
-      "Proceed only if you intentionally accept this setup.";
+      "<strong>Stop – 100% commission:</strong> this validator keeps <em>all</em> staking rewards. " +
+      "For ordinary stakers, net yield is effectively <strong>zero</strong>. " +
+      "This is one of the worst outcomes for delegators – do not stake here unless you explicitly intend that setup.";
     return;
   }
 
@@ -1916,7 +1950,7 @@ function renderCommissionCriticalAlert(commissionPct) {
     el.style.display = "block";
     el.innerHTML =
       `<strong>High commission warning:</strong> current validator commission is ${commissionPct.toFixed(0)}%. ` +
-      "This can significantly reduce delegator net rewards.";
+      "Most rewards go to the validator, not stakers – this can wipe out delegator yield.";
     return;
   }
 
@@ -2083,9 +2117,12 @@ function computeVerdict({
   if (isDelinquentNow) {
     tier = "caution";
     reasons.push("currently delinquent on the network");
+  } else if (Number.isFinite(commission) && commission >= 100) {
+    tier = "caution";
+    reasons.push("commission is 100% – stakers earn nothing; validator keeps all rewards");
   } else if (Number.isFinite(commission) && commission >= 80) {
     tier = "caution";
-    reasons.push(`commission is ${commission.toFixed(0)}% – delegators effectively earn nothing`);
+    reasons.push(`commission is ${commission.toFixed(0)}% – most rewards go to the validator, not stakers`);
   } else if (
     Number.isFinite(recentVotingPct) &&
     recentVotingPct < 90 &&
@@ -3376,6 +3413,7 @@ async function main() {
     commissionEl.className = cls.join(" ");
   }
   renderCommissionCriticalAlert(latestCom);
+  renderCommissionStakerHint(latestCom);
 
   const uptimeNum = Number(live.uptimeLast5EpochsPct);
   safeSetText(
