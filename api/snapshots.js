@@ -7,6 +7,85 @@ function missingEnvVars(keys) {
   });
 }
 
+function snapshotDayKeyUtc(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatCsvDateUtc(iso) {
+  const key = snapshotDayKeyUtc(iso);
+  return key || "";
+}
+
+function csvEscape(value) {
+  const s = value == null ? "" : String(value);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function collapseSnapshotsToDaily(rows) {
+  const byDay = new Map();
+  for (const row of rows) {
+    const key = snapshotDayKeyUtc(row?.captured_at);
+    if (!key) continue;
+    byDay.set(key, row);
+  }
+  return [...byDay.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, row]) => row);
+}
+
+async function fetchAllSnapshotRows(supabase, vote, totalCount) {
+  const batchSize = 1000;
+  const all = [];
+  let offset = 0;
+
+  while (offset < totalCount) {
+    const end = Math.min(offset + batchSize - 1, totalCount - 1);
+    const { data, error } = await supabase
+      .from("validator_snapshots")
+      .select("status, commission, uptime, sw_apy, tr_apy, pools, captured_at")
+      .eq("vote_key", vote)
+      .order("captured_at", { ascending: true })
+      .range(offset, end);
+
+    if (error) throw error;
+    all.push(...(data || []));
+    offset += batchSize;
+  }
+
+  return all;
+}
+
+function buildDailySnapshotCsv(vote, rows) {
+  const daily = collapseSnapshotsToDaily(rows);
+  const lines = [
+    "date_utc,status,commission_pct,voting_consistency_pct,stake_pools,sw_apy,tr_apy,captured_at"
+  ];
+
+  for (const row of daily) {
+    lines.push(
+      [
+        csvEscape(formatCsvDateUtc(row.captured_at)),
+        csvEscape(row.status ?? ""),
+        csvEscape(row.commission ?? ""),
+        csvEscape(row.uptime ?? ""),
+        csvEscape(row.pools ?? ""),
+        csvEscape(row.sw_apy ?? ""),
+        csvEscape(row.tr_apy ?? ""),
+        csvEscape(row.captured_at ?? "")
+      ].join(",")
+    );
+  }
+
+  return { csv: lines.join("\n"), rowCount: daily.length, vote };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -32,6 +111,7 @@ export default async function handler(req, res) {
     }
 
     const vote = String(req.query.vote || "").trim();
+    const format = String(req.query.format || "").trim().toLowerCase();
     const includeAllStats =
       String(req.query.include_all_stats || "").trim().toLowerCase() === "1";
     const limitRaw = Number(req.query.limit || 240);
@@ -41,6 +121,43 @@ export default async function handler(req, res) {
 
     if (!vote) {
       return res.status(400).json({ error: "Missing vote parameter" });
+    }
+
+    if (format === "csv") {
+      const { count: totalCount, error: countErr } = await supabase
+        .from("validator_snapshots")
+        .select("id", { count: "exact", head: true })
+        .eq("vote_key", vote);
+
+      if (countErr) {
+        console.error("snapshots CSV count error:", countErr);
+        return res.status(500).json({ error: "Failed to load snapshot count" });
+      }
+
+      if (!totalCount) {
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="validator-${vote.slice(0, 8)}-daily-snapshots.csv"`
+        );
+        return res
+          .status(200)
+          .send("date_utc,status,commission_pct,voting_consistency_pct,stake_pools,sw_apy,tr_apy,captured_at\n");
+      }
+
+      try {
+        const rows = await fetchAllSnapshotRows(supabase, vote, totalCount);
+        const { csv } = buildDailySnapshotCsv(vote, rows);
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="validator-${vote.slice(0, 8)}-daily-snapshots.csv"`
+        );
+        return res.status(200).send(csv);
+      } catch (err) {
+        console.error("snapshots CSV export error:", err);
+        return res.status(500).json({ error: "Failed to export snapshots" });
+      }
     }
 
     const [
@@ -87,28 +204,14 @@ export default async function handler(req, res) {
 
     let allTimeStats = null;
     if (includeAllStats && typeof totalCount === "number" && totalCount > 0) {
-      const batchSize = 1000;
-      let offset = 0;
       let delinquentCount = 0;
       let commissionChanges = 0;
       let prevCommission = null;
       let hasPrev = false;
 
-      while (offset < totalCount) {
-        const end = Math.min(offset + batchSize - 1, totalCount - 1);
-        const { data: chunk, error: chunkErr } = await supabase
-          .from("validator_snapshots")
-          .select("status, commission")
-          .eq("vote_key", vote)
-          .order("captured_at", { ascending: true })
-          .range(offset, end);
-
-        if (chunkErr) {
-          console.error("snapshots all-time stats error:", chunkErr);
-          return res.status(500).json({ error: "Failed to load all-time snapshot stats" });
-        }
-
-        for (const row of chunk || []) {
+      try {
+        const rows = await fetchAllSnapshotRows(supabase, vote, totalCount);
+        for (const row of rows) {
           if (row?.status && row.status !== "healthy") delinquentCount++;
 
           const c = Number(row?.commission);
@@ -118,8 +221,9 @@ export default async function handler(req, res) {
             hasPrev = true;
           }
         }
-
-        offset += batchSize;
+      } catch (err) {
+        console.error("snapshots all-time stats error:", err);
+        return res.status(500).json({ error: "Failed to load all-time snapshot stats" });
       }
 
       allTimeStats = {

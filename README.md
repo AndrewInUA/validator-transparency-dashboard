@@ -163,13 +163,13 @@ Share link on the profile page copies the current URL including compare state.
 
 - Per-epoch detail page
 - Delinquency alerts and proactive signals
-- Exports and shareable snapshot reports
 - Network-wide change signals (directory and compare views)
 - Actionable delegator guidance – what to do next, not just charts
 - Builder-ready surface – documented metric definitions and embed patterns
 
 **Recently shipped**
 
+- Change history exports – copy summary and daily snapshot CSV on validator profiles
 - Change history on validator profiles – full snapshot tracking period with pattern summary
 
 ---

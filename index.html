@@ -1066,6 +1066,18 @@
       color: var(--text2);
     }
 
+    .what-changed-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+
+    .what-changed-export-btn {
+      font-size: 13px;
+      padding: 8px 14px;
+    }
+
     .what-changed-section-title {
       margin: 12px 0 8px;
       font-size: 11px;
@@ -2760,6 +2772,10 @@
       </div>
       <p id="what-changed-headline" class="what-changed-headline">Checking snapshot history…</p>
       <p id="what-changed-sub" class="what-changed-sub"></p>
+      <div id="what-changed-export-wrap" class="what-changed-actions" hidden>
+        <button type="button" id="what-changed-copy-btn" class="copy-btn what-changed-export-btn">Copy summary</button>
+        <button type="button" id="what-changed-csv-btn" class="copy-btn what-changed-export-btn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">Download CSV</button>
+      </div>
       <div id="what-changed-history-wrap" hidden>
         <div class="what-changed-section-title">Recorded changes</div>
         <ul id="what-changed-history-list" class="what-changed-list"></ul>
@@ -2829,10 +2845,9 @@
             <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
             <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
             <div class="pill pill-ok">Done: First-glance KPI strip + richer directory &amp; pickers (context before you open a profile)</div>
-            <div class="pill pill-ok">Done: Change history on validator profiles (full snapshot tracking period)</div>
+            <div class="pill pill-ok">Done: Change history exports – copy summary and daily snapshot CSV</div>
             <div class="pill">Next: Per-epoch detail page</div>
             <div class="pill">Next: Delinquency alerts &amp; proactive signals</div>
-            <div class="pill">Next: Exports and shareable snapshot reports</div>
             <div class="pill">Next: Network-wide change signals (directory &amp; compare views)</div>
             <div class="pill">Next: Actionable delegator guidance – what to do next, not just charts</div>
             <div class="pill">Next: Builder-ready surface – documented HTTP APIs, stable metric definitions, embed / reuse patterns</div>
@@ -3125,7 +3140,7 @@
   });
 </script>
 
-<script src="./app.js?v=84" defer></script>
+<script src="./app.js?v=85" defer></script>
 
 </body>
 </html>

@@ -1066,6 +1066,128 @@ function renderWhatChanged(summary) {
   }
 }
 
+let changeHistoryExportCtx = null;
+
+function buildChangeHistorySummaryText(ctx) {
+  if (!ctx) return "";
+  const lines = [
+    `Change history – ${ctx.name}`,
+    `Vote account: ${ctx.voteKey}`,
+    "",
+    ctx.whatChanged?.headline || "",
+    ctx.whatChanged?.sub || ""
+  ];
+
+  const historyItems = ctx.whatChanged?.historyWindow?.items || [];
+  const patternItems = ctx.whatChanged?.patternWindow?.items || [];
+
+  if (historyItems.length) {
+    lines.push("", "Recorded changes:");
+    for (const item of historyItems) {
+      lines.push(`• ${item.label}: ${item.text}`);
+    }
+  }
+
+  if (patternItems.length) {
+    lines.push("", "Pattern over tracking period:");
+    for (const item of patternItems) {
+      lines.push(`• ${item.label}: ${item.text}`);
+    }
+  }
+
+  if (ctx.whatChanged?.epochLine) {
+    lines.push("", ctx.whatChanged.epochLine);
+  }
+
+  lines.push(
+    "",
+    `Profile: ${document.getElementById("share-url")?.value?.trim() || ctx.shareUrl || ""}`,
+    "",
+    "Source: Validator Transparency Dashboard. Not staking advice."
+  );
+
+  return lines.join("\n");
+}
+
+function setChangeHistoryExportContext(ctx) {
+  changeHistoryExportCtx = ctx;
+  const wrap = document.getElementById("what-changed-export-wrap");
+  if (wrap) wrap.hidden = !ctx?.voteKey;
+}
+
+async function downloadChangeHistoryCsv(voteKey, btn) {
+  const defaultLabel = "Download CSV";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Preparing…";
+  }
+
+  try {
+    const res = await fetch(
+      `${SNAPSHOTS_API}?vote=${encodeURIComponent(voteKey)}&format=csv`
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const blob = await res.blob();
+    const dispo = res.headers.get("Content-Disposition") || "";
+    const match = /filename="([^"]+)"/i.exec(dispo);
+    const filename =
+      match?.[1] || `validator-${voteKey.slice(0, 8)}-daily-snapshots.csv`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    if (btn) btn.textContent = "Downloaded";
+  } catch (err) {
+    console.warn("CSV export failed:", err);
+    if (btn) btn.textContent = "Failed";
+  } finally {
+    if (btn) {
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = defaultLabel;
+      }, 1500);
+    }
+  }
+}
+
+function wireChangeHistoryExports() {
+  const copyBtn = document.getElementById("what-changed-copy-btn");
+  const csvBtn = document.getElementById("what-changed-csv-btn");
+  const copyDefault = "Copy summary";
+
+  if (copyBtn && !copyBtn.dataset.wired) {
+    copyBtn.dataset.wired = "1";
+    copyBtn.addEventListener("click", async () => {
+      if (!changeHistoryExportCtx) return;
+      try {
+        await navigator.clipboard.writeText(
+          buildChangeHistorySummaryText(changeHistoryExportCtx)
+        );
+        copyBtn.textContent = "Copied!";
+      } catch {
+        copyBtn.textContent = "Error";
+      }
+      setTimeout(() => {
+        copyBtn.textContent = copyDefault;
+      }, 1500);
+    });
+  }
+
+  if (csvBtn && !csvBtn.dataset.wired) {
+    csvBtn.dataset.wired = "1";
+    csvBtn.addEventListener("click", () => {
+      if (!changeHistoryExportCtx?.voteKey) return;
+      downloadChangeHistoryCsv(changeHistoryExportCtx.voteKey, csvBtn);
+    });
+  }
+}
+
 // ── STABILITY ─────────────────────────────────────
 function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   const n = snaps.length;
@@ -2957,6 +3079,7 @@ async function main() {
       }, 1500);
     };
   }
+  wireChangeHistoryExports();
 
   const openInput = document.getElementById("open-validator-input");
   const openNameInput = document.getElementById("open-validator-name");
@@ -3282,6 +3405,12 @@ async function main() {
     snapshotMeta
   });
   renderWhatChanged(whatChanged);
+  setChangeHistoryExportContext({
+    voteKey: CURRENT.voteKey,
+    name: resolvedDisplayName,
+    whatChanged,
+    shareUrl: getShareLink()
+  });
 
   const baseStatus = normalizeStatusForCompare(live?.status);
   const baseMetrics = {
