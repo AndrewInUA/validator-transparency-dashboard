@@ -2007,7 +2007,7 @@ function normalizeStatusForCompare(status) {
 let __networkStatsPromise = null;
 async function loadNetworkStats() {
   if (__networkStatsPromise) return __networkStatsPromise;
-  __networkStatsPromise = fetch("/api/network-stats", { cache: "no-store" })
+  __networkStatsPromise = fetch(`${API_BASE}/api/network-stats`, { cache: "no-store" })
     .then(async r => {
       if (!r.ok) return null;
       const j = await r.json().catch(() => null);
@@ -2901,7 +2901,7 @@ function setupValidatorTypeahead({ input, resultsBox, onPick, excludeVote, limit
 
   const fetchAndRender = async q => {
     try {
-      const url = `/api/validators-directory?limit=${limit}` +
+      const url = `${API_BASE}/api/validators-directory?limit=${limit}` +
         (q ? `&q=${encodeURIComponent(q)}` : "");
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) {
