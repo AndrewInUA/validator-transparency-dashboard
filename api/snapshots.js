@@ -207,7 +207,12 @@ export default async function handler(req, res) {
       let delinquentCount = 0;
       let commissionChanges = 0;
       let prevCommission = null;
-      let hasPrev = false;
+      let hasPrevCommission = false;
+      let prevStatus = null;
+      let hasPrevStatus = false;
+      const commissionChangeEvents = [];
+      const statusChangeEvents = [];
+      const MAX_EVENTS = 40;
 
       try {
         const rows = await fetchAllSnapshotRows(supabase, vote, totalCount);
@@ -216,9 +221,33 @@ export default async function handler(req, res) {
 
           const c = Number(row?.commission);
           if (Number.isFinite(c)) {
-            if (hasPrev && prevCommission !== c) commissionChanges++;
+            if (hasPrevCommission && prevCommission !== c) {
+              commissionChanges++;
+              if (commissionChangeEvents.length < MAX_EVENTS) {
+                commissionChangeEvents.push({
+                  from: prevCommission,
+                  to: c,
+                  captured_at: row?.captured_at || null
+                });
+              }
+            }
             prevCommission = c;
-            hasPrev = true;
+            hasPrevCommission = true;
+          }
+
+          const status = String(row?.status || "").toLowerCase();
+          if (status) {
+            if (hasPrevStatus && prevStatus !== status) {
+              if (statusChangeEvents.length < MAX_EVENTS) {
+                statusChangeEvents.push({
+                  from: prevStatus,
+                  to: status,
+                  captured_at: row?.captured_at || null
+                });
+              }
+            }
+            prevStatus = status;
+            hasPrevStatus = true;
           }
         }
       } catch (err) {
@@ -229,7 +258,9 @@ export default async function handler(req, res) {
       allTimeStats = {
         sample_count: totalCount,
         delinquent_count: delinquentCount,
-        commission_changes: commissionChanges
+        commission_changes: commissionChanges,
+        commission_change_events: commissionChangeEvents,
+        status_change_events: statusChangeEvents
       };
     }
 

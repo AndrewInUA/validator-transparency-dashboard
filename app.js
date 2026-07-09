@@ -1358,6 +1358,12 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   const allTimeSample = Number(snapshotMeta?.all_time?.sample_count);
   const allTimeDelinquent = Number(snapshotMeta?.all_time?.delinquent_count);
   const allTimeCommissionChanges = Number(snapshotMeta?.all_time?.commission_changes);
+  const allTimeCommissionEvents = Array.isArray(snapshotMeta?.all_time?.commission_change_events)
+    ? snapshotMeta.all_time.commission_change_events
+    : [];
+  const allTimeStatusEvents = Array.isArray(snapshotMeta?.all_time?.status_change_events)
+    ? snapshotMeta.all_time.status_change_events
+    : [];
   const hasAllTimeSignals =
     Number.isFinite(allTimeSample) &&
     allTimeSample > 0 &&
@@ -1370,7 +1376,67 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
     ? allTimeCommissionChanges
     : commissionChanges;
 
+  const loadedCommissionEvents = [];
+  const loadedStatusEvents = [];
+  for (let i = 1; i < n; i++) {
+    const prev = snaps[i - 1];
+    const cur = snaps[i];
+    const cPrev = Number(prev.commission);
+    const cCur = Number(cur.commission);
+    if (Number.isFinite(cPrev) && Number.isFinite(cCur) && cPrev !== cCur) {
+      loadedCommissionEvents.push({
+        from: cPrev,
+        to: cCur,
+        captured_at: cur.captured_at || null
+      });
+    }
+    const sPrev = String(prev.status || "").toLowerCase();
+    const sCur = String(cur.status || "").toLowerCase();
+    if (sPrev && sCur && sPrev !== sCur) {
+      loadedStatusEvents.push({
+        from: sPrev,
+        to: sCur,
+        captured_at: cur.captured_at || null
+      });
+    }
+  }
+
+  const commissionEvents =
+    hasAllTimeSignals && allTimeCommissionEvents.length
+      ? allTimeCommissionEvents
+      : loadedCommissionEvents;
+  const statusEvents =
+    hasAllTimeSignals && allTimeStatusEvents.length
+      ? allTimeStatusEvents
+      : loadedStatusEvents;
+
   const pills = [];
+
+  const delinquencyDetails =
+    signalSample >= 2 && signalDelinquent > 0
+      ? {
+          title: `Delinquency in ${signalScope}`,
+          intro: `${signalDelinquent} of ${signalSample} stored snapshots were not healthy.`,
+          items: statusEvents
+            .filter(e => e.to === "delinquent" || e.from === "delinquent")
+            .slice()
+            .reverse()
+            .map(e => ({
+              tone: e.to === "delinquent" ? "warn" : "ok",
+              label: formatSnapshotDate(e.captured_at),
+              text: `${snapshotStatusLabel(e.from)} ${EN_DASH} ${snapshotStatusLabel(e.to)}`
+            }))
+        }
+      : null;
+  if (delinquencyDetails && !delinquencyDetails.items.length) {
+    delinquencyDetails.items = [
+      {
+        tone: "warn",
+        label: "Summary",
+        text: `${signalDelinquent} non-healthy snapshot${signalDelinquent === 1 ? "" : "s"} recorded in ${signalScope}.`
+      }
+    ];
+  }
 
   pills.push({
     ok: signalSample >= 2 ? signalDelinquent === 0 : false,
@@ -1380,8 +1446,60 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
           ? `No delinquency in ${signalScope}`
           : `Delinquency in ${signalScope} (${signalDelinquent}/${signalSample})`
         : "Delinquency signal waiting for more snapshots",
-    tip: "Snapshot-only signal from stored history."
+    tip: delinquencyDetails
+      ? "Click to see when status changed in stored history."
+      : "Snapshot-only signal from stored history.",
+    details: delinquencyDetails
   });
+
+  const commissionDetails =
+    signalSample >= 2 &&
+    (signalCommissionChanges > 0 ||
+      (Number.isFinite(latestCommission) && latestCommission >= 50))
+      ? {
+          title:
+            signalCommissionChanges > 0
+              ? `Commission changes in ${signalScope}`
+              : `Commission level in ${signalScope}`,
+          intro:
+            signalCommissionChanges > 0
+              ? `${signalCommissionChanges} recorded change${signalCommissionChanges === 1 ? "" : "s"} in stored snapshot history.`
+              : Number.isFinite(latestCommission) && latestCommission >= 100
+                ? "Commission is 100% – stakers earn nothing even if the rate never changed."
+                : `Commission is currently ${latestCommission}% (unchanged in this history window, but high for stakers).`,
+          items: [
+            ...commissionEvents
+              .slice()
+              .reverse()
+              .map(e => ({
+                tone: Number(e.to) > Number(e.from) ? "warn" : "ok",
+                label: formatSnapshotDate(e.captured_at),
+                text: `${e.from}% ${EN_DASH} ${e.to}%`
+              })),
+            ...(Number.isFinite(latestCommission)
+              ? [
+                  {
+                    tone: latestCommission >= 50 ? "warn" : "neutral",
+                    label: "Current",
+                    text: `${latestCommission}% commission`
+                  }
+                ]
+              : [])
+          ]
+        }
+      : null;
+  if (
+    commissionDetails &&
+    commissionDetails.items.length === 1 &&
+    commissionDetails.items[0].label === "Current" &&
+    signalCommissionChanges > 0
+  ) {
+    commissionDetails.items.unshift({
+      tone: "warn",
+      label: "Summary",
+      text: `${signalCommissionChanges} commission change${signalCommissionChanges === 1 ? "" : "s"} recorded (dates loading from history).`
+    });
+  }
 
   pills.push({
     ok:
@@ -1398,12 +1516,14 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
               : `Commission stable in ${signalScope}`
           : `Commission changes in ${signalScope}: ${signalCommissionChanges}`
         : "Commission-change signal waiting for more snapshots",
-    tip:
-      Number.isFinite(latestCommission) && latestCommission >= 50
+    tip: commissionDetails
+      ? "Click to see when commission changed (and current level)."
+      : Number.isFinite(latestCommission) && latestCommission >= 50
         ? latestCommission >= 100
           ? "100% commission – stakers earn nothing even when the rate is unchanged."
           : "High commission level – unchanged still means most rewards go to the validator, not stakers."
-        : "Snapshot-only signal from stored commission history."
+        : "Snapshot-only signal from stored commission history.",
+    details: commissionDetails
   });
 
   pills.push({
@@ -1468,14 +1588,78 @@ function renderStability(st) {
     allTimeEl.style.display = line ? "block" : "none";
   }
   const pillsEl = document.getElementById("stability-pills");
+  const detailEl = document.getElementById("stability-signal-detail");
+  if (detailEl) {
+    detailEl.hidden = true;
+    detailEl.innerHTML = "";
+  }
   if (pillsEl) {
     pillsEl.innerHTML = "";
     for (const p of st.pills) {
-      const span = document.createElement("span");
-      span.className = `pill ${p.ok ? "pill-ok" : "pill-warn"}`;
-      span.textContent = p.text;
-      if (p.tip) span.title = p.tip;
-      pillsEl.appendChild(span);
+      const hasDetails = !!(p.details && Array.isArray(p.details.items) && p.details.items.length);
+      const el = document.createElement(hasDetails ? "button" : "span");
+      el.type = hasDetails ? "button" : undefined;
+      el.className = `pill ${p.ok ? "pill-ok" : "pill-warn"}${hasDetails ? " pill-action" : ""}`;
+      el.textContent = p.text;
+      if (p.tip) el.title = p.tip;
+      if (hasDetails) {
+        el.setAttribute("aria-expanded", "false");
+        el.addEventListener("click", () => {
+          if (!detailEl) return;
+          const alreadyOpen =
+            !detailEl.hidden && detailEl.dataset.signal === p.text;
+          pillsEl.querySelectorAll(".pill-action").forEach(btn => {
+            btn.setAttribute("aria-expanded", "false");
+            btn.classList.remove("is-open");
+          });
+          if (alreadyOpen) {
+            detailEl.hidden = true;
+            detailEl.innerHTML = "";
+            delete detailEl.dataset.signal;
+            return;
+          }
+          el.setAttribute("aria-expanded", "true");
+          el.classList.add("is-open");
+          detailEl.dataset.signal = p.text;
+          detailEl.hidden = false;
+          const itemsHtml = p.details.items
+            .map(
+              item =>
+                `<li class="stability-signal-item" data-tone="${escapeHtmlDirectory(
+                  item.tone || "neutral"
+                )}">` +
+                `<span class="stability-signal-label">${escapeHtmlDirectory(
+                  item.label || ""
+                )}</span>` +
+                `<span class="stability-signal-text">${escapeHtmlDirectory(
+                  item.text || ""
+                )}</span>` +
+                `</li>`
+            )
+            .join("");
+          detailEl.innerHTML =
+            `<div class="stability-signal-title">${escapeHtmlDirectory(
+              p.details.title || "Signal detail"
+            )}</div>` +
+            (p.details.intro
+              ? `<p class="stability-signal-intro">${escapeHtmlDirectory(
+                  p.details.intro
+                )}</p>`
+              : "") +
+            `<ul class="stability-signal-list">${itemsHtml}</ul>` +
+            `<button type="button" class="stability-signal-jump" id="stability-jump-what-changed">See full change history ↓</button>`;
+          const jumpBtn = detailEl.querySelector("#stability-jump-what-changed");
+          if (jumpBtn) {
+            jumpBtn.addEventListener("click", () => {
+              const card = document.getElementById("what-changed-card");
+              if (card) {
+                card.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            });
+          }
+        });
+      }
+      pillsEl.appendChild(el);
     }
   }
 
