@@ -17,6 +17,13 @@ function num(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Stakewiz list feed mixes percent (0–100) and hundredths (e.g. 700 → 7%). */
+function normalizeStakewizCommission(raw) {
+  const n = num(raw);
+  if (n === null) return null;
+  return n > 100 ? n / 100 : n;
+}
+
 function pickApyEstimate(v) {
   const candidates = [v.apy_estimate, v.apy, v.total_apy, v.apy_total];
   for (const c of candidates) {
@@ -73,7 +80,7 @@ function computePayload(catalog) {
   let highCommissionCount = 0;
 
   for (const v of catalog) {
-    const c = num(v.commission);
+    const c = normalizeStakewizCommission(v.commission);
     const a = pickApyEstimate(v);
     const s = num(v.activated_stake);
     if (c !== null) {

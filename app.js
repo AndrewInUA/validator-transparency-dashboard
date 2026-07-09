@@ -2678,6 +2678,19 @@ function fmtStakeDirectory(n) {
     : n.toFixed(1);
 }
 
+/** Stakewiz directory commission: 0–100 = %, above 100 = hundredths (700 → 7%). */
+function stakewizCommissionPct(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return n > 100 ? n / 100 : n;
+}
+
+function formatDirectoryCommission(raw) {
+  const pct = stakewizCommissionPct(raw);
+  if (!Number.isFinite(pct)) return "–";
+  return `${Number.isInteger(pct) ? pct : pct.toFixed(1)}%`;
+}
+
 function buildDashboardHrefLocal(vote) {
   return `./index.html?${new URLSearchParams({ vote }).toString()}`;
 }
@@ -2803,13 +2816,14 @@ function typeaheadDirectoryMetaHtml(r) {
       `<span class="ta-chip ta-chip-muted" title="Stakewiz rank by stake">#${escapeHtmlDirectory(String(r.rank))}</span>`
     );
   }
-  if (Number.isFinite(r.commission)) {
+  const commissionPct = stakewizCommissionPct(r.commission);
+  if (Number.isFinite(commissionPct)) {
     const band =
-      r.commission >= 50 ? " ta-chip-warn" : r.commission <= 5 ? " ta-chip-ok" : "";
+      commissionPct >= 50 ? " ta-chip-warn" : commissionPct <= 5 ? " ta-chip-ok" : "";
     chips.push(
       `<span class="ta-chip ta-chip-muted${band}" title="Validator commission">${escapeHtmlDirectory(
-        String(r.commission)
-      )}% fee</span>`
+        formatDirectoryCommission(r.commission)
+      )} fee</span>`
     );
   }
   if (Number.isFinite(r.stake_sol)) {
@@ -3018,7 +3032,7 @@ async function initValidatorDirectoryEmbed() {
           `</div>` +
         `</td>` +
         `<td class="dir-vote">${escapeHtmlDirectory(r.vote)}</td>` +
-        `<td>${Number.isFinite(r.commission) ? `${r.commission}%` : "–"}</td>` +
+        `<td>${formatDirectoryCommission(r.commission)}</td>` +
         `<td>${fmtStakeDirectory(r.stake_sol)}</td>` +
         `<td class="dir-narrow">${jitoCell}</td>` +
         `<td class="dir-narrow">${vsCell}</td>` +
@@ -3214,15 +3228,7 @@ async function main() {
     }
 
     setOpenFeedback("Opening validator…");
-    const targetUrl = buildValidatorUrl(vote, name);
-    const opened = window.open(targetUrl, "_blank", "noopener,noreferrer");
-    if (!opened) {
-      setOpenFeedback(
-        "Popup blocked by browser. Allow popups for this site to open validator in a new tab.",
-        true
-      );
-      return;
-    }
+    window.location.assign(buildValidatorUrl(vote, name));
   };
 
   const setCompareFeedback = (text, isError = false) => {

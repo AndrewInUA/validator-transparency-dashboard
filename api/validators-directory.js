@@ -14,6 +14,13 @@ function safeImageUrl(v) {
   return raw;
 }
 
+/** Stakewiz list feed mixes percent (0–100) and hundredths (e.g. 700 → 7%). */
+function normalizeStakewizCommission(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return n > 100 ? n / 100 : n;
+}
+
 function normalizeRow(v) {
   const vote = String(v.vote_identity || "").trim();
   const stake = Number(v.activated_stake);
@@ -22,7 +29,7 @@ function normalizeRow(v) {
     vote,
     name: typeof v.name === "string" ? v.name.trim() : "",
     image: safeImageUrl(v),
-    commission: Number.isFinite(Number(v.commission)) ? Number(v.commission) : null,
+    commission: normalizeStakewizCommission(v.commission),
     stake_sol: Number.isFinite(stake) ? stake : null,
     delinquent: !!v.delinquent,
     rank: Number.isFinite(Number(v.rank)) ? Number(v.rank) : null,
