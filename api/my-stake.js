@@ -248,7 +248,7 @@ function buildVerdict(accounts, names) {
     return {
       tone: "wait",
       headline: "No native stake on this wallet",
-      body: "We did not find a stake account this address controls. If you only hold a liquid staking token (JitoSOL, mSOL, PSOL), that will not show here — this page is for native stake.",
+      body: "We did not find a stake account this address controls. If you only hold a liquid staking token (JitoSOL, mSOL, PSOL), that will not show here – this page is for native stake.",
       next: "If you expected to see a position, check you connected the wallet that actually created the stake."
     };
   }
@@ -276,7 +276,7 @@ function buildVerdict(accounts, names) {
     }
     if (acc.validator?.commission === 100) {
       issues.push(
-        `${label} is at 100% commission — a stop sign. Delegators keep none of the inflation rewards.`
+        `${label} is at 100% commission – a stop sign. Delegators keep none of the inflation rewards.`
       );
     }
     if (acc.validator?.commissionChanged) {
@@ -286,7 +286,7 @@ function buildVerdict(accounts, names) {
     }
     if (acc.idleMevSol >= 0.01) {
       notes.push(
-        `${fmtSol(acc.idleMevSol)} SOL of spare balance is sitting on ${shortKey(acc.pubkey)} (often Jito tips — not auto-staked).`
+        `${fmtSol(acc.idleMevSol)} SOL of spare balance is sitting on ${shortKey(acc.pubkey)} (often Jito tips – not auto-staked).`
       );
     }
   }
@@ -325,7 +325,7 @@ function buildVerdict(accounts, names) {
       /\s+/g,
       " "
     ),
-    next: notes[0] || "Telegram pings for this picture come in a later slice — this page is the verdict.",
+    next: notes[0] || "Come back after the next epoch, or save this page.",
     lastEpochSol
   };
 }

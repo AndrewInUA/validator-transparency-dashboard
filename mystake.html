@@ -94,16 +94,43 @@
       text-decoration: none;
     }
     .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       border: 1px solid var(--border);
       background: var(--surface);
       border-radius: 999px;
       padding: 8px 14px;
       font-family: var(--font);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      color: var(--text);
+      color: var(--text2);
       cursor: pointer;
     }
+    .theme-toggle-track {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .theme-toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.22s ease;
+    }
+    html[data-theme="dark"] .theme-toggle-thumb {
+      transform: translateX(20px);
+    }
+    .theme-toggle-label { white-space: nowrap; }
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -186,14 +213,17 @@
       </div>
       <div class="header-actions">
         <a class="nav-link" href="./index.html">Validators</a>
-        <button type="button" class="theme-toggle" id="theme-toggle">Theme</button>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" title="Switch theme">
+          <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
+          <span class="theme-toggle-label" id="theme-toggle-label">Dark</span>
+        </button>
       </div>
     </div>
 
     <div class="card">
       <h1>How is my stake doing?</h1>
       <p class="lead">
-        Same voice as the validator dashboard — a verdict on <em>your</em> native stake, not a chart.
+        Same voice as the validator dashboard – a verdict on <em>your</em> native stake, not a chart.
         Connect the wallet that owns the stake, or paste its address. Nothing is signed except the wallet’s own connect prompt. We do not move SOL.
       </p>
       <div class="row">

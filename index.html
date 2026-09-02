@@ -2463,7 +2463,7 @@
       </a>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" title="Theme">
         <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
-        <span class="theme-toggle-label" id="theme-toggle-label">Light</span>
+        <span class="theme-toggle-label" id="theme-toggle-label">Dark</span>
       </button>
       <div class="live-pill">
         <div class="live-dot"></div>
@@ -3224,7 +3224,7 @@
     const t = document.documentElement.getAttribute("data-theme") || "light";
     const label = document.getElementById("theme-toggle-label");
     const btn = document.getElementById("theme-toggle");
-    if (label) label.textContent = t === "dark" ? "Dark" : "Light";
+    if (label) label.textContent = t === "dark" ? "Light" : "Dark";
     if (btn) {
       btn.setAttribute("aria-pressed", t === "dark" ? "true" : "false");
       btn.setAttribute(
