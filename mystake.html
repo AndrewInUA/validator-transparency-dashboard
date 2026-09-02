@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="See how your native Solana stake is doing in plain language: last epoch rewards, commission, and whether your validator stayed online." />
+  <title>My stake – Validator Transparency</title>
+  <link rel="icon" href="./assets/logo-transparent.png" type="image/png" />
+  <script>
+    (function () {
+      try {
+        var k = "vtd-theme";
+        var t = localStorage.getItem(k);
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #E9EDF1;
+      --surface: #FFFFFF;
+      --surface2: #F4F6F8;
+      --border: #E3E8EF;
+      --border2: #D6DCE5;
+      --accent: #c9ff15;
+      --warn: #f36b6b;
+      --text: #101319;
+      --text2: #8b93a6;
+      --text3: #b7bfcc;
+      --heading: #060314;
+      --btn-primary-bg: #060314;
+      --btn-primary-fg: #ffffff;
+      --stat-green: #3a7d00;
+      --font: "Inter", system-ui, sans-serif;
+      --card-radius: 24px;
+      --shadow-card: 0 6px 24px rgba(10, 12, 20, 0.06);
+      color-scheme: light;
+    }
+    html[data-theme="dark"] {
+      --bg: #0c0e14;
+      --surface: #141821;
+      --surface2: #1a2030;
+      --border: #2a3142;
+      --border2: #3a4358;
+      --text: #e8ebf2;
+      --text2: #9aa3b8;
+      --text3: #6b7488;
+      --heading: #f0f3fa;
+      --btn-primary-bg: #c9ff15;
+      --btn-primary-fg: #060314;
+      --stat-green: #9fe000;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    a { color: inherit; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 20px 18px 48px; }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .product-brand { display: flex; align-items: center; gap: 12px; }
+    .product-logo { border-radius: 12px; }
+    .product-name { font-weight: 700; color: var(--heading); }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .theme-toggle {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 16px;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 36px); color: var(--heading); letter-spacing: -0.03em; }
+    .lead { color: var(--text2); margin: 0 0 18px; max-width: 640px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .copy-btn {
+      border: 0;
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
+      border-radius: 18px;
+      padding: 10px 16px;
+      font-family: var(--font);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .copy-btn.secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .share-input {
+      flex: 1;
+      min-width: 200px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-family: var(--font);
+      font-size: 14px;
+    }
+    .muted { color: var(--text2); font-size: 13px; }
+    .error { color: var(--warn); font-size: 14px; }
+    .verdict { border-width: 2px; }
+    .verdict.ok { border-color: rgba(185, 240, 0, 0.5); }
+    .verdict.caution { border-color: rgba(230, 126, 34, 0.65); }
+    .verdict.wait { border-color: var(--border2); }
+    .verdict-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 6px;
+    }
+    .verdict.ok .verdict-kicker { color: var(--stat-green); }
+    .verdict.caution .verdict-kicker { color: #e67e22; }
+    .verdict h2 { margin: 0 0 10px; font-size: 22px; color: var(--heading); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--text3); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .mono { font-variant-numeric: tabular-nums; word-break: break-all; }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+    .pill.down { color: var(--warn); border-color: rgba(243, 107, 107, 0.4); }
+    .hidden { display: none; }
+    .wallet-line { font-size: 13px; color: var(--text2); margin: 8px 0 0; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-bar">
+      <div class="product-brand">
+        <img src="./assets/logo-transparent.png" alt="" class="product-logo" width="40" height="40" />
+        <div class="product-name">My stake</div>
+      </div>
+      <div class="header-actions">
+        <a class="nav-link" href="./index.html">Validators</a>
+        <button type="button" class="theme-toggle" id="theme-toggle">Theme</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1>How is my stake doing?</h1>
+      <p class="lead">
+        Same voice as the validator dashboard — a verdict on <em>your</em> native stake, not a chart.
+        Connect the wallet that owns the stake, or paste its address. Nothing is signed except the wallet’s own connect prompt. We do not move SOL.
+      </p>
+      <div class="row">
+        <button type="button" class="copy-btn" id="btn-phantom">Connect Phantom</button>
+        <button type="button" class="copy-btn secondary" id="btn-solflare">Connect Solflare</button>
+        <button type="button" class="copy-btn secondary hidden" id="btn-disconnect">Disconnect</button>
+      </div>
+      <p class="wallet-line" id="connected-wallet"></p>
+      <p class="muted" style="margin:16px 0 8px">Or paste a wallet (withdraw authority)</p>
+      <div class="row">
+        <input class="share-input" id="wallet-input" type="text" placeholder="Solana wallet address" autocomplete="off" spellcheck="false" />
+        <button type="button" class="copy-btn secondary" id="btn-lookup">Look up</button>
+      </div>
+      <p class="muted" id="status-line" style="margin-top:12px"></p>
+      <p class="error hidden" id="error-line"></p>
+    </div>
+
+    <div class="card verdict hidden" id="verdict-card">
+      <div class="verdict-kicker" id="verdict-kicker">Verdict</div>
+      <h2 id="verdict-headline"></h2>
+      <p id="verdict-body"></p>
+      <p class="muted" id="verdict-next"></p>
+    </div>
+
+    <div class="card hidden" id="accounts-card">
+      <div class="verdict-kicker">Positions</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Stake account</th>
+              <th>Validator</th>
+              <th>Status</th>
+              <th>Active SOL</th>
+              <th>Last epoch</th>
+              <th>Spare SOL</th>
+            </tr>
+          </thead>
+          <tbody id="accounts-body"></tbody>
+        </table>
+      </div>
+      <p class="muted" id="accounts-note" style="margin-top:12px"></p>
+    </div>
+  </div>
+  <script src="./mystake.js"></script>
+</body>
+</html>

@@ -28,6 +28,7 @@ The dashboard helps you **compare validators side by side** using public on-chai
 - **Recent voting chart** – consistency % per finished epoch
 - **Compare mode** – A vs B on the same page; share URL preserves `vote` and optional `vote2`
 - Light / dark theme (persisted)
+- **My stake** (`mystake.html`) – connect a wallet (or paste an address) for a plain-language verdict on *your* native stake: last epoch rewards, commission, delinquency, idle spare SOL. Uses `/api/my-stake`. No signing except the wallet connect prompt; SOL is never moved.
 
 ### Backend & data pipeline
 
@@ -56,11 +57,14 @@ APY figures are **estimates** for comparison – not payout quotes.
 ## Project structure
 
 ```
+├── mystake.html        # My stake – wallet connect / paste + verdict
+├── mystake.js
 ├── index.html          # Single-page UI (landing + profile + compare)
 ├── app.js              # Frontend logic (live data, charts, verdict, compare)
 ├── validators.html     # Redirects to home #directory-section
 ├── api/
 │   ├── collect.js      # Cron: snapshot all vote accounts → Supabase
+│   ├── my-stake.js     # Wallet → stake accounts, epoch rewards, snapshot join
 │   ├── snapshots.js    # Read snapshot history for a vote account
 │   ├── ratings.js      # Stakewiz + Trillium APY / pool merge
 │   ├── network-stats.js# Network medians for context lines
