@@ -1,4 +1,4 @@
-# Validator Transparency Dashboard
+# Validator Transparency
 
 A delegator-focused **comparison navigator** for Solana validators. Open any mainnet vote account, see how it stacks up on stability history, commission risk, live voting behavior, reward estimates, and stake-pool presence – with plain-English copy and tooltips throughout.
 
@@ -8,7 +8,7 @@ A delegator-focused **comparison navigator** for Solana validators. Open any mai
 
 ## What it does
 
-The dashboard helps you **compare validators side by side** using public on-chain and third-party feeds – not as staking advice, but as structured context before you delegate.
+Validator Transparency helps you **compare validators side by side** using public on-chain and third-party feeds – not as staking advice, but as structured context before you delegate.
 
 ### Home & directory
 

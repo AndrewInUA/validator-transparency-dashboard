@@ -114,7 +114,7 @@ export default async function handler(req, res) {
       returned: results.length,
       source: "stakewiz",
       note:
-        "Directory rows (name, stake, commission, Jito flag, voting % from Stakewiz) refresh on cache; opening a profile uses this dashboard’s RPC + snapshots.",
+        "Directory rows (name, stake, commission, Jito flag, voting % from Stakewiz) refresh on cache; opening a profile uses this tool’s RPC + snapshots.",
       results
     });
   } catch (e) {

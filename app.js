@@ -1,5 +1,5 @@
 /**
- * Validator Transparency Dashboard – app.js v50
+ * Validator Transparency – app.js v50
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
  * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
@@ -1143,7 +1143,7 @@ function buildChangeHistorySummaryText(ctx) {
     "",
     `Profile: ${document.getElementById("share-url")?.value?.trim() || ctx.shareUrl || ""}`,
     "",
-    "Source: Validator Transparency Dashboard. Not staking advice."
+    "Source: Validator Transparency. Not staking advice."
   );
 
   return lines.join("\n");
@@ -1892,7 +1892,7 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
       signalPoints += 2;
       pushUniqueInsight(positives, {
         pill: `Stability ${Math.round(stabilityScore)}/100`,
-        tip: `Stability score is strong (${stabilityScore}/100) inside this dashboard's archived snapshots (delinquency + commission churn signals).`
+        tip: `Stability score is strong (${stabilityScore}/100) inside archived snapshots here (delinquency + commission churn signals).`
       });
     } else if (stabilityScore >= 70) {
       signalPoints += 1;
@@ -1925,7 +1925,7 @@ function computeDelegatorAssessment({ live, ratings, poolsCount, snaps, stabilit
     signalPoints -= 1;
     pushUniqueInsight(cautions, {
       pill: `${snapCount} snapshots on file`,
-      tip: "Snapshot history still thin inside this dashboard; interpret checklist outputs as early reads, not longitudinally airtight."
+      tip: "Snapshot history still thin here; interpret checklist outputs as early reads, not longitudinally airtight."
     });
   }
 
@@ -2450,7 +2450,7 @@ function computeVerdict({
     },
     wait: {
       label: "Early read on our charts",
-      blurbPrefix: "History is still building in this dashboard –"
+      blurbPrefix: "History is still building here –"
     },
     caution: {
       label: "Risk flags – read carefully",
@@ -3280,7 +3280,7 @@ async function initValidatorDirectoryEmbed() {
 async function main() {
   if (!isProbablyVoteKey(CURRENT.voteKey)) {
     document.documentElement.classList.add("app-landing");
-    document.title = "Validator Transparency Dashboard";
+    document.title = "Validator Transparency";
     await initLandingPage();
     return;
   }
@@ -3303,7 +3303,7 @@ async function main() {
       resolvedDisplayName = shortKey(CURRENT.voteKey);
     }
 
-    document.title = `${resolvedDisplayName} · Validator Dashboard`;
+    document.title = `${resolvedDisplayName} · Validator Transparency`;
     safeSetText(
       document.getElementById("validator-name-head"),
       resolvedDisplayName
@@ -3327,7 +3327,7 @@ async function main() {
     }
   };
 
-  document.title = `${resolvedDisplayName} · Validator Dashboard`;
+  document.title = `${resolvedDisplayName} · Validator Transparency`;
 
   safeSetText(document.getElementById("validator-name-head"), resolvedDisplayName);
   safeSetText(
