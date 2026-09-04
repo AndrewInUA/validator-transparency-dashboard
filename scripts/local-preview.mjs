@@ -125,5 +125,5 @@ createServer(async (req, res) => {
   }
   serveStatic(req, res);
 }).listen(PORT, "127.0.0.1", () => {
-  console.log(`My stake local: http://127.0.0.1:${PORT}/mystake.html`);
+  console.log(`Stake health local: http://127.0.0.1:${PORT}/mystake.html`);
 });
