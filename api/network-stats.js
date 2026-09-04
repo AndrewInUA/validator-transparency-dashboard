@@ -24,8 +24,14 @@ function normalizeStakewizCommission(raw) {
   return n > 100 ? n / 100 : n;
 }
 
+/**
+ * Prefer Stakewiz total_apy (staking + Jito, close to TrueAPY).
+ * apy_estimate is a forward theoretical number that is nearly identical
+ * across the catalog (~6.6–7%), so using it as the network median makes
+ * almost every real earned yield look "below median".
+ */
 function pickApyEstimate(v) {
-  const candidates = [v.apy_estimate, v.apy, v.total_apy, v.apy_total];
+  const candidates = [v.total_apy, v.apy_total, v.staking_apy, v.apy, v.apy_estimate];
   for (const c of candidates) {
     const n = Number(c);
     if (Number.isFinite(n) && n > 0 && n < 100) return n;

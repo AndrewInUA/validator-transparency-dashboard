@@ -2373,8 +2373,15 @@ function computeVerdict({
     }
 
     if (Number.isFinite(apy) && Number.isFinite(apyMedian)) {
-      if (apy >= apyMedian) positives.push(`APY at or above network median`);
-      else if (apyMedian - apy > 0.3) negatives.push(`APY below network median`);
+      if (apy >= apyMedian) {
+        positives.push(
+          `APY estimate ~${apy.toFixed(2)}% (network median ~${apyMedian.toFixed(2)}%)`
+        );
+      } else if (apyMedian - apy > 0.3) {
+        negatives.push(
+          `APY estimate ~${apy.toFixed(2)}% vs network median ~${apyMedian.toFixed(2)}%`
+        );
+      }
     }
 
     if (

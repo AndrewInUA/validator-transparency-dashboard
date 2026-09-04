@@ -38,6 +38,26 @@ loadEnvFile(".env");
 const { default: myStake } = await import(
   pathToFileURL(join(root, "api/my-stake.js")).href
 );
+const { default: networkStats } = await import(
+  pathToFileURL(join(root, "api/network-stats.js")).href
+);
+
+const PROD_API = "https://validator-transparency-dashboard.vercel.app";
+
+async function proxyApi(req, res, url) {
+  const dest = `${PROD_API}${url.pathname}${url.search}`;
+  try {
+    const up = await fetch(dest, { headers: { accept: "application/json" } });
+    const body = Buffer.from(await up.arrayBuffer());
+    res.statusCode = up.status;
+    res.setHeader("Content-Type", up.headers.get("content-type") || "application/json");
+    res.end(body);
+  } catch (err) {
+    res.statusCode = 502;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ ok: false, error: err.message || "Proxy failed" }));
+  }
+}
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -84,11 +104,12 @@ function serveStatic(req, res) {
 
 createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
-  if (url.pathname === "/api/my-stake") {
+  if (url.pathname === "/api/my-stake" || url.pathname === "/api/network-stats") {
     req.query = Object.fromEntries(url.searchParams);
     vercelRes(res);
+    const handler = url.pathname === "/api/my-stake" ? myStake : networkStats;
     try {
-      await myStake(req, res);
+      await handler(req, res);
     } catch (err) {
       if (!res.headersSent) {
         res.statusCode = 500;
@@ -96,6 +117,10 @@ createServer(async (req, res) => {
         res.end(JSON.stringify({ ok: false, error: err.message || "Server error" }));
       }
     }
+    return;
+  }
+  if (url.pathname.startsWith("/api/")) {
+    await proxyApi(req, res, url);
     return;
   }
   serveStatic(req, res);
