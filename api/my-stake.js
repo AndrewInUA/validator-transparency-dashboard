@@ -4,9 +4,11 @@ const STAKE_PROGRAM = "Stake11111111111111111111111111111111111111";
 const LAMPORTS_PER_SOL = 1_000_000_000;
 const PUBKEY_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const MAX_ACCOUNTS = 40;
-const REWARD_EPOCHS = 8;
+/** Verdict and table only print the last finished epoch. */
+const REWARD_EPOCHS = 1;
 const STAKER_OFFSET = 12;
 const WITHDRAWER_OFFSET = 44;
+const RPC_TIMEOUT_MS = 8000;
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -36,7 +38,8 @@ async function rpcCall(method, params) {
       const rpcRes = await fetch(rpc.url, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+        signal: AbortSignal.timeout(RPC_TIMEOUT_MS)
       });
       if (!rpcRes.ok) throw new Error(`RPC HTTP ${rpcRes.status}`);
       const json = await rpcRes.json();
@@ -99,15 +102,13 @@ async function fetchStakeAccounts(wallet) {
     return source;
   }
 
-  let source = "unknown";
-  let lastErr = null;
-  for (const offset of [WITHDRAWER_OFFSET, STAKER_OFFSET]) {
-    try {
-      source = (await pull(offset)) || source;
-    } catch (err) {
-      lastErr = err;
-    }
-  }
+  const pulls = await Promise.allSettled([
+    pull(WITHDRAWER_OFFSET),
+    pull(STAKER_OFFSET)
+  ]);
+  const source =
+    pulls.find(p => p.status === "fulfilled")?.value || "unknown";
+  const lastErr = pulls.find(p => p.status === "rejected")?.reason;
   if (byPubkey.size === 0 && lastErr) throw lastErr;
   return { accounts: [...byPubkey.entries()], source };
 }
@@ -179,42 +180,44 @@ async function fetchRewards(pubkeys, currentEpoch) {
 
 async function latestSnapshots(supabase, voteKeys) {
   const out = {};
-  for (const vote of voteKeys) {
-    const { data, error } = await supabase
-      .from("validator_snapshots")
-      .select("status, commission, uptime, captured_at")
-      .eq("vote_key", vote)
-      .order("captured_at", { ascending: false })
-      .limit(16);
+  await Promise.all(
+    voteKeys.map(async vote => {
+      const { data, error } = await supabase
+        .from("validator_snapshots")
+        .select("status, commission, uptime, captured_at")
+        .eq("vote_key", vote)
+        .order("captured_at", { ascending: false })
+        .limit(16);
 
-    if (error || !data?.length) {
-      out[vote] = null;
-      continue;
-    }
+      if (error || !data?.length) {
+        out[vote] = null;
+        return;
+      }
 
-    const latest = data[0];
-    const older = data.find(row => {
-      const a = new Date(row.captured_at).getTime();
-      const b = new Date(latest.captured_at).getTime();
-      return Number.isFinite(a) && Number.isFinite(b) && b - a >= 3 * 86400000;
-    });
+      const latest = data[0];
+      const older = data.find(row => {
+        const a = new Date(row.captured_at).getTime();
+        const b = new Date(latest.captured_at).getTime();
+        return Number.isFinite(a) && Number.isFinite(b) && b - a >= 3 * 86400000;
+      });
 
-    const commNow = Number(latest.commission);
-    const commThen = older ? Number(older.commission) : null;
-    out[vote] = {
-      status: latest.status || "unknown",
-      commission: Number.isFinite(commNow) ? commNow : null,
-      uptime: Number.isFinite(Number(latest.uptime))
-        ? Number(latest.uptime)
-        : null,
-      captured_at: latest.captured_at,
-      commissionWas: Number.isFinite(commThen) ? commThen : null,
-      commissionChanged:
-        Number.isFinite(commNow) &&
-        Number.isFinite(commThen) &&
-        commNow !== commThen
-    };
-  }
+      const commNow = Number(latest.commission);
+      const commThen = older ? Number(older.commission) : null;
+      out[vote] = {
+        status: latest.status || "unknown",
+        commission: Number.isFinite(commNow) ? commNow : null,
+        uptime: Number.isFinite(Number(latest.uptime))
+          ? Number(latest.uptime)
+          : null,
+        captured_at: latest.captured_at,
+        commissionWas: Number.isFinite(commThen) ? commThen : null,
+        commissionChanged:
+          Number.isFinite(commNow) &&
+          Number.isFinite(commThen) &&
+          commNow !== commThen
+      };
+    })
+  );
   return out;
 }
 
@@ -346,14 +349,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const epochInfo = await rpcCall("getEpochInfo", []);
+    const [epochInfo, stakeFound] = await Promise.all([
+      rpcCall("getEpochInfo", []),
+      fetchStakeAccounts(wallet)
+    ]);
     const currentEpoch = Number(epochInfo.result?.epoch);
     if (!Number.isFinite(currentEpoch)) {
       throw new Error("Could not read current epoch");
     }
 
-    const { accounts: rawAccounts, source: gpaSource } =
-      await fetchStakeAccounts(wallet);
+    const { accounts: rawAccounts, source: gpaSource } = stakeFound;
 
     const sliced = rawAccounts.slice(0, MAX_ACCOUNTS);
     const parsed = sliced.map(([pubkey, item]) =>
@@ -361,24 +366,26 @@ export default async function handler(req, res) {
     );
 
     const pubkeys = parsed.map(a => a.pubkey);
-    const rewardMap =
-      pubkeys.length > 0 ? await fetchRewards(pubkeys, currentEpoch) : {};
-
     const voteKeys = [
       ...new Set(parsed.map(a => a.vote).filter(Boolean))
     ];
 
-    let snapshots = {};
     const supabaseUrl = String(process.env.SUPABASE_URL || "").trim();
     const supabaseKey = String(
       process.env.SUPABASE_SERVICE_ROLE_KEY || ""
     ).trim();
-    if (supabaseUrl && supabaseKey && voteKeys.length) {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      snapshots = await latestSnapshots(supabase, voteKeys);
-    }
+    const supabase =
+      supabaseUrl && supabaseKey
+        ? createClient(supabaseUrl, supabaseKey)
+        : null;
 
-    const names = voteKeys.length ? await validatorNames(voteKeys) : {};
+    const [rewardMap, snapshots, names] = await Promise.all([
+      pubkeys.length > 0 ? fetchRewards(pubkeys, currentEpoch) : {},
+      supabase && voteKeys.length
+        ? latestSnapshots(supabase, voteKeys)
+        : {},
+      voteKeys.length ? validatorNames(voteKeys) : {}
+    ]);
 
     const accounts = parsed.map(acc => ({
       ...acc,
@@ -390,7 +397,10 @@ export default async function handler(req, res) {
     const verdict = buildVerdict(accounts, names);
     const truncated = rawAccounts.length > MAX_ACCOUNTS;
 
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=15, stale-while-revalidate=45"
+    );
     return res.status(200).json({
       ok: true,
       wallet,

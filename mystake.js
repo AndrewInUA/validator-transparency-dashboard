@@ -100,6 +100,14 @@ function setStatus(text) {
   if (el) el.textContent = text || "";
 }
 
+function setBusy(busy) {
+  for (const id of ["btn-lookup", "btn-phantom", "btn-solflare"]) {
+    const el = $(id);
+    if (el) el.disabled = !!busy;
+  }
+  $("status-line")?.classList.toggle("busy", !!busy);
+}
+
 function renderVerdict(v) {
   const card = $("verdict-card");
   if (!card || !v) {
@@ -187,9 +195,8 @@ function renderAccounts(data) {
 
 async function loadWallet(wallet) {
   setError("");
-  setStatus("Loading your stake…");
-  $("verdict-card")?.classList.add("hidden");
-  $("accounts-card")?.classList.add("hidden");
+  setBusy(true);
+  setStatus("Looking up your stake on-chain…");
   try {
     const res = await fetch(
       `${MY_STAKE_API}?wallet=${encodeURIComponent(wallet)}`
@@ -208,6 +215,8 @@ async function loadWallet(wallet) {
   } catch (err) {
     setStatus("");
     setError(err.message || "Could not load this wallet.");
+  } finally {
+    setBusy(false);
   }
 }
 
