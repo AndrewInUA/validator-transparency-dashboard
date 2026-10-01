@@ -2642,7 +2642,7 @@
         </div>
         <div id="current-context" class="header-context">Loading context…</div>
         <div class="header-note identity-note">
-          This page is tied to the <code class="inline-code">vote</code> in the URL. The backend records scheduled snapshots for <strong>all</strong> mainnet vote accounts; per-validator “how much history” still grows from the first day that account appears in storage.
+          This page is tied to the <code class="inline-code">vote</code> in the URL. The backend records <strong>one snapshot a day</strong> for <strong>all</strong> mainnet vote accounts; per-validator “how much history” still grows from the first day that account appears in storage.
         </div>
       </div>
 
@@ -2961,7 +2961,7 @@
           <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
             <div class="pill pill-ok">Done: All-time snapshot-based stability scoring</div>
             <div class="pill pill-ok">Done: Validator comparison on the same page</div>
-            <div class="pill pill-ok">Done: Full-network snapshot collection (scheduled; all vote accounts from RPC)</div>
+            <div class="pill pill-ok">Done: Full-network snapshot collection (once a day; all vote accounts from RPC)</div>
             <div class="pill pill-ok">Done: Directory on home – search by name or vote key (<a href="./index.html#directory-section">open home</a>)</div>
             <div class="pill pill-ok">Done: First-glance KPI strip + richer directory &amp; pickers (context before you open a profile)</div>
             <div class="pill pill-ok">Done: Change history exports – copy summary and daily snapshot CSV</div>
@@ -2983,7 +2983,7 @@
   <div class="footer">
     <div><strong>Source model.</strong> Live inputs come from Solana RPC + Stakewiz + Trillium + Jito proxy. Stability uses backend snapshot history plus current public inputs.</div>
     <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots for the opened vote account. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context. Two validators can both be “fully covered” by collection but have different history lengths until enough days of snapshots accrue.</div>
-    <div><strong>History model.</strong> Scheduled jobs snapshot <strong>all</strong> mainnet vote accounts returned by RPC and write shared rows in storage. Opening a page only sends an optional analytics ping (does not gate whether snapshots exist). Everyone reads the same dataset for a given vote key.</div>
+    <div><strong>History model.</strong> Once a day, a scheduled job snapshots <strong>all</strong> mainnet vote accounts returned by RPC and writes one row per validator. Opening a page only sends an optional analytics ping (does not gate whether snapshots exist). Everyone reads the same dataset for a given vote key.</div>
     <div class="footer-brand-row">
       <img src="./assets/logo-transparent.png" alt="" class="footer-mini-logo" width="28" height="28" loading="lazy" />
       <div>

@@ -2,7 +2,7 @@
  * Validator Transparency – app.js v50
  * Backend-only snapshot model:
  * page open -> /api/track-validator (interest / analytics; optional)
- * CRON -> /api/collect loads every validator from getVoteAccounts, syncs tracked_validators, writes snapshots
+ * CRON -> /api/collect once a day loads every validator from getVoteAccounts, syncs tracked_validators, writes one snapshot per validator
  */
 
 const USE_LIVE = true;
@@ -850,7 +850,7 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
     return {
       ready: false,
       headline: "No stored snapshots yet for this validator.",
-      sub: "Daily snapshots are collected for all mainnet validators. A change log appears once history builds.",
+      sub: "One snapshot a day is collected for all mainnet validators. A change log appears once history builds.",
       historyWindow: null,
       patternWindow: null,
       epochWindow
@@ -908,7 +908,7 @@ function computeWhatChanged({ snaps, live, stability, snapshotMeta }) {
       ? `Steady over ${pluralDays(spanDays)} of stored snapshots (${periodRange}).`
       : `${events.length} recorded change${events.length === 1 ? "" : "s"} over ${pluralDays(spanDays)} (${periodRange}).`;
 
-  let sub = `${totalAll.toLocaleString("en-US")} snapshots in storage (${periodRange}).`;
+  let sub = `${totalAll.toLocaleString("en-US")} daily snapshots in storage (${periodRange}).`;
   const eventCommissionCount = events.filter(e => e.label === "Commission").length;
   const needsWindowNote =
     hasPartialWindow &&
@@ -1337,9 +1337,9 @@ function computeStability({ live, ratings, poolsCount, snaps, snapshotMeta }) {
   ) {
     const o = fmtSnapshotDate(snapshotMeta.oldest_captured_at);
     const ne = fmtSnapshotDate(snapshotMeta.newest_captured_at);
-    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots (${o} ${EN_DASH} ${ne}).`;
+    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} daily snapshots (${o} ${EN_DASH} ${ne}).`;
   } else if (totalAll !== null && totalAll > 0) {
-    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} snapshots.`;
+    allTimeMetaLine = `All-time: ${totalAll.toLocaleString("en-US")} daily snapshots.`;
   }
 
   if (n >= 2) {

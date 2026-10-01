@@ -120,6 +120,31 @@ async function syncTrackedValidators(supabase, allKeys, nowIso) {
   }
 }
 
+function utcDayStartIso(nowIso) {
+  const dayStart = new Date(nowIso);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  return dayStart.toISOString();
+}
+
+async function dropSameDaySnapshots(supabase, rows, nowIso) {
+  if (rows.length === 0) return rows;
+  const dayStart = utcDayStartIso(nowIso);
+  const already = new Set();
+
+  for (let i = 0; i < rows.length; i += 200) {
+    const slice = rows.slice(i, i + 200).map(row => row.vote_key);
+    const { data, error } = await supabase
+      .from("validator_snapshots")
+      .select("vote_key")
+      .in("vote_key", slice)
+      .gte("captured_at", dayStart);
+    if (error) throw error;
+    for (const row of data || []) already.add(row.vote_key);
+  }
+
+  return rows.filter(row => !already.has(row.vote_key));
+}
+
 async function insertSnapshotChunks(supabase, rows) {
   let inserted = 0;
   const errors = [];
@@ -254,9 +279,10 @@ export default async function handler(req, res) {
       });
     }
 
+    const rowsToInsert = await dropSameDaySnapshots(supabase, rows, nowIso);
     const { inserted, failed, errors_sample } = await insertSnapshotChunks(
       supabase,
-      rows
+      rowsToInsert
     );
 
     return res.status(200).json({
