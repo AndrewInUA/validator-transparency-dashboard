@@ -2367,6 +2367,13 @@ function computeVerdict({
     if (Number.isFinite(commission)) {
       if (commission <= 5) {
         positives.push(`low validator commission (${commission.toFixed(0)}%)`);
+      } else if (
+        Number.isFinite(commissionMedian) &&
+        commission > commissionMedian + 1
+      ) {
+        negatives.push(
+          `commission is ${commission.toFixed(0)}%, above the network median of ${commissionMedian.toFixed(0)}%`
+        );
       } else if (commission >= 10) {
         negatives.push(`higher validator commission (${commission.toFixed(0)}%)`);
       }
