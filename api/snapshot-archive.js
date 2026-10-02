@@ -2,30 +2,67 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+const RAW_ARCHIVE =
+  "https://raw.githubusercontent.com/AndrewInUA/validator-transparency-dashboard/main/data/snapshot-archive.json";
+const CACHE_MS = 30 * 60 * 1000;
+
 let cache = null;
+let cachedAt = 0;
+let loading = null;
 
-function archiveFile() {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [
-    path.join(here, "..", "data", "snapshot-archive.json"),
-    path.join(process.cwd(), "data", "snapshot-archive.json"),
-    path.join(process.cwd(), "snapshot-archive.json")
-  ];
-  return candidates.find(candidate => fs.existsSync(candidate)) || null;
+function localArchiveFile() {
+  const candidates = [];
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    candidates.push(path.join(here, "..", "data", "snapshot-archive.json"));
+  } catch {
+    // Bundled runtimes may not expose a real file URL.
+  }
+  candidates.push(path.join(process.cwd(), "data", "snapshot-archive.json"));
+  return candidates.find(candidate => {
+    try {
+      return fs.existsSync(candidate);
+    } catch {
+      return false;
+    }
+  }) || null;
 }
 
-export function loadSnapshotArchive() {
-  if (cache) return cache;
-  const file = archiveFile();
-  cache = file ? JSON.parse(fs.readFileSync(file, "utf8")) : {};
-  return cache;
+async function readArchive() {
+  const local = localArchiveFile();
+  if (local) {
+    return JSON.parse(fs.readFileSync(local, "utf8"));
+  }
+
+  const response = await fetch(RAW_ARCHIVE);
+  if (!response.ok) {
+    throw new Error(`Snapshot archive HTTP ${response.status}`);
+  }
+  return response.json();
 }
 
-export function rowsForVote(vote) {
-  const raw = loadSnapshotArchive()[String(vote || "").trim()];
+export async function loadSnapshotArchive() {
+  if (cache && Date.now() - cachedAt < CACHE_MS) return cache;
+  if (!loading) {
+    loading = readArchive()
+      .then(data => {
+        cache = data && typeof data === "object" ? data : {};
+        cachedAt = Date.now();
+        return cache;
+      })
+      .finally(() => {
+        loading = null;
+      });
+  }
+  return loading;
+}
+
+export async function rowsForVote(vote) {
+  const key = String(vote || "").trim();
+  const raw = (await loadSnapshotArchive())[key];
   if (!Array.isArray(raw) || raw.length === 0) return null;
   return raw.map(item => ({
-    vote_key: vote,
+    vote_key: key,
     captured_at: item[0] || null,
     status: item[1] ?? null,
     commission: item[2] == null || item[2] === "" ? null : Number(item[2]),

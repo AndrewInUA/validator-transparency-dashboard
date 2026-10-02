@@ -1,7 +1,6 @@
 {
   "functions": {
     "api/snapshots.js": {
-      "includeFiles": "data/snapshot-archive.json",
       "maxDuration": 30
     },
     "api/collect.js": {
