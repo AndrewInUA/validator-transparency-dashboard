@@ -2642,7 +2642,7 @@
         </div>
         <div id="current-context" class="header-context">Loading context…</div>
         <div class="header-note identity-note">
-          This page is tied to the <code class="inline-code">vote</code> in the URL. Every day at <strong>00:15 UTC</strong> a job reads every mainnet vote account from Solana and saves one snapshot: status, commission, and voting. History for a validator starts the first day that account is saved. Opening this page does not create the snapshot.
+          This page is tied to the <code class="inline-code">vote</code> in the URL. Every day at <strong>00:15 UTC</strong> a job reads every mainnet vote account from Solana and saves one snapshot: status, commission, and voting. History for a validator starts the first day that account is saved.
         </div>
       </div>
 
@@ -2721,7 +2721,7 @@
         <ul class="stability-usage-list">
           <li>This score reflects full stored history for this vote account (same pipeline as every other validator).</li>
           <li>Higher is better for consistency (fewer delinquency events and fee changes).</li>
-          <li>Snapshots are taken once a day at 00:15 UTC for every mainnet vote account, whether or not anyone opens the page.</li>
+          <li>Snapshots are taken once a day at 00:15 UTC for every mainnet vote account.</li>
           <li>New entries can look “early” until enough daily snapshots pile up – compare validators with similar history length when possible.</li>
           <li>Use this as the main consistency signal; then check APY and pool context.</li>
         </ul>
@@ -2984,7 +2984,7 @@
   <div class="footer">
     <div><strong>Source model.</strong> Live inputs come from Solana RPC + Stakewiz + Trillium + Jito proxy. Stability uses backend snapshot history plus current public inputs.</div>
     <div><strong>Methodology.</strong> Main stability ring uses all stored snapshots for the opened vote account. Highlighted secondary score uses the recent snapshot window. Recent voting consistency is short-window RPC context. Two validators can both be “fully covered” by collection but have different history lengths until enough days of snapshots accrue.</div>
-    <div><strong>History model.</strong> Every day at <strong>00:15 UTC</strong>, a scheduled job reads all mainnet vote accounts from Solana RPC and saves one row per validator: status, commission, and voting. The page reads those saved rows. Opening a profile does not create a snapshot, and everyone sees the same history for a given vote key.</div>
+    <div><strong>History model.</strong> Every day at <strong>00:15 UTC</strong>, a scheduled job reads all mainnet vote accounts from Solana RPC and saves one row per validator: status, commission, and voting. The page reads those saved rows, and everyone sees the same history for a given vote key.</div>
     <div class="footer-brand-row">
       <img src="./assets/logo-transparent.png" alt="" class="footer-mini-logo" width="28" height="28" loading="lazy" />
       <div>
