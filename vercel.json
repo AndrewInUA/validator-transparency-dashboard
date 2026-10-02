@@ -9,22 +9,12 @@
     },
     "api/my-stake.js": {
       "maxDuration": 30
-    },
-    "api/telegram.js": {
-      "maxDuration": 30
-    },
-    "api/telegram-epoch.js": {
-      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/collect",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/telegram-epoch",
-      "schedule": "0 2 * * *"
     }
   ],
   "headers": [
