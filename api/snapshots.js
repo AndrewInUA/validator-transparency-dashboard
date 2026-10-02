@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { allTimeStatsFromRows, rowsForVote } from "./snapshot-archive.js";
 
 function missingEnvVars(keys) {
   return keys.filter(k => {
@@ -86,6 +87,38 @@ function buildDailySnapshotCsv(vote, rows) {
   return { csv: lines.join("\n"), rowCount: daily.length, vote };
 }
 
+function sendArchive(res, vote, limit, includeAllStats, format) {
+  const rows = rowsForVote(vote);
+  if (!rows) return false;
+
+  if (format === "csv") {
+    const { csv } = buildDailySnapshotCsv(vote, rows);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="validator-${vote.slice(0, 8)}-daily-snapshots.csv"`
+    );
+    res.status(200).send(csv);
+    return true;
+  }
+
+  const window = rows.slice(Math.max(0, rows.length - limit));
+  res.status(200).json({
+    ok: true,
+    vote,
+    count: window.length,
+    meta: {
+      total_count: rows.length,
+      oldest_captured_at: rows[0]?.captured_at ?? null,
+      newest_captured_at: rows[rows.length - 1]?.captured_at ?? null,
+      all_time: includeAllStats ? allTimeStatsFromRows(rows) : null
+    },
+    snapshots: window,
+    history_source: "archive"
+  });
+  return true;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -123,6 +156,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing vote parameter" });
     }
 
+    if (sendArchive(res, vote, limit, includeAllStats, format)) return;
+
     if (format === "csv") {
       const { count: totalCount, error: countErr } = await supabase
         .from("validator_snapshots")
@@ -131,6 +166,7 @@ export default async function handler(req, res) {
 
       if (countErr) {
         console.error("snapshots CSV count error:", countErr);
+        if (sendArchive(res, vote, limit, false, "csv")) return;
         return res.status(500).json({ error: "Failed to load snapshot count" });
       }
 
@@ -156,6 +192,7 @@ export default async function handler(req, res) {
         return res.status(200).send(csv);
       } catch (err) {
         console.error("snapshots CSV export error:", err);
+        if (sendArchive(res, vote, limit, false, "csv")) return;
         return res.status(500).json({ error: "Failed to export snapshots" });
       }
     }
@@ -193,6 +230,7 @@ export default async function handler(req, res) {
     if (countErr || oldestErr || newestErr || windowErr) {
       const err = countErr || oldestErr || newestErr || windowErr;
       console.error("snapshots GET error:", err);
+      if (sendArchive(res, vote, limit, includeAllStats, format)) return;
       return res.status(500).json({ error: "Failed to load snapshots" });
     }
 
@@ -252,6 +290,7 @@ export default async function handler(req, res) {
         }
       } catch (err) {
         console.error("snapshots all-time stats error:", err);
+        if (sendArchive(res, vote, limit, includeAllStats, format)) return;
         return res.status(500).json({ error: "Failed to load all-time snapshot stats" });
       }
 
@@ -278,6 +317,13 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("snapshots handler error:", err);
+    const vote = String(req.query?.vote || "").trim();
+    const format = String(req.query?.format || "").trim().toLowerCase();
+    const includeAllStats =
+      String(req.query?.include_all_stats || "").trim().toLowerCase() === "1";
+    const limitRaw = Number(req.query?.limit || 240);
+    const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(limitRaw, 500)) : 240;
+    if (vote && sendArchive(res, vote, limit, includeAllStats, format)) return;
     return res.status(500).json({ error: "Internal server error" });
   }
 }
