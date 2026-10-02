@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const archivePath = path.resolve("data/snapshot-archive.json");
+const voteDir = path.resolve("data/by-vote");
 
 function buildRpcUrl() {
   const key = String(process.env.HELIUS_API_KEY || "").trim();
@@ -48,9 +48,12 @@ async function fetchVoteAccounts(rpcUrl) {
   };
 }
 
-const archive = fs.existsSync(archivePath)
-  ? JSON.parse(fs.readFileSync(archivePath, "utf8"))
-  : {};
+function readRows(vote) {
+  const file = path.join(voteDir, `${vote}.json`);
+  if (!fs.existsSync(file)) return [];
+  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+  return Array.isArray(parsed) ? parsed : [];
+}
 
 const nowIso = new Date().toISOString();
 const today = utcDay(nowIso);
@@ -69,7 +72,8 @@ for (const validator of delinquent) {
 let added = 0;
 let skipped = 0;
 for (const [vote, { validator, status }] of byKey) {
-  const rows = Array.isArray(archive[vote]) ? archive[vote] : [];
+  if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(vote)) continue;
+  const rows = readRows(vote);
   const last = rows[rows.length - 1];
   if (last && utcDay(last[0]) === today) {
     skipped++;
@@ -82,10 +86,9 @@ for (const [vote, { validator, status }] of byKey) {
     Number.isFinite(commission) ? commission : null,
     uptimeFromEpochCredits(validator?.epochCredits)
   ]);
-  archive[vote] = rows;
+  fs.mkdirSync(voteDir, { recursive: true });
+  fs.writeFileSync(path.join(voteDir, `${vote}.json`), JSON.stringify(rows));
   added++;
 }
 
-fs.mkdirSync(path.dirname(archivePath), { recursive: true });
-fs.writeFileSync(archivePath, JSON.stringify(archive));
 console.log(`validators ${byKey.size} added ${added} already_today ${skipped} day ${today}`);

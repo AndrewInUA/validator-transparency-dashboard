@@ -1,68 +1,13 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const RAW_ARCHIVE =
-  "https://raw.githubusercontent.com/AndrewInUA/validator-transparency-dashboard/main/data/snapshot-archive.json";
+const RAW_VOTE =
+  "https://raw.githubusercontent.com/AndrewInUA/validator-transparency-dashboard/main/data/by-vote/";
 const CACHE_MS = 30 * 60 * 1000;
 
-let cache = null;
-let cachedAt = 0;
-let loading = null;
+const cache = new Map();
 
-function localArchiveFile() {
-  const candidates = [];
-  try {
-    const here = path.dirname(fileURLToPath(import.meta.url));
-    candidates.push(path.join(here, "..", "data", "snapshot-archive.json"));
-  } catch {
-    // Bundled runtimes may not expose a real file URL.
-  }
-  candidates.push(path.join(process.cwd(), "data", "snapshot-archive.json"));
-  return candidates.find(candidate => {
-    try {
-      return fs.existsSync(candidate);
-    } catch {
-      return false;
-    }
-  }) || null;
-}
-
-async function readArchive() {
-  const local = localArchiveFile();
-  if (local) {
-    return JSON.parse(fs.readFileSync(local, "utf8"));
-  }
-
-  const response = await fetch(RAW_ARCHIVE);
-  if (!response.ok) {
-    throw new Error(`Snapshot archive HTTP ${response.status}`);
-  }
-  return response.json();
-}
-
-export async function loadSnapshotArchive() {
-  if (cache && Date.now() - cachedAt < CACHE_MS) return cache;
-  if (!loading) {
-    loading = readArchive()
-      .then(data => {
-        cache = data && typeof data === "object" ? data : {};
-        cachedAt = Date.now();
-        return cache;
-      })
-      .finally(() => {
-        loading = null;
-      });
-  }
-  return loading;
-}
-
-export async function rowsForVote(vote) {
-  const key = String(vote || "").trim();
-  const raw = (await loadSnapshotArchive())[key];
+function toRows(vote, raw) {
   if (!Array.isArray(raw) || raw.length === 0) return null;
   return raw.map(item => ({
-    vote_key: key,
+    vote_key: vote,
     captured_at: item[0] || null,
     status: item[1] ?? null,
     commission: item[2] == null || item[2] === "" ? null : Number(item[2]),
@@ -71,6 +16,26 @@ export async function rowsForVote(vote) {
     tr_apy: null,
     pools: null
   }));
+}
+
+export async function rowsForVote(vote) {
+  const key = String(vote || "").trim();
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,48}$/.test(key)) return null;
+
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.rows;
+
+  const response = await fetch(`${RAW_VOTE}${key}.json`);
+  if (response.status === 404) {
+    cache.set(key, { at: Date.now(), rows: null });
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`Snapshot history HTTP ${response.status}`);
+  }
+  const rows = toRows(key, await response.json());
+  cache.set(key, { at: Date.now(), rows });
+  return rows;
 }
 
 export function allTimeStatsFromRows(rows) {
