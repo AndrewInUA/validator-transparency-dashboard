@@ -3,8 +3,19 @@ import path from "path";
 
 const voteDir = path.resolve("data/by-vote");
 
+function heliusKey() {
+  let key = String(process.env.HELIUS_API_KEY || "").trim();
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1).trim();
+  }
+  return key;
+}
+
 function buildRpcUrl() {
-  const key = String(process.env.HELIUS_API_KEY || "").trim();
+  const key = heliusKey();
   if (key) return `https://mainnet.helius-rpc.com/?api-key=${key}`;
   return "https://api.mainnet-beta.solana.com";
 }
